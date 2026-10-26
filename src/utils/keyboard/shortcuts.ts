@@ -38,13 +38,14 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		const target = e.target as HTMLElement;
+		const target = e.target as HTMLElement | null;
 		if (
-			target.tagName === "INPUT" ||
-			target.tagName === "TEXTAREA" ||
-			target.isContentEditable ||
-			target.closest("input") ||
-			target.closest("textarea")
+			target &&
+			(target.tagName === "INPUT" ||
+				target.tagName === "TEXTAREA" ||
+				target.isContentEditable ||
+				target.closest?.("input") ||
+				target.closest?.("textarea"))
 		) {
 			return;
 		}

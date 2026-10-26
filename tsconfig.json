@@ -29,5 +29,5 @@
 		"lib": ["DOM", "ES2018"]
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],
-	"exclude": ["node_modules"]
+	"exclude": ["node_modules", "src/**/*.test.ts", "src/**/*.test.tsx", "tests"]
 }
