@@ -7,7 +7,7 @@
 	"author": "Liber Primus",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/liberprimus/liber-music-player-plugin.git"
+		"url": "https://github.com/sudh29/liber_music.git"
 	},
 	"scripts": {
 		"dev": "node scripts/deploy.mjs dev && node esbuild.config.mjs",

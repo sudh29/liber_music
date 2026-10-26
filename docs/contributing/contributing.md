@@ -17,14 +17,14 @@ We welcome contributions from the community! Here's how you can help:
 
 #### 🐛 Bug Reports
 
-- Use the [bug report template](https://github.com/liberprimus/liber-music-player-plugin/issues/new?template=bug_report.md)
+- Use the [bug report template](https://github.com/sudh29/liber_music/issues/new?template=bug_report.md)
 - Include steps to reproduce
 - Describe expected vs actual behavior
 - Provide system information (OS, Obsidian version, plugin version)
 
 #### 💡 Feature Requests
 
-- Use the [feature request template](https://github.com/liberprimus/liber-music-player-plugin/issues/new?template=feature_request.md)
+- Use the [feature request template](https://github.com/sudh29/liber_music/issues/new?template=feature_request.md)
 - Explain the problem you're trying to solve
 - Describe your proposed solution
 - Consider implementation complexity
@@ -46,8 +46,8 @@ We welcome contributions from the community! Here's how you can help:
 
 ```bash
 # Clone the repository
-git clone https://github.com/liberprimus/liber-music-player-plugin.git
-cd liber-music-player-plugin
+git clone https://github.com/sudh29/liber_music.git
+cd liber_music
 
 # Install dependencies
 npm install
@@ -83,5 +83,5 @@ Use conventional commit format:
 
 ### 📞 Contact
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/liberprimus/liber-music-player-plugin/issues)
-- **GitHub Discussions**: [Ask questions or share ideas](https://github.com/liberprimus/liber-music-player-plugin/discussions)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/sudh29/liber_music/issues)
+- **GitHub Discussions**: [Ask questions or share ideas](https://github.com/sudh29/liber_music/discussions)

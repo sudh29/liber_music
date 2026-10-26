@@ -1,8 +1,9 @@
 <div align="center">
     <h1>Liber Music Player Plugin for Obsidian</h1>
     <p>
-        <img src="https://img.shields.io/badge/plugin-Liber_Music_Player-7f6df2?logo=obsidian" alt="Liber Music Player">
-        <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.3.8-7f6df2?logo=obsidian" alt="Version 1.3.8"></a>
+        <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
+        <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
         <img src="https://img.shields.io/badge/tests-59%20passed-brightgreen" alt="Tests: 59 passed">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
@@ -105,11 +106,11 @@ Word timestamps are enclosed within `<mm:ss.xx>` tags following the line timesta
 ### Option 2: Obsidian42 - BRAT (Beta Releases)
 1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) from Community plugins.
 2. Open BRAT settings and click **Add Beta plugin**.
-3. Enter repository path: `liberprimus/liber-music-player-plugin`.
+3. Enter repository path: `sudh29/liber_music`.
 4. Click **Add Plugin** and enable **Liber Music Player Plugin** under Community Plugins.
 
 ### Option 3: Manual Installation
-1. Download the latest release (`main.js`, `manifest.json`, and `styles.css`) from [GitHub Releases](https://github.com/liberprimus/liber-music-player-plugin/releases).
+1. Download the latest release (`main.js`, `manifest.json`, and `styles.css`) from [GitHub Releases](https://github.com/sudh29/liber_music/releases).
 2. Create a folder named `liber-music-player-plugin` in `<YourVault>/.obsidian/plugins/`.
 3. Copy the downloaded files into `<YourVault>/.obsidian/plugins/liber-music-player-plugin/`.
 4. Reload Obsidian and toggle **Liber Music Player Plugin** on in settings.
@@ -134,8 +135,8 @@ Word timestamps are enclosed within `<mm:ss.xx>` tags following the line timesta
 
 ```bash
 # Clone the repository
-git clone https://github.com/liberprimus/liber-music-player-plugin.git
-cd liber-music-player-plugin
+git clone https://github.com/sudh29/liber_music.git
+cd liber_music
 
 # Install dependencies
 npm install
