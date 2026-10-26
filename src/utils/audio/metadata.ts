@@ -311,6 +311,56 @@ export async function readAudioFileBinary(
 	}
 }
 
+/** 默认元数据探测读取头部大小：256KB */
+export const METADATA_HEADER_CHUNK_SIZE = 256 * 1024;
+
+/**
+ * 针对大文件优化的音频头部二进制数据读取：
+ * 优先仅读取前 256KB 头部，避免全量载入 50MB 无损音频导致移动端 OOM 崩溃。
+ *
+ * @param app Obsidian 应用实例
+ * @param file 音频文件
+ * @param maxBytes 最大读取字节数（默认 256KB）
+ * @returns 头部二进制切片
+ */
+export async function readAudioFileHeaderBinary(
+	app: App,
+	file: TFile,
+	maxBytes: number = METADATA_HEADER_CHUNK_SIZE
+): Promise<ArrayBuffer | null> {
+	// 1. 如果在具有 Node.js fs 环境的桌面端（Electron），使用 fs.openSync + fs.readSync 仅读取前 maxBytes
+	try {
+		const adapter = app.vault.adapter as unknown as { getBasePath?: () => string };
+		if (typeof adapter.getBasePath === "function") {
+			const fs = await import("node:fs");
+			const path = await import("node:path");
+			const basePath = adapter.getBasePath();
+			const fullPath = path.join(basePath, file.path);
+			if (fs.existsSync(fullPath)) {
+				const fd = fs.openSync(fullPath, "r");
+				try {
+					const buffer = Buffer.alloc(maxBytes);
+					const bytesRead = fs.readSync(fd, buffer, 0, maxBytes, 0);
+					const slice = buffer.subarray(0, bytesRead);
+					return slice.buffer.slice(slice.byteOffset, slice.byteOffset + slice.byteLength);
+				} finally {
+					fs.closeSync(fd);
+				}
+			}
+		}
+	} catch {
+		// 忽略并回退到 adapter 读取
+	}
+
+	// 2. 移动端/沙箱环境下使用 adapter 读取并进行切片截断
+	const fullBuffer = await readAudioFileBinary(app, file);
+	if (!fullBuffer) return null;
+	if (fullBuffer.byteLength <= maxBytes) {
+		return fullBuffer;
+	}
+	return fullBuffer.slice(0, maxBytes);
+}
+
 /**
  * 从音频文件的二进制缓冲区中提取嵌入的元数据
  * 

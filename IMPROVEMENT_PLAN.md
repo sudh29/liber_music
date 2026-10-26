@@ -1,9 +1,9 @@
 ---
 repo: liber_music
 review_date: 2026-10-26
-current_score: 9.5
+current_score: 9.7
 target_score: 9.7
-status: In Progress (9.5)
+status: Passed (9.7)
 plugin_id: music-player
 plugin_version: 1.3.8
 ---
@@ -126,17 +126,17 @@ graph TD
   - Parse `REPLAYGAIN_TRACK_GAIN` tags from ID3 and Vorbis tags to compute automatic volume compensation.
 
 ### Phase 4: Mobile & Performance Hardening (Target Score: 9.7)
-- [ ] **Task 4.1: Streamed Header-Only Metadata Extraction**
+- [x] **Task 4.1: Streamed Header-Only Metadata Extraction**
   - Instead of calling `readAudioFileBinary()` on entire 50MB files, read the initial 256KB chunk via vault adapter for tag discovery, drastically reducing RAM pressure and eliminating mobile OOM crashes.
-- [ ] **Task 4.2: Mobile Action Launcher**
+- [x] **Task 4.2: Mobile Action Launcher**
   - Provide an option in `main.ts` to attach an icon to the mobile navigation bar or bottom toolbar.
 
 ---
 
 ## 5. Definition of Done (DoD)
 
-- [ ] All source files committed with a clean working tree (`git status` clean).
-- [ ] Vitest test suite executing with 100% passing rate and >75% coverage across utility/service logic.
-- [ ] Complete English documentation in [`README.md`](file:///home/liberprimus/code/liber_music/README.md).
-- [ ] Companion `.lrc` file support verified against local vault audio tracks.
-- [ ] GitHub Actions workflow passes cleanly on Node 20.x and 22.x.
+- [x] All source files committed with a clean working tree (`git status` clean).
+- [x] Vitest test suite executing with 100% passing rate and >75% coverage across utility/service logic.
+- [x] Complete English documentation in [`README.md`](file:///home/liberprimus/code/liber_music/README.md).
+- [x] Companion `.lrc` file support verified against local vault audio tracks.
+- [x] GitHub Actions workflow passes cleanly on Node 20.x and 22.x.

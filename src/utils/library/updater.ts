@@ -14,7 +14,12 @@
 
 import { App, Notice } from "obsidian";
 import MusicPlayerPlugin from "@/main";
-import { getEmbeddedAudioMetadataFromBuffer, readAudioFileBinary, readCompanionLrc } from "../audio/metadata";
+import {
+	getEmbeddedAudioMetadataFromBuffer,
+	readAudioFileBinary,
+	readAudioFileHeaderBinary,
+	readCompanionLrc,
+} from "../audio/metadata";
 import { generateArtistsAndAlbums } from "../data/transform";
 import { scanVaultAudioFiles } from "./scanVaultAudio";
 import { t, tWithParams } from "@/utils/i18n/i18n";
@@ -88,14 +93,21 @@ export async function rebuildAllData(
 					})
 				);
 				
-				// 读取音频文件的二进制数据（兼容移动端）
-				const binary = await readAudioFileBinary(app, file);
-				if (!binary) {
-					console.warn(`无法读取文件 ${file.path}`);
-					continue;
+				// 优先仅读取 256KB 音频头部探测元数据，大幅降低移动端与无损大文件内存占用
+				let binary = await readAudioFileHeaderBinary(app, file);
+				let audioMetadata = binary ? await getEmbeddedAudioMetadataFromBuffer(binary) : null;
+
+				// 若头部未能识别有效信息（如特殊尾置标签），回退至全量读取
+				if (!audioMetadata || (!audioMetadata.title && !audioMetadata.artist)) {
+					const fullBinary = await readAudioFileBinary(app, file);
+					if (fullBinary) {
+						const fullMeta = await getEmbeddedAudioMetadataFromBuffer(fullBinary);
+						if (fullMeta) {
+							audioMetadata = fullMeta;
+						}
+					}
 				}
-				
-				const audioMetadata = await getEmbeddedAudioMetadataFromBuffer(binary);
+
 				if (!audioMetadata) {
 					console.warn(`无法提取文件 ${file.path} 的元数据`);
 					continue;

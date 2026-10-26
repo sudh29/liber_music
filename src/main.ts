@@ -13,7 +13,7 @@
 import { initBufferPolyfill } from "./utils/polyfills/buffer";
 initBufferPolyfill();
 
-import { Platform, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { MusicPlayerView, VIEW_TYPE_MUSIC_PLAYER } from './views/MusicPlayerView';
 import { generateArtistsAndAlbums } from './utils/data/transform';
 import { getTrackPath } from './utils/track/id';
@@ -53,13 +53,11 @@ export default class MusicPlayerPlugin extends Plugin {
 			(leaf) => new MusicPlayerView(leaf, this)
 		);
 
-		// 添加侧边栏图标（仅在桌面端可用，移动端不支持）
-		if (!Platform.isMobile) {
-			this.addRibbonIcon('lucide-music', t('ribbon.musicPlayer'), () => {
-				// 点击图标后：在右侧栏打开播放器
-				void this.activateView();
-			});
-		}
+		// 添加功能区图标（支持桌面端侧边栏与移动端 Ribbon / 抽屉菜单）
+		this.addRibbonIcon('lucide-music', t('ribbon.musicPlayer'), () => {
+			// 点击图标后：打开播放器视图
+			void this.activateView();
+		});
 
 		// 添加快捷命令：打开音乐播放器
 		this.addCommand({
