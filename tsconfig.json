@@ -1,9 +1,9 @@
 {
 	"compilerOptions": {
-		"baseUrl": "src",
 		"paths": {
-			"@/*": ["*"],
-			"buffer-polyfill": ["../node_modules/buffer"]
+			"@/*": ["./src/*"],
+			"buffer-polyfill": ["./node_modules/buffer"],
+			"*": ["./src/*"]
 		},
 		"inlineSourceMap": true,
 		"inlineSources": true,
@@ -26,17 +26,8 @@
 		"resolveJsonModule": true,
 		"jsx": "react-jsx",
 		"jsxImportSource": "react",
-		"lib": [
-			"DOM",
-			"ES2018"
-		]
+		"lib": ["DOM", "ES2018"]
 	},
-	"include": [
-		"src/**/*.ts",
-		"src/**/*.tsx"
-	],
-	"exclude": [
-		"node_modules"
-	]
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"exclude": ["node_modules"]
 }
-

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { applyLyricsOffset, parseLyricsOffset, stripLyricsOffsetTags } from "./offset";
 import type { LyricLine } from "./parser";
 import type { ExtendedLyricLine } from "./extendedParser";
@@ -41,7 +41,8 @@ describe("lyrics offset utility", () => {
 
 	describe("stripLyricsOffsetTags", () => {
 		it("should remove single and multiple offset tags completely", () => {
-			const text = "[ti:Song]\n[offset:500]\n[00:01.00]Line 1\n[offset:-200]\n[00:05.00]Line 2";
+			const text =
+				"[ti:Song]\n[offset:500]\n[00:01.00]Line 1\n[offset:-200]\n[00:05.00]Line 2";
 			const stripped = stripLyricsOffsetTags(text);
 			expect(stripped).not.toContain("[offset:");
 			expect(stripped).toContain("[ti:Song]");

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { isTimestampedKaraokeLyrics } from "./formatDetection";
 import { calculateLyricsIndex } from "./indexCalculator";
 import { LyricsExtendedParser } from "./extendedParser";
@@ -18,7 +18,9 @@ describe("lyrics formatDetection", () => {
 	it("should return false for regular single-timestamp lines and empty text", () => {
 		expect(isTimestampedKaraokeLyrics("")).toBe(false);
 		expect(isTimestampedKaraokeLyrics("   ")).toBe(false);
-		expect(isTimestampedKaraokeLyrics("[00:01.00]Just regular line\n[00:05.00]Another line")).toBe(false);
+		expect(
+			isTimestampedKaraokeLyrics("[00:01.00]Just regular line\n[00:05.00]Another line"),
+		).toBe(false);
 	});
 });
 
@@ -52,16 +54,24 @@ describe("calculateLyricsIndex", () => {
 		];
 
 		// At t = 1.0, adjusted = 1.5 (< 2.0) -> -1
-		expect(calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 1.0 })).toBe(-1);
+		expect(calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 1.0 })).toBe(
+			-1,
+		);
 
 		// At t = 1.6, adjusted = 2.1 (>= 2.0 and < 5.0) -> index 0
-		expect(calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 1.6 })).toBe(0);
+		expect(calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 1.6 })).toBe(
+			0,
+		);
 
 		// At t = 4.8, adjusted = 5.3 (>= 5.0 and < 8.0) -> index 1
-		expect(calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 4.8 })).toBe(1);
+		expect(calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 4.8 })).toBe(
+			1,
+		);
 
 		// At t = 10.0, adjusted = 10.5 (>= 8.0, last line) -> index 2
-		expect(calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 10.0 })).toBe(2);
+		expect(
+			calculateLyricsIndex({ fullLyrics, fullExtendedLyrics: [], currentTime: 10.0 }),
+		).toBe(2);
 	});
 
 	it("should prioritize fullExtendedLyrics with 0.2s advance when present", () => {

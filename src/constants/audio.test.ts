@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { DEFAULT_PLAYBACK_RATE, DEFAULT_VOLUME, isSupportedAudioExtension, SUPPORTED_AUDIO_FORMATS } from "./audio";
+import { describe, expect, it } from "vite-plus/test";
+import {
+	DEFAULT_PLAYBACK_RATE,
+	DEFAULT_VOLUME,
+	isSupportedAudioExtension,
+	SUPPORTED_AUDIO_FORMATS,
+} from "./audio";
 
 describe("audio constants and extension validation", () => {
 	it("should have expected supported formats and defaults", () => {

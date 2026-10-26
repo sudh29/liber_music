@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { sortByName, sortTracksByTrack } from "./sort";
 import type { TFile } from "obsidian";
 import type { MusicPlayerSettings } from "@/types";

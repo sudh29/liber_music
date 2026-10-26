@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { LyricsService } from "./LyricsService";
 import { App, TFile } from "obsidian";
 import type MusicPlayerPlugin from "@/main";

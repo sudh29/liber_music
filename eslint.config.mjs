@@ -18,7 +18,7 @@ export default tseslint.config(
 			"versions.json",
 			"package.json",
 			"main.js",
-			"vitest.config.ts",
+			"vite.config.ts",
 			"tests/**",
 		],
 	},
