@@ -27,6 +27,9 @@ export function getPreviousIndex(
 	shuffleManager?: ShuffleManager
 ): number {
 	if (isShuffle && shuffleManager) {
+		if (shuffleManager.getTotalCount() !== list.length || shuffleManager.getTotalCount() === 0) {
+			shuffleManager.initialize(list.length, currentIndex);
+		}
 		const prev = shuffleManager.getPreviousTrack();
 		if (prev !== null) return prev;
 	}
@@ -54,12 +57,13 @@ export function getNextIndex(
 	shuffleManager?: ShuffleManager
 ): number {
 	if (isShuffle && shuffleManager) {
+		if (shuffleManager.getTotalCount() !== list.length || shuffleManager.getTotalCount() === 0) {
+			shuffleManager.initialize(list.length, currentIndex);
+		}
 		const next = shuffleManager.getNextTrack();
 		if (next !== null) return next;
-		if (playMode === "repeat-all" || playMode === "shuffle") {
-			const cycleFirst = shuffleManager.startNewCycle();
-			if (cycleFirst !== null) return cycleFirst;
-		}
+		const cycleFirst = shuffleManager.startNewCycle();
+		if (cycleFirst !== null) return cycleFirst;
 	}
 	if (playMode === "shuffle") {
 		return Math.floor(Math.random() * list.length);
@@ -92,6 +96,9 @@ export function handleTrackEnd(
 		return { shouldPlayNext: false, shouldRepeat: true, shouldStop: false };
 	}
 	if (isShuffle && shuffleManager) {
+		if (shuffleManager.getTotalCount() !== list.length || shuffleManager.getTotalCount() === 0) {
+			shuffleManager.initialize(list.length, currentIndex);
+		}
 		if (shuffleManager.getRemainingCount() > 0) {
 			return { shouldPlayNext: true, shouldRepeat: false, shouldStop: false };
 		}

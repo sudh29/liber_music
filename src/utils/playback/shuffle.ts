@@ -53,20 +53,41 @@ export class ShuffleManager {
 
 	/**
 	 * Manually sets the active track (e.g. user clicked a specific song in the library).
-	 * Preserves the clicked song in history and shuffles the remaining pool.
+	 * Preserves the clicked song in history and removes it from the unplayed pool,
+	 * ensuring all remaining unplayed songs are still played before any repeats.
 	 *
 	 * @param index - Index of track user selected
+	 * @param totalTracks - Optional playlist length to auto-sync if changed
 	 */
-	onTrackSelected(index: number): void {
+	onTrackSelected(index: number, totalTracks?: number): void {
+		if (totalTracks && (this.totalCount !== totalTracks || this.totalCount <= 0)) {
+			this.initialize(totalTracks, index);
+			return;
+		}
+
 		if (this.totalCount <= 0 || index < 0 || index >= this.totalCount) {
 			return;
 		}
 
+		// If this track is already the current track in history, nothing to change
+		if (this.playedHistory[this.playedHistory.length - 1] === index) {
+			return;
+		}
+
+		// Remove from unplayedDeck if present so it won't repeat
+		const deckIdx = this.unplayedDeck.indexOf(index);
+		if (deckIdx !== -1) {
+			this.unplayedDeck.splice(deckIdx, 1);
+		}
+
 		this.playedHistory.push(index);
-		const remaining = Array.from({ length: this.totalCount }, (_, i) => i)
-			.filter(i => i !== index);
-		this.unplayedDeck = this.shuffleArray(remaining);
+
+		// If all tracks have been played, start a new cycle
+		if (this.unplayedDeck.length === 0) {
+			this.startNewCycle();
+		}
 	}
+
 
 	/**
 	 * Gets the next track index from the non-repeating shuffle deck.
@@ -129,6 +150,13 @@ export class ShuffleManager {
 		this.unplayedDeck.unshift(current);
 
 		return this.playedHistory[this.playedHistory.length - 1] ?? null;
+	}
+
+	/**
+	 * Returns total count of tracks in deck.
+	 */
+	getTotalCount(): number {
+		return this.totalCount;
 	}
 
 	/**

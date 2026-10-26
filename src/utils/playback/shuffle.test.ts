@@ -60,24 +60,27 @@ describe("ShuffleManager (Non-Repeating Smart Shuffle)", () => {
 		expect(manager.getPreviousTrack()).toBeNull();
 	});
 
-	it("should handle manual track selection by user", () => {
+	it("should handle manual track selection by user without repeating played tracks", () => {
 		const manager = new ShuffleManager();
-		manager.initialize(5, 0);
+		manager.initialize(5, 0); // 0 played, [1, 2, 3, 4] in unplayed deck
 
 		// User clicks track 3
 		manager.onTrackSelected(3);
 
-		expect(manager.getRemainingCount()).toBe(4);
+		expect(manager.getPlayedCount()).toBe(2);
+		expect(manager.getRemainingCount()).toBe(3);
 
-		// The remaining 4 tracks should not include 3
+		// The remaining 3 tracks should not include 0 or 3
 		const remaining: number[] = [];
-		for (let i = 0; i < 4; i++) {
+		for (let i = 0; i < 3; i++) {
 			remaining.push(manager.getNextTrack()!);
 		}
 
+		expect(remaining).not.toContain(0);
 		expect(remaining).not.toContain(3);
-		expect(new Set(remaining).size).toBe(4);
+		expect(new Set(remaining).size).toBe(3);
 	});
+
 
 	it("should handle boundary conditions: 0 or 1 tracks", () => {
 		const manager = new ShuffleManager();

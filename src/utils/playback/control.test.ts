@@ -7,6 +7,8 @@ import {
 	handleTrackEnd,
 	togglePlayMode,
 } from "./control";
+import { ShuffleManager } from "./shuffle";
+
 
 describe("playback/control utilities", () => {
 	const mockFiles = [
@@ -68,7 +70,31 @@ describe("playback/control utilities", () => {
 			const singleList = [mockFiles[0]!];
 			expect(getNextIndex(0, singleList, "normal")).toBe(0);
 		});
+
+		it("should auto-initialize uninitialized shuffleManager and return valid next track", () => {
+			const manager = new ShuffleManager(); // totalCount is 0
+			const nextIdx = getNextIndex(0, mockFiles, "normal", true, manager);
+			expect(nextIdx).toBeGreaterThanOrEqual(0);
+			expect(nextIdx).toBeLessThan(mockFiles.length);
+			expect(nextIdx).not.toBe(0); // Should not repeat current track
+			expect(manager.getTotalCount()).toBe(mockFiles.length);
+		});
+
+		it("should cycle into a new deck when deck is exhausted on Next click", () => {
+			const manager = new ShuffleManager();
+			manager.initialize(mockFiles.length, 0);
+			// Exhaust the deck
+			while (manager.getRemainingCount() > 0) {
+				manager.getNextTrack();
+			}
+			expect(manager.getRemainingCount()).toBe(0);
+
+			const nextIdx = getNextIndex(2, mockFiles, "normal", true, manager);
+			expect(nextIdx).toBeGreaterThanOrEqual(0);
+			expect(nextIdx).toBeLessThan(mockFiles.length);
+		});
 	});
+
 
 	describe("handleTrackEnd", () => {
 		it("should repeat current track in repeat-one mode", () => {

@@ -258,7 +258,7 @@ export class PlaybackService {
 		);
 		const trackIdxInList = activeList.findIndex((f) => f.path === track.path);
 		if (trackIdxInList !== -1) {
-			this.shuffleManager.onTrackSelected(trackIdxInList);
+			this.shuffleManager.onTrackSelected(trackIdxInList, activeList.length);
 		}
 
 		if (delayPlay) {
@@ -492,7 +492,7 @@ export class PlaybackService {
 				state.favorites
 			);
 			const currentIdx = state.currentTrack ? list.findIndex((f) => f.path === state.currentTrack?.path) : -1;
-			this.shuffleManager.reset(list.length, currentIdx >= 0 ? currentIdx : undefined);
+			this.shuffleManager.initialize(list.length, currentIdx >= 0 ? currentIdx : -1);
 		}
 		if (this.callbacks.onLibraryUpdated) {
 			void this.callbacks.onLibraryUpdated();
