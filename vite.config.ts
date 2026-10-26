@@ -1,7 +1,13 @@
 import { defineConfig } from "vite-plus";
+import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
+	plugins: [
+		react({
+			compiler: true, // Enables Oxc's native Rust React Compiler (oxc-transform-react) instead of Babel
+		}),
+	],
 	staged: {
 		"*.{ts,tsx,js,mjs}": "vp lint",
 	},
