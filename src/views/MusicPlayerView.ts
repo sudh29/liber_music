@@ -1,12 +1,12 @@
 /**
- * 音乐播放器视图模块
+ * Music player view module
  * 
- * 架构说明：
- * - 本类负责 Obsidian View 生命周期管理和服务初始化
- * - 业务逻辑方法（如播放控制、库管理等）主要通过 hooks 封装访问
- * - React 组件应使用 hooks（usePlaybackControl, useLibraryManagement）而不是直接调用 view 方法
- * - Components 组件应通过 props 接收数据和回调，不直接访问 view
- * - 非 React 代码（如键盘快捷键）可以直接访问标记为 @internal 的方法
+ * Architectural notes:
+ * - Manages Obsidian View lifecycle and service initialization
+ * - Business logic methods (playback control, library management) are encapsulated and accessed via hooks
+ * - React components should consume hooks (usePlaybackControl, useLibraryManagement) rather than calling view methods directly
+ * - Components receive data and callbacks via props and avoid accessing view directly
+ * - Non-React code (e.g. keyboard shortcuts) may directly access methods marked @internal
  */
 
 import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
@@ -22,37 +22,37 @@ import { t, tWithParams } from "@/utils/i18n/i18n";
 import { formatListLabel } from "@/utils/list/formatter";
 
 /**
- * 音乐播放器视图的类型标识符
+ * Music player view type identifier.
  * 
- * 用于在 Obsidian 中注册和识别音乐播放器视图
+ * Used to register and identify the music player view in Obsidian.
  */
 export const VIEW_TYPE_MUSIC_PLAYER = "view";
 
 /**
- * 音乐播放器视图类
+ * Music player view class.
  * 
- * 继承自 Obsidian 的 ItemView，负责：
- * - Obsidian View 生命周期管理（onOpen, onClose）
- * - 所有服务的初始化和依赖注入
- * - 提供业务逻辑方法供 hooks 和键盘快捷键使用
- * - 管理 React 根组件的挂载和卸载
+ * Extends Obsidian's ItemView, responsible for:
+ * - Obsidian View lifecycle management (onOpen, onClose)
+ * - Service initialization and dependency injection
+ * - Providing business logic methods for hooks and keyboard shortcuts
+ * - Managing React root component mounting and unmounting
  * 
- * 注意：业务逻辑主要通过 hooks 封装访问，React 组件应使用 hooks 而不是直接调用 view 方法。
+ * Note: Business logic is encapsulated in hooks; React components should use hooks instead of calling view methods directly.
  */
 export class MusicPlayerView extends ItemView {
-	/** 插件实例 */
+	/** Plugin instance */
 	plugin: MusicPlayerPlugin;
 	
 	/**
-	 * 获取当前音频元素
+	 * Gets current audio element
 	 * 
-	 * @returns 当前音频元素，如果不存在则返回 null
+	 * @returns Current audio element, or null if non-existent
 	 */
 	get audioElement(): HTMLAudioElement | null {
 		return this.audioService.getAudioElement();
 	}
 	
-	/** 状态管理服务 */
+	/** State management services */
 	private stateService: StateService;
 	private libraryService: LibraryService;
 	private playlistService: PlaylistService;
@@ -69,73 +69,73 @@ export class MusicPlayerView extends ItemView {
 	private keyboardShortcuts?: KeyboardShortcutHandler;
 	private libraryUpdateListeners: Set<() => void> = new Set();
 	private reactRoot: Root | null = null;
-	/** 播放上一首时的回调（用于设置 lastAction） */
+	/** Callback when playing previous track (sets lastAction) */
 	private onPlayPreviousCallback?: () => void;
-	/** 播放下一首时的回调（用于设置 lastAction） */
+	/** Callback when playing next track (sets lastAction) */
 	private onPlayNextCallback?: () => void;
-	/** 直接选择歌曲时的回调（用于清除 lastAction） */
+	/** Callback when directly selecting a track (clears lastAction) */
 	private onDirectPlayCallback?: () => void;
-	/** 文件系统监听器（用于监控音乐文件变化） */
+	/** Vault file system listeners (monitors audio file changes) */
 	private vaultEventListeners: Array<() => void> = [];
-	/** 是否需要重建索引的标识 */
+	/** Flag indicating whether library re-indexing is required */
 	private needsRebuild: boolean = false;
 
-	// ========== 状态访问器 ==========
-	// 简化 getter，直接访问 stateService，避免重复调用 getState()
+	// ========== State Accessors ==========
+	// Direct access to stateService to avoid redundant getState() calls
 	
-	/** 获取完整状态对象 */
+	/** Gets full state object */
 	get state() { return this.stateService.getState(); }
-	/** 当前播放的曲目 */
+	/** Currently playing track */
 	get currentTrack() { return this.state.currentTrack; }
-	/** 所有音乐文件列表 */
+	/** All music tracks */
 	get trackList() { return this.state.trackList; }
-	/** 当前曲目在列表中的索引 */
+	/** Current track index within list */
 	get currentIndex() { return this.state.currentIndex; }
-	/** 是否正在播放 */
+	/** Whether audio is currently playing */
 	get isPlaying() { return this.state.isPlaying; }
-	/** 当前曲目的普通歌词 */
+	/** Standard lyrics for current track */
 	get currentLyrics() { return this.state.currentLyrics; }
-	/** 当前曲目的逐字歌词 */
+	/** Word-by-word extended lyrics for current track */
 	get currentExtendedLyrics() { return this.state.currentExtendedLyrics; }
-	/** 收藏的曲目列表 */
+	/** Favorite track list */
 	get favorites() { return this.state.favorites; }
-	/** 播放列表映射（播放列表名称 -> 曲目路径数组） */
+	/** Playlist map (playlist name -> track paths array) */
 	get playlistMap() { return this.state.playlistMap; }
-	/** 当前播放列表的 section ID */
+	/** Current playlist section ID */
 	get currentSectionIdForPlaylist() { return this.state.currentSectionIdForPlaylist; }
-	/** 当前列表上下文 */
+	/** Current list context */
 	get currentList() { return this.state.currentList; }
-	/** 当前列表标识符 */
+	/** Current list identifier */
 	get currentListId() { return this.state.currentListId; }
-	/** 播放模式 */
+	/** Playback mode */
 	get playMode() { return this.state.playMode; }
-	/** 音量（0-1） */
+	/** Volume (0-1) */
 	get volume() { return this.state.volume; }
-	/** 播放速率（0.25-4.0） */
+	/** Playback rate (0.25-4.0) */
 	get playbackRate() { return this.state.playbackRate; }
 
 	/**
-	 * React API - 统一接口供 React 组件使用
+	 * React API - unified interface for React components
 	 * 
-	 * 返回 ReactApiService 提供的 API 接口，供 React 组件通过 hooks 调用。
+	 * Returns API interface provided by ReactApiService for consumption via hooks.
 	 * 
-	 * @returns React API 接口对象
+	 * @returns React API interface object
 	 */
 	get reactApi(): ReactApi {
 		return this.reactApiService.getApi();
 	}
 
 	/**
-	 * 创建音乐播放器视图实例
+	 * Creates a music player view instance.
 	 * 
-	 * 初始化所有服务并建立依赖关系。服务初始化顺序很重要：
-	 * 1. 基础服务（StateService, LibraryService, PlaylistService 等）
-	 * 2. 依赖基础服务的服务（ListService, ViewService 等）
-	 * 3. 编排服务（PlaybackService, LibraryOrchestrationService）
-	 * 4. API 服务（ReactApiService）
+	 * Initializes all services with strict dependency ordering:
+	 * 1. Base services (StateService, LibraryService, PlaylistService, etc.)
+	 * 2. Dependent services (ListService, ViewService, etc.)
+	 * 3. Orchestration services (PlaybackService, LibraryOrchestrationService)
+	 * 4. API service (ReactApiService)
 	 * 
-	 * @param leaf - Obsidian 工作区叶子节点
-	 * @param plugin - 插件实例
+	 * @param leaf - Obsidian workspace leaf
+	 * @param plugin - Plugin instance
 	 */
 	constructor(leaf: WorkspaceLeaf, plugin: MusicPlayerPlugin) {
 		super(leaf);
@@ -188,7 +188,7 @@ export class MusicPlayerView extends ItemView {
 			{
 				onLibraryUpdated: () => this.handleLibraryUpdated(),
 				onDirectPlay: () => {
-					// 清除 lastAction，直接更新封面，不显示动画
+					// Clear lastAction to update cover immediately without sliding animation
 					if (this.onDirectPlayCallback) {
 						this.onDirectPlayCallback();
 					}
@@ -198,20 +198,17 @@ export class MusicPlayerView extends ItemView {
 				},
 			}
 		);
-		// 创建音频事件处理器，用于在文件重命名时重新创建音频元素
-		// 使用与 PlaybackService 相同的回调结构
+		// Audio event handlers for recreating audio element on file rename
+		// Matches callback structure in PlaybackService
 		const audioEventHandlers = {
 			onTimeUpdate: () => {
-				// 播放进度更新回调（由 React 组件通过 usePlaybackState 处理）
-				// PlaybackService 使用 onProgressUpdate，但这里我们不需要做任何事情
-				// 因为 React 组件会通过 requestAnimationFrame 自动更新
+				// Playback progress update (handled by React components via usePlaybackState)
 			},
 			onLoadedMetadata: () => {
-				// 元数据加载完成回调（由 React 组件处理）
-				// PlaybackService 使用 onDurationUpdate，但这里我们不需要做任何事情
+				// Metadata loaded callback (handled by React components)
 			},
 			onEnded: () => {
-				// 播放结束回调，与 PlaybackService 的 onTrackEnd 一致
+				// Track ended callback, consistent with PlaybackService onTrackEnd
 				this.onTrackEnd();
 			},
 		};
@@ -228,109 +225,108 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 获取视图类型标识符
+	 * Gets view type identifier
 	 * 
-	 * @returns 视图类型标识符
+	 * @returns View type identifier
 	 */
 	getViewType() {
 		return VIEW_TYPE_MUSIC_PLAYER;
 	}
 
 	/**
-	 * 订阅库更新事件
+	 * Subscribes to library update events.
 	 * 
-	 * 当音乐库发生变化时（如刷新库、切换收藏、修改播放列表等），
-	 * 会通知所有已注册的监听器。
+	 * Notifies registered listeners when music library changes
+	 * (refresh, toggle favorite, edit playlist, etc.).
 	 * 
-	 * @param listener - 库更新时的回调函数
+	 * @param listener - Callback function on library update
 	 */
 	public subscribeLibraryUpdates(listener: () => void) {
 		this.libraryUpdateListeners.add(listener);
 	}
 
 	/**
-	 * 取消订阅库更新事件
+	 * Unsubscribes from library update events.
 	 * 
-	 * @param listener - 要移除的监听器函数
+	 * @param listener - Listener function to remove
 	 */
 	public unsubscribeLibraryUpdates(listener: () => void) {
 		this.libraryUpdateListeners.delete(listener);
 	}
 
 	/**
-	 * 获取视图显示文本
+	 * Gets view display title
 	 * 
-	 * @returns 视图显示名称
+	 * @returns View display name
 	 */
 	getDisplayText() {
 		return t("view.title");
 	}
 
 	/**
-	 * 获取视图图标
+	 * Gets view icon
 	 * 
-	 * @returns 图标名称（Lucide 图标）
+	 * @returns Lucide icon name
 	 */
 	getIcon() {
 		return "lucide-music";
 	}
 
 	/**
-	 * 视图打开时的初始化方法
+	 * View initialization method called when opening view.
 	 * 
-	 * 负责：
-	 * - 设置 React 根组件
-	 * - 检查歌曲列表一致性，如果不一致则自动执行库更新
-	 * - 刷新库状态
-	 * - 恢复上次播放的曲目
-	 * - 设置键盘快捷键
-	 * - 注册文件系统监听器（监控音乐文件变化）
+	 * Responsible for:
+	 * - Setting up React root component
+	 * - Checking track list consistency and flagging need for index rebuild
+	 * - Refreshing library state
+	 * - Restoring last played track
+	 * - Registering keyboard shortcuts
+	 * - Registering vault file system listeners
 	 */
 	async onOpen() {
 		try {
-			// 每次视图打开时重新加载设置，确保官方同步后的数据能够生效
+			// Reload settings on each view open to ensure remote sync changes apply
 			await this.plugin.loadSettings();
 
-			// 先清理旧的 React root（如果存在）
+			// Clean up previous React root if present
 			if (this.reactRoot) {
 				try {
 					this.reactRoot.unmount();
 				} catch (e) {
-					console.warn("卸载旧的 React root 时出错:", e);
+					console.warn("Error unmounting previous React root:", e);
 				}
 				this.reactRoot = null;
 			}
 			
-			// 设置 React 根组件（必须在最前面，确保 UI 能显示）
+			// Setup React root component (must happen first to ensure UI can render)
 			const { reactRoot } = this.viewSetupService.setupView(this.containerEl, this);
 			this.reactRoot = reactRoot;
 			
-			// 注册文件系统监听器，监控音乐文件变化
-			// 先清理可能存在的旧监听器，再设置新的监听器
+			// Register file system listeners to monitor audio file changes
 			this.listenerService.cleanup();
 			this.listenerService.setup();
 			
-			// 启动时自动检查歌曲列表一致性，如果需要重建则设置标识，不自动重建
+			// Check library consistency on startup; set flag if rebuild is required without auto-rebuilding
 			try {
 				const needsUpdate = await this.libraryService.checkLibraryConsistency();
 				if (needsUpdate) {
-					console.debug("检测到库不一致，需要重建索引");
+					console.debug("Library inconsistency detected; index rebuild required");
 					this.needsRebuild = true;
-					// 通知 React 组件更新 UI
+					// Notify React components to update UI
 					this.notifyNeedsRebuildChange();
 				}
 			} catch (error) {
-				// 静默处理错误，不影响启动流程
-				console.error("启动时检查数据时出错:", error);
+				// Silently handle error to avoid breaking startup flow
+				console.error("Error checking library data on startup:", error);
 			}
 			
-			// 初始化时刷新库状态
+			// Refresh library state on initialization
 			await this.handleLibraryUpdated();
 			await this.restoreLastPlayedTrack();
 			this.keyboardShortcuts = setupKeyboardShortcuts(this);
 		} catch (error) {
-			console.error("初始化视图时出错:", error);
-			// 即使出错，也尝试显示错误信息
+			console.error("Error initializing view:", error);
+			// Display fallback error container if initialization fails
 			if (this.containerEl) {
 				const errorDiv = this.containerEl.createDiv();
 				errorDiv.setCssProps({ padding: "20px", color: "var(--text-error)" });
@@ -343,18 +339,18 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 视图关闭时的清理方法
+	 * View cleanup method called on close.
 	 * 
-	 * 负责：
-	 * - 清理音频元素
-	 * - 移除键盘快捷键监听
-	 * - 移除文件系统监听器
-	 * - 卸载 React 根组件
+	 * Responsible for:
+	 * - Cleaning up audio element
+	 * - Removing keyboard shortcut listeners
+	 * - Removing vault event listeners
+	 * - Unmounting React root
 	 */
 	async onClose() {
 		await this.audioService.cleanup();
 		if (this.keyboardShortcuts) this.keyboardShortcuts.cleanup();
-		// 清理文件系统监听器
+		// Clean up file system listeners
 		this.listenerService.cleanup();
 		if (this.reactRoot) {
 			this.reactRoot.unmount();
@@ -363,11 +359,11 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 打开播放列表选择对话框
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Opens queue / playlist modal
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	public async openPlaylistSheet() {
-		// 打开播放列表前刷新库状态
+		// Refresh library state before opening playlist modal
 		await this.handleLibraryUpdated();
 		const { list } = this.listService.getCurrentPlaylistForTrack(
 			this.state.currentTrack,
@@ -390,7 +386,7 @@ export class MusicPlayerView extends ItemView {
 		);
 		const selectedFile = await modal.prompt();
 		if (selectedFile) {
-			// 清除 lastAction，直接更新封面，不显示动画
+			// Clear lastAction to update cover immediately without sliding animation
 			if (this.onDirectPlayCallback) {
 				this.onDirectPlayCallback();
 			}
@@ -402,9 +398,9 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 打开搜索模态框（私有方法）
+	 * Opens search modal (private method).
 	 * 
-	 * 刷新音乐列表后打开搜索对话框，允许用户搜索并选择歌曲播放。
+	 * Refreshes track list and opens modal allowing user to search and play tracks.
 	 */
 	private async openSearchModal() {
 		await this.refreshMusicList();
@@ -413,7 +409,7 @@ export class MusicPlayerView extends ItemView {
 		modal.setPlaceholder(t("search.placeholder"));
 		const selectedFile = await modal.prompt();
 		if (selectedFile) {
-			// 清除 lastAction，直接更新封面，不显示动画
+			// Clear lastAction to update cover immediately without sliding animation
 			if (this.onDirectPlayCallback) {
 				this.onDirectPlayCallback();
 			}
@@ -428,10 +424,8 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 恢复上次播放的曲目
-	 * 
-	 * 在视图打开时调用，尝试恢复上次播放的曲目。
-	 * 根据设置决定是否自动播放。
+	 * Restores last played track on view open.
+	 * Checks settings to decide whether to auto-play.
 	 */
 	private async restoreLastPlayedTrack() {
 		const autoPlay = this.plugin.settings.autoPlayOnOpen ?? false;
@@ -439,39 +433,39 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 打开搜索模态框（公共方法）
+	 * Opens search modal (public method).
 	 * 
-	 * 供外部调用的搜索方法，内部调用私有方法。
+	 * Public entry point for search modal invocation.
 	 */
 	public openSearchModalPublic() {
 		void this.openSearchModal();
 	}
 
 	/**
-	 * 刷新音乐列表
+	 * Refreshes music track list.
 	 * 
-	 * 从设置中读取数据并重新构建分类数据（艺术家、专辑等）。
+	 * Reads data from settings and rebuilds categorized collections (artists, albums, etc.).
 	 */
 	async refreshMusicList() {
 		this.libraryService.refreshMusicList();
 	}
 
 	/**
-	 * 获取资源文件路径
+	 * Resolves asset file path.
 	 * 
-	 * @param filename - 资源文件名
-	 * @returns 资源文件的完整路径
+	 * @param filename - Asset filename
+	 * @returns Full path to asset file
 	 */
 	public async getAssetPath(filename: string): Promise<string> {
 		return this.assetService.getAssetPath(filename);
 	}
 
 	/**
-	 * 获取播放状态快照
+	 * Gets playback state snapshot.
 	 * 
-	 * 用于 React 组件获取当前播放状态，包含所有播放相关的信息。
+	 * Used by React components to retrieve all current playback state information.
 	 * 
-	 * @returns 播放状态快照对象
+	 * @returns Playback state snapshot object
 	 */
 	public getReactPlaybackSnapshot(): ReactPlaybackSnapshot {
 		const state = this.stateService.getState();
@@ -482,11 +476,11 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 获取音乐库快照
+	 * Gets library snapshot.
 	 * 
-	 * 用于 React 组件获取当前音乐库数据，包含所有分类的歌曲信息。
+	 * Used by React components to retrieve categorized music library information.
 	 * 
-	 * @returns 音乐库快照对象
+	 * @returns Library snapshot object
 	 */
 	public getReactLibrarySnapshot(): ReactLibrarySnapshot {
 		const state = this.stateService.getState();
@@ -498,11 +492,11 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 异步获取歌曲封面（优先文件夹中的 cover 文件，其次内嵌封面）
+	 * Asynchronously resolves track album cover (folder cover image prioritized over embedded cover).
 	 * 
-	 * @param trackFile - 音乐文件
-	 * @param options - 可选参数（例如在移动端列表禁用内嵌封面提取）
-	 * @returns 封面图片 URL（可能是文件路径或 base64 Data URL），如果未找到则返回 undefined
+	 * @param trackFile - Music track file
+	 * @param options - Optional parameters (e.g. disable embedded cover extraction in mobile lists)
+	 * @returns Cover image URL (file path or base64 Data URL), or undefined if not found
 	 */
 	public async getTrackCoverAsync(
 		trackFile: TFile | null | undefined,
@@ -513,19 +507,19 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 切换播放/暂停
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Toggles playback between play and pause.
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	async togglePlay() {
 		await this.playbackService.togglePlay();
 	}
 
 	/**
-	 * 播放上一首
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Plays previous track.
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	async playPrevious() {
-		// 如果注册了回调（用于设置 lastAction），先调用回调
+		// Call callback if registered (used to set lastAction)
 		if (this.onPlayPreviousCallback) {
 			this.onPlayPreviousCallback();
 		}
@@ -533,11 +527,11 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 播放下一首
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Plays next track.
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	async playNext() {
-		// 如果注册了回调（用于设置 lastAction），先调用回调
+		// Call callback if registered (used to set lastAction)
 		if (this.onPlayNextCallback) {
 			this.onPlayNextCallback();
 		}
@@ -545,16 +539,16 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 设置播放操作的回调（用于设置/清除 lastAction）
+	 * Sets callbacks for playback actions (used to set/clear lastAction).
 	 * 
-	 * 当通过快捷键触发上一首/下一首时，会调用这些回调来设置 lastAction，
-	 * 从而触发唱片滑动动画。
-	 * 当直接选择歌曲时（从库、搜索、播放列表），会调用 onDirectPlay 回调来清除 lastAction，
-	 * 从而直接更新封面，不显示动画。
+	 * When previous/next is triggered via keyboard shortcuts, these callbacks set lastAction
+	 * to trigger disc sliding animations.
+	 * When a song is selected directly (library, search, playlist), onDirectPlay clears lastAction
+	 * to update the cover immediately without sliding animation.
 	 * 
-	 * @param onPrev - 播放上一首时的回调
-	 * @param onNext - 播放下一首时的回调
-	 * @param onDirectPlay - 直接选择歌曲时的回调（用于清除 lastAction）
+	 * @param onPrev - Callback when playing previous track
+	 * @param onNext - Callback when playing next track
+	 * @param onDirectPlay - Callback when directly selecting a track (clears lastAction)
 	 */
 	setPlaybackActionCallbacks(onPrev?: () => void, onNext?: () => void, onDirectPlay?: () => void) {
 		this.onPlayPreviousCallback = onPrev;
@@ -563,94 +557,95 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
-	 * 歌曲播放结束时的回调
+	 * Callback when current track completes playback.
 	 * 
-	 * 由音频元素的事件监听器调用，处理播放结束后的逻辑
-	 * （如自动播放下一首、单曲循环等）
+	 * Triggered by audio element event listener to handle post-playback logic
+	 * (e.g. auto-play next track, single-track repeat, etc.).
 	 */
 	private onTrackEnd = () => {
 		this.playbackService.handleTrackEnd();
 	};
 
 	/**
-	 * 切换播放模式
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Toggles playback mode.
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	async togglePlayMode() {
 		this.stateService.setPlayMode(togglePlayMode(this.state.playMode));
 	}
 
 	/**
-	 * 跳转到指定播放位置（0-1 之间的比例）
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Seeks to specific playback ratio (0 to 1).
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	public seekToRatio(ratio: number) {
 		this.audioService.seekToRatio(ratio);
 	}
 
 	/**
-	 * 快进指定秒数
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Fast-forwards audio by specified seconds.
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	seekForward(seconds: number) {
 		this.audioService.seekForward(seconds);
 	}
 
 	/**
-	 * 快退指定秒数
-	 * @internal React 组件应通过 usePlaybackControl hook 访问此方法
+	 * Rewinds audio by specified seconds.
+	 * @internal React components should access this method via usePlaybackControl hook
 	 */
 	seekBackward(seconds: number) {
 		this.audioService.seekBackward(seconds);
 	}
 
 	/**
-	 * 重建所有数据
+	 * Rebuilds all library data.
 	 * 
-	 * 完全重建音乐库的所有数据，包括重新扫描文件、提取元数据、生成分类等。
-	 * @internal React 组件应通过 useLibraryManagement hook 访问此方法
+	 * Performs a complete rebuild of the music library: rescans vault files,
+	 * re-extracts metadata, regenerates classifications, etc.
+	 * @internal React components should access this method via useLibraryManagement hook
 	 */
 	public async rebuildAllData() {
-		// 执行重建
+		// Execute rebuild
 		await this.libraryService.rebuildAllData();
-		// 清除重建标识
+		// Clear rebuild flag
 		this.needsRebuild = false;
-		// 通知 React 组件更新 UI
+		// Notify React components to update UI
 		this.notifyNeedsRebuildChange();
-		// 更新状态和通知监听器
+		// Update state and notify listeners
 		await this.handleLibraryUpdated();
 	}
 
 	/**
-	 * 获取是否需要重建索引的标识
+	 * Checks whether library index rebuild is required.
 	 * 
-	 * @returns 如果需要重建返回 true，否则返回 false
+	 * @returns True if rebuild is required, false otherwise
 	 */
 	public getNeedsRebuild(): boolean {
 		return this.needsRebuild;
 	}
 
 	/**
-	 * 通知 React 组件更新重建标识状态
+	 * Notifies React components of rebuild flag change.
 	 * 
-	 * 通过触发库更新事件来通知 React 组件刷新 UI
+	 * Triggers library update events to refresh React UI.
 	 */
 	private notifyNeedsRebuildChange(): void {
-		// 触发所有已注册的监听器，让 React 组件能够刷新 UI
+		// Trigger all registered listeners so React components update UI
 		for (const listener of this.libraryUpdateListeners) {
 			try {
 				listener();
 			} catch (e) {
-				console.error("通知重建标识变化时出错:", e);
+				console.error("Error notifying rebuild flag change:", e);
 			}
 		}
 	}
 
 	/**
-	 * 处理库更新事件
+	 * Handles library update events.
 	 * 
-	 * 当音乐库发生变化时调用，通知所有已注册的监听器。
-	 * 同时会更新库状态（刷新列表、更新分类等）。
+	 * Called whenever the library changes to notify all registered listeners.
+	 * Updates library state (refreshes track list, updates categorizations, etc.).
 	 */
 	public async handleLibraryUpdated() {
 		await this.libraryService.handleLibraryUpdated(this.libraryUpdateListeners);

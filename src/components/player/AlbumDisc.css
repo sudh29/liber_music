@@ -1,17 +1,16 @@
 /**
- * 专辑唱片组件样式文件
+ * Album disc component styles
  * 
- * 包含专辑唱片组件的所有样式，包括：
- * - 唱片容器和布局样式
- * - 唱片旋转动画
- * - 唱针动画（播放/暂停时的移动）
- * - 切换动画（上一首/下一首时的滑动效果）
- * - 唱片阴影效果
- * - 拖动进度功能样式
- * - 移动端适配样式
+ * Contains all styles for the album disc component including:
+ * - Disc container and layout styles
+ * - Disc rotation animation
+ * - Tonearm animation (movement on play/pause)
+ * - Switch animation (slide effects on previous/next track)
+ * - Disc shadow effect
+ * - Mobile responsive styles
  */
 
-/* ========== 容器样式 ========== */
+/* ========== Container Styles ========== */
 .music-player .album-container-wrapper {
     position: relative;
     display: flex;
@@ -29,10 +28,9 @@
 	width: 320px;
 	height: 320px;
 	border-radius: 50%;
-	/* 浅色模式：黑色半透明 */
+	/* Light mode: semi-transparent black */
 	background: rgba(0, 0, 0, 0.03);
-	/* 只让内圈（290px）之外的圆环显示：用遮罩把中心挖掉，
-	   遮罩会连同背景填充一起裁剪 */
+	/* Only show outer ring beyond inner circle (290px): mask out center */
 	-webkit-mask-image: radial-gradient(circle closest-side, transparent 0 89%, #000 91%);
 	mask-image: radial-gradient(circle closest-side, transparent 0 89%, #000 91%);
 	bottom: 0;
@@ -42,7 +40,7 @@
 	pointer-events: none;
 }
 
-/* 深色模式：白色半透明 */
+/* Dark mode: semi-transparent white */
 .theme-dark .music-player .disc-shadow {
 	background: rgba(255, 255, 255, 0.03);
 }
@@ -113,7 +111,7 @@
 	opacity: 0.9;
 }
 
-/* 由构建注入 background-image（data URL），替代 <img src>，大图不进 main.js */
+/* Injected background-image (data URL) at build time, replacing <img src> so large images stay out of main.js */
 .music-player .disc-background.disc-background-embedded {
 	object-fit: unset;
 	background-size: contain;

@@ -1,14 +1,14 @@
 /**
- * 播放页面样式文件
+ * Play page component styles
  * 
- * 合并了 DiscPage 和 LyricsPage 的样式，包含：
- * - 播放页面的通用布局样式
- * - Disc 模式样式（唱片封面 + 三行歌词）
- * - Lyrics 模式样式（完整歌词列表）
- * - 移动端适配样式
+ * Combines DiscPage and LyricsPage styles, containing:
+ * - General layout styles for playback page
+ * - Disc mode styles (album cover + triplet lyrics)
+ * - Lyrics mode styles (full scrollable lyrics list)
+ * - Mobile responsive styles
  */
 
-/* ========== 通用样式 ========== */
+/* ========== Common Styles ========== */
 .music-player .play-page-wrapper {
 	flex: 1;
 	display: flex;
@@ -16,8 +16,8 @@
 	min-height: 0;
 }
 
-/* ========== Disc 模式样式 ========== */
-/* 唱片页面：显示唱片封面和三行歌词 */
+/* ========== Disc Mode Styles ========== */
+/* Disc view: displays album cover and triplet lyrics */
 .music-player .disc-and-lyrics-triplet-wrapper {
 	min-height: 625px;
 	max-height: 625px;
@@ -57,8 +57,8 @@
 	height: 440px;
 }
 
-/* ========== Lyrics 模式样式 ========== */
-/* 歌词页面：显示完整歌词列表，支持滚动 */
+/* ========== Lyrics Mode Styles ========== */
+/* Lyrics view: displays full lyrics list, supports scrolling */
 .music-player .lyrics-list-wrapper {
 	flex: 1;
 	min-height: 625px;

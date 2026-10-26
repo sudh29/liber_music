@@ -1,11 +1,11 @@
 /**
- * 播放控制组件
+ * Playback controls component
  * 
- * 提供音乐播放的基本控制功能，包括：
- * - 播放/暂停按钮
- * - 上一首/下一首按钮
- * - 播放模式切换按钮（顺序、循环、单曲循环、随机）
- * - 播放列表查看按钮
+ * Provides basic music playback controls, including:
+ * - Play/pause button
+ * - Previous/next track buttons
+ * - Play mode toggle button (sequential, repeat all, repeat one, shuffle)
+ * - Queue / playlist view button
  */
 
 import React from "react";
@@ -14,27 +14,27 @@ import { setIcon } from "obsidian";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 播放控制组件的属性接口
+ * Props interface for PlaybackControls component
  */
 export interface PlaybackControlsProps {
-	/** 是否正在播放 */
+	/** Whether playback is currently active */
 	isPlaying: boolean;
-	/** 当前播放模式 */
+	/** Current play mode */
 	playMode: PlayMode;
-	/** 切换播放/暂停的回调函数 */
+	/** Callback function to toggle play/pause */
 	onTogglePlay: () => void;
-	/** 播放上一首的回调函数 */
+	/** Callback function to play previous track */
 	onPrev: () => void;
-	/** 播放下一首的回调函数 */
+	/** Callback function to play next track */
 	onNext: () => void;
-	/** 切换播放模式的回调函数 */
+	/** Callback function to toggle play mode */
 	onToggleMode: () => void;
-	/** 打开播放列表的回调函数 */
+	/** Callback function to open playback queue */
 	onOpenPlaylist: () => void;
 }
 
 /**
- * 获取播放模式的无障碍标签
+ * Get accessibility label for play mode
  */
 function playModeLabel(mode: PlayMode): string {
 	if (mode === "repeat-one") return t("playback.mode.repeatOne");
@@ -44,34 +44,34 @@ function playModeLabel(mode: PlayMode): string {
 }
 
 /**
- * 获取播放模式对应的 Obsidian 图标名称
+ * Get Obsidian icon name corresponding to play mode
  * 
- * @param mode 播放模式
- * @returns 返回图标名称
+ * @param mode Play mode
+ * @returns Icon name
  */
 function playModeIcon(mode: PlayMode): string {
 	if (mode === "repeat-one") return "repeat-1";
 	if (mode === "repeat-all") return "repeat";
 	if (mode === "shuffle") return "shuffle";
-	return "list-ordered"; // 顺序播放
+	return "list-ordered"; // Sequential playback
 }
 
 /**
- * 设置按钮的 Obsidian 图标
+ * Set Obsidian icon on button element
  * 
- * @param ref 按钮元素的 ref
- * @param icon 图标名称
+ * @param ref Button element ref
+ * @param icon Icon name
  */
 function setButtonIcon(ref: React.RefObject<HTMLElement>, icon: string) {
 	if (ref.current) setIcon(ref.current, icon);
 }
 
 /**
- * 播放控制组件
+ * Playback controls component
  * 
- * 显示播放控制按钮，包括播放/暂停、上一首/下一首、播放模式切换、播放列表查看等。
+ * Displays playback control buttons: play/pause, prev/next, play mode toggle, and queue modal.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function PlaybackControls(props: PlaybackControlsProps) {
 	const { isPlaying, playMode, onTogglePlay, onPrev, onNext, onToggleMode, onOpenPlaylist } = props;
@@ -82,7 +82,7 @@ export function PlaybackControls(props: PlaybackControlsProps) {
 	const nextRef = React.useRef<HTMLButtonElement | null>(null);
 	const playlistRef = React.useRef<HTMLButtonElement | null>(null);
 
-	// 设置 Obsidian 内置图标
+	// Set Obsidian built-in icons
 	React.useEffect(() => {
 		setButtonIcon(modeRef, playModeIcon(playMode));
 		setButtonIcon(prevRef, "skip-back");

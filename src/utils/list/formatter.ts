@@ -1,17 +1,18 @@
 /**
- * 列表格式化工具函数
+ * List formatting utility functions
  *
- * 在「类型 + 名称」与稳定列表 ID 字符串之间转换，以及将列表 ID 格式化为界面展示文案。
+ * Converts between type/name pairs and stable listId strings,
+ * and formats list IDs into UI labels.
  */
 
 import { t, tWithParams } from "@/utils/i18n/i18n";
 
 /**
- * 将播放列表信息转换为 currentList / listId 字符串格式
+ * Formats playlist information into currentList / listId string format.
  *
- * @param type 列表类型（"all"、"favorites"、"playlist"、"artist"、"album"）
- * @param name 列表名称（对于 playlist、artist、album 类型必需）
- * @returns 格式化后的列表标识符；类型或名称无效时返回 "all"
+ * @param type List type ("all", "favorites", "playlist", "artist", "album")
+ * @param name List name (required for playlist, artist, album types)
+ * @returns Formatted list identifier string; falls back to "all" if invalid
  */
 export function formatCurrentList(type: string, name?: string): string {
 	if (type === "all") return "all";
@@ -23,7 +24,7 @@ export function formatCurrentList(type: string, name?: string): string {
 }
 
 /**
- * 将稳定列表 ID 格式化为当前语言下的一句展示文案（如队列占位符中的上下文）。
+ * Formats stable list ID into localized display text (e.g. for queue header).
  */
 export function formatListLabel(listId: string): string {
 	if (!listId || listId === "all") return t("list.all");

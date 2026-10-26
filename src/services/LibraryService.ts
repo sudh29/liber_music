@@ -1,11 +1,11 @@
 /**
- * 音乐库管理服务
+ * Music library management service
  * 
- * 负责管理音乐库相关的业务逻辑，包括：
- * - 重建所有数据（完全重建音乐库的所有数据）
- * - 刷新音乐列表（从设置中读取并构建分类数据）
- * - 获取歌曲列表、收藏、歌单、艺术家、专辑等数据
- * - 库更新编排（组合多个服务的调用）
+ * Manages music library business logic:
+ * - Rebuilding all data (complete vault rescanning and metadata re-indexing)
+ * - Refreshing music list (reading from settings and building categorized collections)
+ * - Retrieving track lists, favorites, playlists, artists, albums
+ * - Orchestrating library update lifecycle
  */
 
 import { App, TFile } from "obsidian";
@@ -19,8 +19,9 @@ import { PlaylistService } from "./PlaylistService";
 import { LyricsService } from "./LyricsService";
 import { generateArtistsAndAlbums } from "@/utils/data/transform";
 import { getOrCreateTrackId, getTrackPath } from "@/utils/track/id";
+
 export interface LibraryOrchestrationCallbacks {
-	/** 库更新时的回调 */
+	/** Callback invoked on library updates */
 	onLibraryUpdated?: () => Promise<void>;
 }
 
@@ -35,14 +36,11 @@ export class LibraryService {
 	) {}
 
 	/**
-	 * 同步“当前播放列表”与最新库数据
+	 * Synchronizes the current playback list with the latest library data.
 	 *
-	 * 背景：库快照是基于最新的 trackList 生成的，因此会自动剔除已删除文件；
-	 * 但当前播放列表（state.currentList.tracks）是一次性写入的数组，不会自动重算，
-	 * 导致“库中的同名列表”与“当前播放中的列表”不一致。
-	 *
-	 * 这里在每次 refreshMusicList 后，按 currentList.type/name 重新构建 tracks，
-	 * 让当前播放列表也能自动更新。
+	 * Context: Library snapshots are built on the latest trackList, automatically omitting deleted files;
+	 * however, the current playback list (state.currentList.tracks) was assigned at selection time.
+	 * Re-evaluating tracks by currentList.type and name ensures consistency.
 	 */
 	private syncCurrentListAfterRefresh(): void {
 		if (!this.stateService) return;
@@ -60,13 +58,11 @@ export class LibraryService {
 		} else if (type === "favorites") {
 			tracks = favorites;
 		} else if (type === "playlist") {
-			// playlist 需要依赖 PlaylistService
 			if (this.playlistService) {
 				const playlistMap = this.playlistService.getPlaylistMap();
 				const playlistTrackIds = playlistMap[name] || [];
-				// 创建路径到文件的映射，用于快速查找
+				// Map path to file for fast lookup
 				const pathToFileMap = new Map(trackList.map(f => [f.path, f]));
-				// 通过 ID 获取路径，然后查找文件
 				const playlistFiles = playlistTrackIds
 					.map(id => {
 						const path = getTrackPath(id, this.plugin.settings);
@@ -82,11 +78,11 @@ export class LibraryService {
 		} else if (type === "album") {
 			tracks = this.getAlbums(trackList).find((a) => a.name === name)?.tracks ?? [];
 		} else {
-			// 兜底：使用当前列表的曲目
+			// Fallback: use existing tracks
 			tracks = currentList.tracks || [];
 		}
 
-		// 只有确实变化时才写回，减少无意义的 state 更新
+		// Only write back when changes exist to avoid redundant state updates
 		const same =
 			tracks.length === currentList.tracks.length &&
 			tracks.every((f, i) => f.path === currentList.tracks[i]?.path);
@@ -94,18 +90,16 @@ export class LibraryService {
 			this.stateService.setCurrentList({ type, name, tracks });
 		}
 
-		// 同步 currentTrack/currentIndex：
-		// 1. 如果当前曲目在新 trackList 中找不到（可能被删除、移动、重命名或不在扫描范围内），清理播放状态
-		// 2. 如果索引发生变化（文件顺序改变），更新索引
+		// Sync currentTrack and currentIndex:
+		// 1. If current track is missing from trackList (deleted, moved, or outside scan scope), clear state
+		// 2. If index shifted, update index
 		if (state.currentTrack) {
 			const newIdx = trackList.findIndex((f) => f.path === state.currentTrack!.path);
 			if (newIdx === -1) {
-				// 文件不在新列表中：清理播放状态，避免状态悬空
 				this.stateService.setCurrentTrack(null, -1);
 				this.stateService.setIsPlaying(false);
 				this.stateService.resetLyrics();
 			} else if (newIdx !== state.currentIndex) {
-				// 索引变化：更新索引（文件顺序可能改变）
 				const track = trackList[newIdx];
 				if (track) {
 					this.stateService.setCurrentTrack(track, newIdx);
@@ -115,85 +109,71 @@ export class LibraryService {
 	}
 
 	/**
-	 * 检查歌曲列表是否需要更新（仅在启动时调用，异步执行避免阻塞UI）
+	 * Checks whether library track list requires an update (called on startup without blocking UI).
 	 * 
-	 * 对比实际文件系统中的音乐文件与 settings.tracks 中存储的 ID，
-	 * 如果发现不一致（文件被删除、新增、或路径变化），返回 true。
+	 * Compares actual vault audio files against IDs stored in settings.tracks.
+	 * If discrepancy is detected (files deleted, added, or path changes), returns true.
 	 * 
-	 * 检查逻辑：
-	 * 1. 快速检查：对比音乐文件夹中的歌曲数量和JSON中的歌曲数量是否一致
-	 * 2. 如果数量一致，检查JSON中的每个ID对应的路径是否真实存在于文件系统中
-	 *    （数量一致时，如果所有JSON路径都存在，则不可能有新文件，无需额外检查）
+	 * Logic:
+	 * 1. Fast check: compare count of files vs count of stored IDs
+	 * 2. If counts match, verify every stored ID resolves to a valid existing file
 	 * 
-	 * @returns Promise<boolean> 如果发现不一致返回 true，否则返回 false
+	 * @returns Promise<boolean> True if inconsistency detected, false otherwise
 	 */
 	async checkLibraryConsistency(): Promise<boolean> {
-		// 使用异步执行，避免阻塞UI渲染
-		// 通过 Promise.resolve().then() 将同步操作转为异步，让UI先渲染
 		return Promise.resolve().then(() => {
-			// 获取实际文件系统中的所有音乐文件路径
 			const actualFiles = this.getAllMusicFiles();
 			const actualPaths = new Set(actualFiles.map(f => f.path));
 			
-			// 获取 settings.tracks 中存储的所有 ID
 			const storedTrackIds = Object.keys(this.plugin.settings.tracks || {});
 			
-			// 1. 快速检查：如果数量不一致，直接返回（性能优化）
+			// 1. Fast check: different counts indicate inconsistency
 			if (actualPaths.size !== storedTrackIds.length) {
 				return true;
 			}
 			
-			// 2. 数量一致时，检查JSON中的每个ID对应的路径是否真实存在于文件系统中
-			// 如果数量一致且所有JSON路径都存在，则不可能有新文件，无需额外检查
+			// 2. Check each stored ID's path
 			for (const trackId of storedTrackIds) {
 				const path = getTrackPath(trackId, this.plugin.settings);
 				if (!path) {
-					// ID 无效，需要更新
 					return true;
 				}
-				// 检查路径是否在实际文件列表中
 				if (!actualPaths.has(path)) {
 					return true;
 				}
-				// 验证文件是否真的存在
 				const file = this.app.vault.getAbstractFileByPath(path);
 				if (!file || !(file instanceof TFile)) {
 					return true;
 				}
 			}
 			
-			// 所有路径都匹配且文件都存在，不需要更新
 			return false;
 		});
 	}
 
 	/**
-	 * 重建所有数据
+	 * Rebuilds all music library data.
 	 * 
-	 * 调用数据重建工具函数来完全重建所有音乐数据
+	 * Rescans vault files, extracts metadata, and updates settings.
 	 */
 	async rebuildAllData(): Promise<number> {
 		return await updateMusicLibrary(this.app, this.plugin);
 	}
 
 	/**
-	 * 获取所有音乐文件列表
-	 * 
-	 * 根据设置的音乐文件夹过滤文件
+	 * Scans and returns all audio files in vault based on settings.
 	 */
 	getAllMusicFiles(): TFile[] {
 		return scanVaultAudioFiles(this.app, this.plugin.settings.musicFolder ?? "");
 	}
 
 	/**
-	 * 获取收藏的歌曲列表（按音轨号排序）
+	 * Gets favorite tracks sorted by track number.
 	 */
 	getFavorites(trackList: TFile[]): TFile[] {
 		const favoriteIds = new Set(this.plugin.settings.favorites || []);
-		// 创建路径到文件的映射，用于快速查找
 		const pathToFileMap = new Map(trackList.map(f => [f.path, f]));
 		
-		// 通过 ID 获取路径，然后查找文件
 		const favoriteFiles = Array.from(favoriteIds)
 			.map(id => {
 				const path = getTrackPath(id, this.plugin.settings);
@@ -205,81 +185,73 @@ export class LibraryService {
 	}
 
 	/**
-	 * 获取歌单映射表
+	 * Gets playlist mapping table.
 	 */
 	getPlaylistMap(): Record<string, string[]> {
 		return this.plugin.settings.playlists || {};
 	}
 
 	/**
-	 * 获取艺术家数据（按音轨号排序）
+	 * Gets artist collections sorted by track number and artist name.
 	 */
 	getArtists(trackList: TFile[]): Array<{ name: string; tracks: TFile[] }> {
 		const artistsData = this.plugin.settings.artists || {};
-		// 创建路径到文件的映射，用于快速查找
 		const pathToFileMap = new Map(trackList.map(f => [f.path, f]));
 		
 		return Object.entries(artistsData)
 			.map(([name, trackIds]) => {
-				// 通过 ID 获取路径，然后查找文件
 				const tracks = trackIds
 					.map(id => {
 						const path = getTrackPath(id, this.plugin.settings);
 						return path ? pathToFileMap.get(path) : null;
 					})
-					.filter((file): file is TFile => file != null); // 同时过滤 null 和 undefined
+					.filter((file): file is TFile => file != null);
 				
 				return {
 					name,
 					tracks: sortTracksByTrack(tracks, this.plugin.settings),
 				};
 			})
-			.filter((artist) => artist.tracks.length > 0) // 过滤掉没有歌曲的艺术家
-			.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
+			.filter((artist) => artist.tracks.length > 0)
+			.sort((a, b) => a.name.localeCompare(b.name, "en"));
 	}
 
 	/**
-	 * 获取专辑数据（按音轨号排序）
+	 * Gets album collections sorted by track number and album name.
 	 */
 	getAlbums(trackList: TFile[]): Array<{ name: string; tracks: TFile[] }> {
 		const albumsData = this.plugin.settings.albums || {};
-		// 创建路径到文件的映射，用于快速查找
 		const pathToFileMap = new Map(trackList.map(f => [f.path, f]));
 		
 		return Object.entries(albumsData)
 			.map(([name, trackIds]) => {
-				// 通过 ID 获取路径，然后查找文件
 				const tracks = trackIds
 					.map(id => {
 						const path = getTrackPath(id, this.plugin.settings);
 						return path ? pathToFileMap.get(path) : null;
 					})
-					.filter((file): file is TFile => file != null); // 同时过滤 null 和 undefined
+					.filter((file): file is TFile => file != null);
 				
 				return {
 					name,
 					tracks: sortTracksByTrack(tracks, this.plugin.settings),
 				};
 			})
-			.filter((album) => album.tracks.length > 0) // 过滤掉没有歌曲的专辑
-			.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
+			.filter((album) => album.tracks.length > 0)
+			.sort((a, b) => a.name.localeCompare(b.name, "en"));
 	}
 
 	/**
-	 * 刷新音乐列表
+	 * Refreshes music track list.
 	 * 
-	 * 从 LibraryService 和 PlaylistService 获取最新数据并更新状态。
-	 * 包括：所有曲目列表、收藏列表、播放列表映射。
-	 * 所有列表都使用统一的排序方式（按音轨号排序）。
-	 * 
-	 * 注意：此方法需要 StateService 和 PlaylistService 实例。
+	 * Fetches latest track list, favorites, and playlists, updating state.
+	 * All lists are consistently sorted by track number.
 	 */
 	refreshMusicList(): void {
 		if (!this.stateService || !this.playlistService) {
-			throw new Error("refreshMusicList 需要 StateService 和 PlaylistService 实例");
+			throw new Error("refreshMusicList requires StateService and PlaylistService instances");
 		}
 		const list = this.getAllMusicFiles();
-		// 对全局音乐列表进行排序
 		const sortedList = sortTracksByTrack(list, this.plugin.settings);
 		this.stateService.setTrackList(sortedList);
 		this.stateService.setFavorites(this.getFavorites(sortedList));
@@ -288,16 +260,13 @@ export class LibraryService {
 	}
 
 	/**
-	 * 刷新当前曲目显示
+	 * Refreshes current track display.
 	 * 
-	 * 重新加载当前曲目的歌词（普通歌词和逐字歌词）。
-	 * 用于在库更新后刷新当前播放曲目的显示信息。
-	 * 
-	 * 注意：此方法需要 StateService 和 LyricsService 实例。
+	 * Reloads standard and extended lyrics for current track.
 	 */
 	async refreshCurrentTrackDisplay(): Promise<void> {
 		if (!this.stateService || !this.lyricsService) {
-			throw new Error("refreshCurrentTrackDisplay 需要 StateService 和 LyricsService 实例");
+			throw new Error("refreshCurrentTrackDisplay requires StateService and LyricsService instances");
 		}
 		const state = this.stateService.getState();
 		if (!state.currentTrack) return;
@@ -305,23 +274,21 @@ export class LibraryService {
 			const { lyrics, extendedLyrics } = this.lyricsService.loadLyrics(state.currentTrack.path);
 			this.stateService.setLyrics(lyrics, extendedLyrics);
 		} catch (error) {
-			console.error("刷新当前曲目显示时出错:", error);
+			console.error("Error refreshing current track display:", error);
 		}
 	}
 
 	/**
-	 * 处理库更新后的刷新
+	 * Handles post-library update refresh workflow:
+	 * 1. Refresh music track list
+	 * 2. Refresh current track display
+	 * 3. Trigger registered listeners
 	 * 
-	 * 完整的库更新流程：
-	 * 1. 刷新音乐列表（从服务获取最新数据）
-	 * 2. 刷新当前曲目显示（重新加载歌词）
-	 * 3. 触发所有已注册的监听器
-	 * 
-	 * @param listeners - 库更新监听器集合
+	 * @param listeners - Set of library update listener callbacks
 	 */
 	async handleLibraryUpdated(listeners: Set<() => void>): Promise<void> {
 		if (!this.stateService) {
-			throw new Error("handleLibraryUpdated 需要 StateService 实例");
+			throw new Error("handleLibraryUpdated requires StateService instance");
 		}
 		try {
 			this.refreshMusicList();
@@ -330,55 +297,54 @@ export class LibraryService {
 				try {
 					listener();
 				} catch (e) {
-					console.error("库更新监听器执行出错:", e);
+					console.error("Error executing library update listener:", e);
 				}
 			}
 		} catch (error) {
-			console.error("处理库更新后的刷新时出错:", error);
+			console.error("Error handling library update refresh:", error);
 		}
 	}
 
 	/**
-	 * 从库中移除单个已删除的歌曲
+	 * Removes a single deleted track from the library.
 	 * 
-	 * 当检测到歌曲文件被删除时，自动清理相关数据：
-	 * - 从 trackIndex 中删除 ID 映射
-	 * - 从 tracks 中删除歌曲信息
-	 * - 从 favorites 中删除（如果存在）
-	 * - 从所有 playlists 中删除（如果存在）
-	 * - 重新生成 artists 和 albums 映射
-	 * - 如果当前正在播放的歌曲被删除，清理播放状态
-	 * - 更新状态服务中的列表
+	 * Cleans up associated references when a music file is deleted:
+	 * - Removes ID mapping from trackIndex
+	 * - Removes metadata entry from tracks
+	 * - Removes from favorites (if present)
+	 * - Removes from all playlists (if present)
+	 * - Regenerates artists and albums mapping
+	 * - Cleans up playback state if the playing track was deleted
+	 * - Updates state and notifies listeners
 	 * 
-	 * @param trackPath - 要删除的歌曲路径
+	 * @param trackPath - Deleted track path
 	 */
 	async removeTrackFromLibrary(trackPath: string): Promise<void> {
 		try {
-			// 获取或创建曲目 ID
 			const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
 			
-			// 1. 从 trackIndex 中删除 ID 映射
+			// 1. Remove ID mapping from trackIndex
 			if (this.plugin.settings.trackIndex && this.plugin.settings.trackIndex[trackId]) {
 				delete this.plugin.settings.trackIndex[trackId];
 			}
 
-			// 2. 从 tracks 中删除歌曲信息
+			// 2. Remove metadata from tracks
 			if (this.plugin.settings.tracks && this.plugin.settings.tracks[trackId]) {
 				delete this.plugin.settings.tracks[trackId];
 			}
 
-			// 3. 从 favorites 中删除（如果存在）
+			// 3. Remove from favorites
 			if (this.plugin.settings.favorites) {
 				const originalFavoritesCount = this.plugin.settings.favorites.length;
 				this.plugin.settings.favorites = this.plugin.settings.favorites.filter(
 					id => id !== trackId
 				);
 				if (this.plugin.settings.favorites.length < originalFavoritesCount) {
-					console.debug(`已从收藏列表中移除已删除的歌曲: ${trackPath}`);
+					console.debug(`Removed deleted track from favorites: ${trackPath}`);
 				}
 			}
 
-			// 4. 从所有 playlists 中删除（如果存在）
+			// 4. Remove from playlists
 			if (this.plugin.settings.playlists) {
 				let totalRemovedFromPlaylists = 0;
 				for (const [playlistName, trackIds] of Object.entries(this.plugin.settings.playlists)) {
@@ -391,152 +357,136 @@ export class LibraryService {
 						const removedCount = originalCount - (updatedPlaylist?.length ?? 0);
 						if (removedCount > 0) {
 							totalRemovedFromPlaylists += removedCount;
-							console.debug(`已从歌单 "${playlistName}" 中移除已删除的歌曲: ${trackPath}`);
+							console.debug(`Removed deleted track from playlist "${playlistName}": ${trackPath}`);
 						}
 					}
 				}
 				if (totalRemovedFromPlaylists > 0) {
-					console.debug(`共从所有歌单中移除了 ${totalRemovedFromPlaylists} 首已删除的歌曲`);
+					console.debug(`Removed ${totalRemovedFromPlaylists} deleted track reference(s) from playlists`);
 				}
 			}
 
-			// 5. 重新生成 artists 和 albums 映射
+			// 5. Regenerate artists and albums
 			const { artists, albums } = generateArtistsAndAlbums(this.plugin.settings);
 			this.plugin.settings.artists = artists;
 			this.plugin.settings.albums = albums;
 
-			// 6. 保存设置
+			// 6. Save settings
 			await this.plugin.saveSettings();
 
-			// 7. 如果当前正在播放的歌曲被删除，清理播放状态
+			// 7. Clear playback state if the playing track was deleted
 			if (this.stateService) {
 				const state = this.stateService.getState();
 				if (state.currentTrack && state.currentTrack.path === trackPath) {
 					this.stateService.setCurrentTrack(null, -1);
 					this.stateService.setIsPlaying(false);
 					this.stateService.resetLyrics();
-					console.debug(`当前播放的歌曲已被删除，已清理播放状态: ${trackPath}`);
+					console.debug(`Currently playing track was deleted; cleared playback state: ${trackPath}`);
 				}
 
-				// 8. 更新状态服务中的列表
+				// 8. Update lists in StateService
 				this.refreshMusicList();
 			}
 
-			// 9. 触发库更新事件，通知 React 组件刷新 UI
+			// 9. Notify React components via callback
 			if (this.callbacks.onLibraryUpdated) {
 				await this.callbacks.onLibraryUpdated();
 			}
 
-			console.debug(`已从库中移除已删除的歌曲: ${trackPath}`);
+			console.debug(`Removed deleted track from library: ${trackPath}`);
 		} catch (error) {
-			console.error(`从库中移除歌曲时出错: ${trackPath}`, error);
+			console.error(`Error removing track from library: ${trackPath}`, error);
 		}
 	}
 
 	/**
-	 * 处理文件重命名
+	 * Handles file renaming.
 	 * 
-	 * 当检测到音乐文件被重命名时，更新库中的路径映射。
+	 * Updates vault path mappings when an audio file is renamed.
+	 * With ID system:
+	 * - Only trackIndex mapping needs updating (track ID remains stable)
+	 * - References in favorites, playlists, artists, albums remain untouched
 	 * 
-	 * 使用 ID 系统的优势：
-	 * - 只需更新 trackIndex 中的路径映射（ID 保持不变）
-	 * - favorites, playlists, artists, albums 中的 ID 不需要更新
-	 * - 大大简化了重命名逻辑，提高了性能和可靠性
-	 * 
-	 * 注意：由于现在使用 Blob URL 播放音频，文件不会被直接占用，
-	 * 所以重命名操作可以正常进行，不会出现 EBUSY 错误。
-	 * 
-	 * @param oldPath - 旧的文件路径
-	 * @param newPath - 新的文件路径
+	 * @param oldPath - Old file path
+	 * @param newPath - New file path
 	 */
 	async renameTrackInLibrary(oldPath: string, newPath: string): Promise<void> {
 		try {
-			// 验证旧路径和新路径是否相同（不应该发生，但作为安全检查）
 			if (oldPath === newPath) {
-				console.warn(`旧路径和新路径相同，跳过重命名: ${oldPath}`);
+				console.warn(`Old and new paths are identical, skipping rename: ${oldPath}`);
 				return;
 			}
 			
-			// 1. 检查新路径是否已经是音乐文件
+			// 1. Verify new path is a valid music file
 			const newFile = this.app.vault.getAbstractFileByPath(newPath);
 			if (!newFile || !(newFile instanceof TFile)) {
-				console.warn(`新路径文件不存在，无法重命名: ${oldPath} -> ${newPath}`);
+				console.warn(`New path file does not exist, cannot rename: ${oldPath} -> ${newPath}`);
 				return;
 			}
 
 			const ext = newFile.extension?.toLowerCase() || '';
 			if (!isSupportedAudioExtension(ext)) {
-				console.warn(`新路径不是音乐文件，跳过重命名: ${oldPath} -> ${newPath}`);
+				console.warn(`New path is not a supported audio file, skipping rename: ${oldPath} -> ${newPath}`);
 				return;
 			}
 
-			// 2. 获取或创建旧路径的 ID
+			// 2. Resolve track ID
 			const trackId = getOrCreateTrackId(oldPath, this.plugin.settings);
 			
-			// 3. 更新 trackIndex 中的路径映射（这是唯一需要更新的地方！）
-			// ID 保持不变，只更新路径映射
+			// 3. Update trackIndex path mapping
 			if (this.plugin.settings.trackIndex && this.plugin.settings.trackIndex[trackId]) {
 				this.plugin.settings.trackIndex[trackId] = newPath;
-				console.debug(`已更新路径映射: ${oldPath} -> ${newPath} (ID: ${trackId})`);
+				console.debug(`Updated path mapping: ${oldPath} -> ${newPath} (ID: ${trackId})`);
 			} else {
-				// 如果旧路径没有 ID，创建新 ID
 				const newTrackId = getOrCreateTrackId(newPath, this.plugin.settings);
-				// 如果旧路径有 tracks 数据，需要迁移
 				const oldTrackData = this.plugin.settings.tracks?.[trackId];
 				if (oldTrackData) {
 					this.plugin.settings.tracks[newTrackId] = oldTrackData;
 					delete this.plugin.settings.tracks[trackId];
-					// 更新所有引用（这种情况不应该发生，但为了安全）
 					this.updateTrackIdReferences(trackId, newTrackId);
 				}
 			}
 
-			// 4. 重新生成 artists 和 albums 映射（因为 tracks 可能已更新）
+			// 4. Regenerate artists and albums
 			const { artists, albums } = generateArtistsAndAlbums(this.plugin.settings);
 			this.plugin.settings.artists = artists;
 			this.plugin.settings.albums = albums;
 
-			// 5. 保存设置
+			// 5. Save settings
 			await this.plugin.saveSettings();
 
-			// 6. 如果当前正在播放的是这个文件，更新当前播放路径
+			// 6. Update current playing track reference if matching
 			if (this.stateService) {
 				const state = this.stateService.getState();
 				if (state.currentTrack && state.currentTrack.path === oldPath) {
-					// 更新当前曲目的路径
 					this.stateService.setCurrentTrack(newFile, state.currentIndex);
-					console.debug(`当前播放的歌曲路径已更新: ${oldPath} -> ${newPath}`);
+					console.debug(`Current playing track path updated: ${oldPath} -> ${newPath}`);
 				}
 
-				// 7. 更新状态服务中的列表
+				// 7. Update lists
 				this.refreshMusicList();
 			}
 
-			// 8. 触发库更新事件，通知 React 组件刷新 UI
+			// 8. Trigger library update callback
 			if (this.callbacks.onLibraryUpdated) {
 				await this.callbacks.onLibraryUpdated();
 			}
 
-			console.debug(`已更新文件重命名: ${oldPath} -> ${newPath}`);
+			console.debug(`Completed track rename: ${oldPath} -> ${newPath}`);
 		} catch (error) {
-			// 记录详细错误信息
-			console.error(`更新文件重命名时出错: ${oldPath} -> ${newPath}`, error);
-			// 重新抛出错误，让调用者知道操作失败
+			console.error(`Error updating track rename: ${oldPath} -> ${newPath}`, error);
 			throw error;
 		}
 	}
 
 	/**
-	 * 更新曲目 ID 引用（用于迁移场景）
+	 * Updates track ID references across playlists and favorites during migration.
 	 * 
-	 * 当需要将旧的 ID 替换为新 ID 时，更新所有引用。
-	 * 这通常不应该发生，但为了数据一致性，提供此方法。
-	 * 
-	 * @param oldTrackId - 旧的曲目 ID
-	 * @param newTrackId - 新的曲目 ID
+	 * @param oldTrackId - Old track ID
+	 * @param newTrackId - New track ID
 	 */
 	private updateTrackIdReferences(oldTrackId: string, newTrackId: string): void {
-		// 更新 favorites
+		// Update favorites
 		if (this.plugin.settings.favorites) {
 			const index = this.plugin.settings.favorites.indexOf(oldTrackId);
 			if (index !== -1) {
@@ -544,7 +494,7 @@ export class LibraryService {
 			}
 		}
 
-		// 更新 playlists
+		// Update playlists
 		if (this.plugin.settings.playlists) {
 			for (const [playlistName, trackIds] of Object.entries(this.plugin.settings.playlists)) {
 				if (Array.isArray(trackIds)) {
@@ -558,55 +508,52 @@ export class LibraryService {
 				}
 			}
 		}
-
-		// artists 和 albums 会在重新生成时自动更新
 	}
 
 	/**
-	 * 更新单个音乐文件的元数据
+	 * Updates metadata for a single audio file.
 	 * 
-	 * 当检测到音乐文件被修改时，重新提取元数据并更新库中的信息：
-	 * - 重新提取文件的元数据（标题、艺术家、专辑、歌词等）
-	 * - 更新 tracks 中的歌曲信息
-	 * - 重新生成 artists 和 albums 映射
-	 * - 如果当前正在播放的是这个文件，更新当前播放信息（包括歌词）
-	 * - 更新状态服务中的列表
+	 * Rescans metadata when an audio file is modified on disk:
+	 * - Extracts embedded tags (title, artist, album, lyrics, etc.)
+	 * - Updates settings.tracks
+	 * - Regenerates artists and albums mapping
+	 * - Updates active playback information if track is currently playing
 	 * 
-	 * @param trackPath - 要更新的歌曲路径
+	 * @param trackPath - Track path to update
 	 */
 	async updateTrackMetadata(trackPath: string): Promise<void> {
 		try {
-			// 1. 获取文件对象
+			// 1. Get file object
 			const file = this.app.vault.getAbstractFileByPath(trackPath);
 			if (!file || !(file instanceof TFile)) {
-				console.warn(`文件不存在，无法更新元数据: ${trackPath}`);
+				console.warn(`File does not exist, cannot update metadata: ${trackPath}`);
 				return;
 			}
 
-			// 2. 检查是否是音乐文件
+			// 2. Verify audio extension
 			const ext = file.extension?.toLowerCase() || '';
 			if (!isSupportedAudioExtension(ext)) {
-				console.warn(`不是音乐文件，跳过更新: ${trackPath}`);
+				console.warn(`Not an audio file, skipping metadata update: ${trackPath}`);
 				return;
 			}
 
-			// 3. 读取音频文件的二进制数据并提取元数据
+			// 3. Read binary and extract metadata
 			const { readAudioFileBinary } = await import("@/utils/audio/metadata");
 			const { getEmbeddedAudioMetadataFromBuffer } = await import("@/utils/audio/metadata");
 			
 			const binary = await readAudioFileBinary(this.app, file);
 			if (!binary) {
-				console.warn(`无法读取文件，跳过更新: ${trackPath}`);
+				console.warn(`Failed to read file, skipping metadata update: ${trackPath}`);
 				return;
 			}
 
 			const audioMetadata = await getEmbeddedAudioMetadataFromBuffer(binary);
 			if (!audioMetadata) {
-				console.warn(`无法提取文件元数据，跳过更新: ${trackPath}`);
+				console.warn(`Failed to extract metadata, skipping update: ${trackPath}`);
 				return;
 			}
 
-			// 4. 获取或创建曲目 ID，然后更新曲目元数据
+			// 4. Update track metadata in settings
 			const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
 			this.plugin.settings.tracks[trackId] = {
 				title: audioMetadata.title || file.basename,
@@ -620,40 +567,38 @@ export class LibraryService {
 				duration: audioMetadata.duration
 			};
 
-			// 5. 重新生成 artists 和 albums 映射
+			// 5. Regenerate artists and albums
 			const { generateArtistsAndAlbums } = await import("@/utils/data/transform");
 			const { artists, albums } = generateArtistsAndAlbums(this.plugin.settings);
 			this.plugin.settings.artists = artists;
 			this.plugin.settings.albums = albums;
 
-			// 6. 保存设置
+			// 6. Save settings
 			await this.plugin.saveSettings();
 
-			// 7. 如果当前正在播放的是这个文件，更新当前播放信息（包括歌词）
+			// 7. Update active playback display if currently playing
 			if (this.stateService) {
 				const state = this.stateService.getState();
 				if (state.currentTrack && state.currentTrack.path === trackPath) {
-					// 更新当前曲目的歌词
 					if (this.lyricsService) {
 						const { lyrics, extendedLyrics } = this.lyricsService.loadLyrics(trackPath);
 						this.stateService.setLyrics(lyrics, extendedLyrics);
 					}
-					console.debug(`当前播放的歌曲元数据已更新: ${trackPath}`);
+					console.debug(`Updated active track metadata: ${trackPath}`);
 				}
 
-				// 8. 更新状态服务中的列表
+				// 8. Refresh list
 				this.refreshMusicList();
 			}
 
-			// 9. 触发库更新事件，通知 React 组件刷新 UI
+			// 9. Notify React components
 			if (this.callbacks.onLibraryUpdated) {
 				await this.callbacks.onLibraryUpdated();
 			}
 
-			console.debug(`已更新歌曲元数据: ${trackPath}`);
+			console.debug(`Updated track metadata: ${trackPath}`);
 		} catch (error) {
-			console.error(`更新歌曲元数据时出错: ${trackPath}`, error);
+			console.error(`Error updating track metadata: ${trackPath}`, error);
 		}
 	}
 }
-

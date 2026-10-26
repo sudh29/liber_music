@@ -1,10 +1,10 @@
 /**
- * 状态管理服务
+ * State management service
  * 
- * 负责管理音乐播放器的所有状态，包括：
- * - 播放状态（当前曲目、播放状态、播放模式等）
- * - 曲目列表和歌词数据
- * - 列表上下文信息
+ * Manages player states:
+ * - Playback status (current track, isPlaying, playMode, etc.)
+ * - Track list and lyric data
+ * - Active playlist queue context
  */
 
 import { TFile } from "obsidian";
@@ -14,62 +14,60 @@ import type { ExtendedLyricLine } from "@/utils/lyrics/extendedParser";
 import type { CurrentList } from "./ListService";
 
 /**
- * 播放器状态接口
+ * Player state interface
  * 
- * 定义音乐播放器的完整状态结构
+ * Defines full state structure for music player.
  */
 export interface PlayerState {
-	/** 当前播放的曲目文件 */
+	/** Currently playing track */
 	currentTrack: TFile | null;
-	/** 当前曲目在列表中的索引 */
+	/** Current track index in trackList */
 	currentIndex: number;
-	/** 是否正在播放 */
+	/** Whether audio is currently playing */
 	isPlaying: boolean;
-	/** 播放模式（顺序、循环、单曲循环、随机） */
+	/** Playback mode (normal, repeat-all, repeat-one, shuffle) */
 	playMode: PlayMode;
-	/** 当前曲目的普通歌词 */
+	/** Standard lyrics for current track */
 	currentLyrics: LyricLine[];
-	/** 当前曲目的逐字歌词 */
+	/** Word-by-word lyrics for current track */
 	currentExtendedLyrics: ExtendedLyricLine[];
-	/** 音量（0-1） */
+	/** Volume (0-1) */
 	volume: number;
-	/** 播放速率（0.25-4.0） */
+	/** Playback rate (0.25-4.0) */
 	playbackRate: number;
-	/** 所有音乐文件列表 */
+	/** All music tracks */
 	trackList: TFile[];
-	/** 收藏的曲目列表 */
+	/** Favorite tracks */
 	favorites: TFile[];
-	/** 播放列表映射（播放列表名称 -> 曲目路径数组） */
+	/** Playlist map (name -> track paths array) */
 	playlistMap: Record<string, string[]>;
-	/** 当前列表上下文 */
+	/** Current list context */
 	currentList: CurrentList | null;
-	/** 当前列表标识符 */
+	/** Current list identifier */
 	currentListId: string | null;
-	/** 当前播放列表的 section ID */
+	/** Current playlist section ID */
 	currentSectionIdForPlaylist: string | null;
-	/** 临时存储的下一首封面 URL（用于切换动画） */
+	/** Pending next track cover URL for transition animation */
 	pendingNextCoverUrl?: string;
-	/** 临时存储的上一首封面 URL（用于切换动画） */
+	/** Pending previous track cover URL for transition animation */
 	pendingPrevCoverUrl?: string;
 }
 
 /**
- * 状态管理服务类
+ * State management service class
  * 
- * 负责管理音乐播放器的所有状态，提供状态的读取和更新方法。
- * 状态以不可变方式返回，确保状态的一致性。
+ * Manages music player states with get/set accessors.
+ * Returns shallow state copies to preserve immutability.
  */
 export class StateService {
-	/** 内部状态对象 */
+	/** Internal state object */
 	private state: PlayerState;
 
 	/**
-	 * 创建状态管理服务实例
+	 * Creates a state management service instance.
 	 * 
-	 * 初始化所有状态为默认值。
-	 * 
-	 * @param initialVolume - 初始音量（0-1），用于从持久化设置恢复
-	 * @param initialPlaybackRate - 初始播放速率（0.25-4.0），用于从持久化设置恢复
+	 * @param initialVolume - Initial volume (0-1) restored from settings
+	 * @param initialPlaybackRate - Initial playback rate (0.25-4.0) restored from settings
 	 */
 	constructor(initialVolume = 1.0, initialPlaybackRate = 1.0) {
 		this.state = {
@@ -93,21 +91,19 @@ export class StateService {
 	}
 
 	/**
-	 * 获取当前状态的副本
+	 * Gets shallow copy of current state.
 	 * 
-	 * 返回状态的浅拷贝，确保外部无法直接修改内部状态。
-	 * 
-	 * @returns 当前状态的副本
+	 * @returns Current state copy
 	 */
 	getState(): PlayerState {
 		return { ...this.state };
 	}
 
 	/**
-	 * 设置当前播放的曲目
+	 * Sets currently playing track.
 	 * 
-	 * @param track - 曲目文件，null 表示没有播放的曲目
-	 * @param index - 曲目在列表中的索引
+	 * @param track - Track file or null
+	 * @param index - Index in track list
 	 */
 	setCurrentTrack(track: TFile | null, index: number) {
 		this.state.currentTrack = track;
@@ -115,28 +111,28 @@ export class StateService {
 	}
 
 	/**
-	 * 设置播放状态
+	 * Sets playback status.
 	 * 
-	 * @param isPlaying - 是否正在播放
+	 * @param isPlaying - Whether audio is playing
 	 */
 	setIsPlaying(isPlaying: boolean) {
 		this.state.isPlaying = isPlaying;
 	}
 
 	/**
-	 * 设置播放模式
+	 * Sets playback mode.
 	 * 
-	 * @param playMode - 播放模式（normal, repeat-all, repeat-one, shuffle）
+	 * @param playMode - Play mode
 	 */
 	setPlayMode(playMode: PlayMode) {
 		this.state.playMode = playMode;
 	}
 
 	/**
-	 * 设置歌词数据
+	 * Sets lyric data.
 	 * 
-	 * @param lyrics - 普通歌词数组
-	 * @param extendedLyrics - 逐字歌词数组
+	 * @param lyrics - Standard lyrics array
+	 * @param extendedLyrics - Word-by-word lyrics array
 	 */
 	setLyrics(lyrics: LyricLine[], extendedLyrics: ExtendedLyricLine[]) {
 		this.state.currentLyrics = lyrics;
@@ -144,9 +140,7 @@ export class StateService {
 	}
 
 	/**
-	 * 重置歌词数据
-	 * 
-	 * 清空当前曲目的所有歌词数据
+	 * Resets lyric data for current track.
 	 */
 	resetLyrics() {
 		this.state.currentLyrics = [];
@@ -154,93 +148,92 @@ export class StateService {
 	}
 
 	/**
-	 * 设置音量
+	 * Sets volume.
 	 * 
-	 * @param volume - 音量值（0-1）
+	 * @param volume - Volume (0-1)
 	 */
 	setVolume(volume: number) {
 		this.state.volume = volume;
 	}
 
 	/**
-	 * 设置播放速率
+	 * Sets playback rate.
 	 * 
-	 * @param rate - 播放速率（0.25-4.0）
+	 * @param rate - Playback rate (0.25-4.0)
 	 */
 	setPlaybackRate(rate: number) {
 		this.state.playbackRate = rate;
 	}
 
 	/**
-	 * 设置曲目列表
+	 * Sets track list.
 	 * 
-	 * @param trackList - 所有音乐文件列表
+	 * @param trackList - All music tracks
 	 */
 	setTrackList(trackList: TFile[]) {
 		this.state.trackList = trackList;
 	}
 
 	/**
-	 * 设置收藏列表
+	 * Sets favorites list.
 	 * 
-	 * @param favorites - 收藏的曲目列表
+	 * @param favorites - Favorite tracks list
 	 */
 	setFavorites(favorites: TFile[]) {
 		this.state.favorites = favorites;
 	}
 
 	/**
-	 * 设置播放列表映射
+	 * Sets playlist map.
 	 * 
-	 * @param playlistMap - 播放列表映射（播放列表名称 -> 曲目路径数组）
+	 * @param playlistMap - Playlist mapping object
 	 */
 	setPlaylistMap(playlistMap: Record<string, string[]>) {
 		this.state.playlistMap = playlistMap;
 	}
 
 	/**
-	 * 设置当前列表上下文
+	 * Sets current list context.
 	 * 
-	 * @param list - 当前列表对象，null 表示没有当前列表
+	 * @param list - Active list context or null
 	 */
 	setCurrentList(list: CurrentList | null) {
 		this.state.currentList = list;
 	}
 
 	/**
-	 * 设置当前列表标识符
+	 * Sets current list identifier.
 	 * 
-	 * @param listId - 列表标识符字符串（如 "all", "favorites", "playlist:xxx"）
+	 * @param listId - List identifier string ("all", "favorites", "playlist:xxx")
 	 */
 	setCurrentListId(listId: string | null) {
 		this.state.currentListId = listId;
 	}
 
 	/**
-	 * 设置当前播放列表的 section ID
+	 * Sets current playlist section ID.
 	 * 
-	 * @param sectionId - section ID，用于标识当前播放列表的上下文
+	 * @param sectionId - Section ID
 	 */
 	setCurrentSectionIdForPlaylist(sectionId: string | null) {
 		this.state.currentSectionIdForPlaylist = sectionId;
 	}
 
 	/**
-	 * 设置临时存储的下一首封面 URL
+	 * Sets pending next cover URL for transition animations.
 	 * 
-	 * @param coverUrl - 封面 URL，undefined 表示清除
+	 * @param coverUrl - Cover URL or undefined to clear
 	 */
 	setPendingNextCoverUrl(coverUrl: string | undefined) {
 		this.state.pendingNextCoverUrl = coverUrl;
 	}
 
 	/**
-	 * 设置临时存储的上一首封面 URL
+	 * Sets pending previous cover URL for transition animations.
 	 * 
-	 * @param coverUrl - 封面 URL，undefined 表示清除
+	 * @param coverUrl - Cover URL or undefined to clear
 	 */
 	setPendingPrevCoverUrl(coverUrl: string | undefined) {
 		this.state.pendingPrevCoverUrl = coverUrl;
 	}
 }
-

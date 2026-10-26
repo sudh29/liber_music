@@ -1,7 +1,7 @@
 /**
- * 视图设置服务
+ * View setup service
  * 
- * 负责管理视图的 DOM 设置和 React 挂载
+ * Manages view DOM setup and React mounting.
  */
 
 import { App } from "obsidian";
@@ -20,7 +20,7 @@ export class ViewSetupService {
 	constructor(private app: App) {}
 
 	/**
-	 * 设置视图的 DOM 结构和 React 挂载
+	 * Sets up view DOM structure and mounts React root.
 	 */
 	setupView(containerEl: HTMLElement, view: MusicPlayerView): ViewSetupResult {
 		const leafContent = containerEl.closest(".workspace-leaf-content");
@@ -42,7 +42,7 @@ export class ViewSetupService {
 		}
 
 		if (!container) {
-			throw new Error("无法找到内容容器");
+			throw new Error("Unable to locate content container");
 		}
 
 		const navContainer = leafContent ?? container;
@@ -50,7 +50,7 @@ export class ViewSetupService {
 		let navHost = navHostEl instanceof HTMLElement ? navHostEl : null;
 		if (!navHost) {
 			navHost = navContainer.createDiv();
-			// 为导航栏宿主添加统一根前缀，便于样式隔离与定位
+			// Add root prefix to nav host for scoped style isolation
 			navHost.className = "music-player nav-header";
 			if (viewHeader && navContainer === leafContent) {
 				navContainer.insertBefore(navHost, viewHeader);
@@ -62,15 +62,13 @@ export class ViewSetupService {
 			navHost.empty?.();
 		}
 
-		// 清理所有旧的 React 挂载点（可能存在的残留元素）
+		// Clean up residual React mount points if present
 		const oldReactMounts = container.querySelectorAll(".music-player-react-root");
 		oldReactMounts.forEach(el => el.remove());
 		
-		// 创建新的 DOM 元素用于挂载 React
+		// Create fresh DOM element for React root
 		const reactMount = container.createDiv();
-		// 为侧栏内容区根节点添加统一根前缀，便于用 .music-player 作为样式作用域
 		reactMount.className = "music-player music-player-container music-player-react-root";
-		// 确保容器有内容，如果没有子元素，直接 appendChild
 		if (container.firstChild) {
 			container.insertBefore(reactMount, container.firstChild);
 		} else {
@@ -83,4 +81,3 @@ export class ViewSetupService {
 		return { container, navHost, reactRoot };
 	}
 }
-

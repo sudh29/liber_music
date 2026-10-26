@@ -1,16 +1,16 @@
 /**
- * 播放控制组件样式文件
+ * Playback controls component styles
  * 
- * 包含播放控制按钮的所有样式，包括：
- * - 控制按钮布局
- * - 播放/暂停按钮样式
- * - 上一首/下一首按钮样式
- * - 播放模式按钮样式
- * - 按钮悬停和激活状态
- * - 播放模式提示框样式
+ * Contains styles for playback control buttons including:
+ * - Control button layout
+ * - Play/pause button styling
+ * - Previous/next track buttons
+ * - Play mode toggle button
+ * - Hover and active states
+ * - Play mode tooltip styling
  */
 
-/* ========== 控制按钮样式 ========== */
+/* ========== Control Button Styles ========== */
 .music-player .controls-row {
 	display: flex;
 	justify-content: center;

@@ -1,14 +1,14 @@
 /**
- * 三行歌词组件样式文件
+ * Triplet lyrics view component styles
  * 
- * 包含三行歌词显示的所有样式，包括：
- * - 三行歌词容器布局
- * - 上一行、当前行、下一行样式
- * - 当前行高亮样式
- * - 卡拉OK 效果样式（逐字高亮）
+ * Contains styles for three-line lyrics display, including:
+ * - Triplet lyrics container layout
+ * - Previous, current, next line styles
+ * - Current line highlight styles
+ * - Karaoke highlight styles
  */
 
-/* ========== 三行歌词容器 ========== */
+/* ========== Triplet Lyrics Container ========== */
 .music-player .lyrics-triplet {
 	display: flex;
 	flex-direction: column;
@@ -47,7 +47,7 @@
 	opacity: 0.5;
 }
 
-/* 当前行高亮和正在播放：使用与全部歌词组件相同的样式 */
+/* Current line highlight and active playing: uses same styling as full lyrics component */
 .music-player .lyric-line-current .lyric-text {
 	color: var(--interactive-accent);
 	font-weight: 600;

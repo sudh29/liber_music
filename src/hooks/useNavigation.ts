@@ -1,7 +1,7 @@
 /**
- * 导航状态管理 Hook
+ * Navigation state management hook
  * 
- * 统一管理 Tab 切换和页面切换逻辑，简化 MusicPlayerRoot 组件
+ * Manages tab switching and page transitions, simplifying MusicPlayerRoot.
  */
 
 import * as React from "react";
@@ -10,30 +10,30 @@ export type TabType = "currentDisc" | "library";
 export type PageType = "disc" | "lyrics";
 
 export interface UseNavigationReturn {
-	/** 当前激活的 Tab */
+	/** Currently active tab */
 	tab: TabType;
-	/** 当前激活的页面（仅在 currentDisc tab 下有效） */
+	/** Currently active page (only applicable under currentDisc tab) */
 	currentPage: PageType;
-	/** 切换到 library tab */
+	/** Switches to library tab */
 	openLibrary: () => void;
-	/** 切换到 currentDisc tab 的 disc 页面 */
+	/** Switches to currentDisc tab on disc page */
 	openDisc: () => void;
-	/** 切换到 currentDisc tab 的 lyrics 页面 */
+	/** Switches to currentDisc tab on lyrics page */
 	openLyrics: () => void;
-	/** 在 currentDisc tab 内切换到 lyrics 页面 */
+	/** Switches to lyrics page within currentDisc tab */
 	switchToLyrics: () => void;
-	/** 在 currentDisc tab 内切换到 disc 页面 */
+	/** Switches to disc page within currentDisc tab */
 	switchToDisc: () => void;
-	/** 是否需要在切换到 lyrics 时标记首次挂载 */
+	/** Whether initial lyrics mount flag should be marked */
 	shouldMarkInitialLyricsMount: boolean;
-	/** 清除首次挂载标记 */
+	/** Clears initial lyrics mount flag */
 	clearInitialLyricsMount: () => void;
 }
 
 /**
- * 导航状态管理 Hook
+ * Navigation state management hook
  * 
- * @returns 导航状态和操作方法
+ * @returns Navigation state and action handlers
  */
 export function useNavigation(): UseNavigationReturn {
 	const [tab, setTab] = React.useState<TabType>("currentDisc");
@@ -41,7 +41,7 @@ export function useNavigation(): UseNavigationReturn {
 	const [pendingPage, setPendingPage] = React.useState<PageType | null>(null);
 	const [shouldMarkInitialLyricsMount, setShouldMarkInitialLyricsMount] = React.useState(false);
 
-	// 处理待处理的页面切换
+	// Handle pending page transitions
 	React.useEffect(() => {
 		if (pendingPage && tab === "currentDisc") {
 			setCurrentPage(pendingPage);
@@ -98,4 +98,3 @@ export function useNavigation(): UseNavigationReturn {
 		clearInitialLyricsMount,
 	};
 }
-

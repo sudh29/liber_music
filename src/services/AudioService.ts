@@ -1,47 +1,47 @@
 /**
- * 音频元素管理服务
+ * Audio element management service
  * 
- * 负责管理 HTMLAudioElement 的生命周期，包括：
- * - 创建音频元素
- * - 绑定事件监听器
- * - 清理音频元素
- * - 管理音量和播放速度
+ * Manages the lifecycle of HTMLAudioElement, including:
+ * - Creating audio elements
+ * - Binding event listeners
+ * - Cleaning up audio elements
+ * - Managing volume and playback rate
  */
 
 import { App } from "obsidian";
 import { TFile } from "obsidian";
 
 /**
- * 音频事件处理器接口
+ * Audio event handlers interface
  * 
- * 定义音频元素需要绑定的各种事件回调函数
+ * Defines event callback functions for the audio element.
  */
 export interface AudioEventHandlers {
-	/** 播放时间更新时的回调 */
+	/** Callback when playback time updates */
 	onTimeUpdate: () => void;
-	/** 元数据加载完成时的回调 */
+	/** Callback when metadata is loaded */
 	onLoadedMetadata: () => void;
-	/** 播放结束时的回调 */
+	/** Callback when playback ends */
 	onEnded: () => void;
 }
 
 /**
- * 音频服务类
+ * Audio service class
  * 
- * 负责管理 HTMLAudioElement 的完整生命周期，包括创建、配置、事件绑定和清理。
- * 提供音频播放控制方法（播放、暂停、跳转、音量、速率等）。
+ * Manages the full lifecycle of HTMLAudioElement: creation, configuration, event binding, and cleanup.
+ * Provides audio playback control methods (play, pause, seek, volume, rate, etc.).
  */
 export class AudioService {
-	/** 当前音频元素实例 */
+	/** Current audio element instance */
 	private audioElement: HTMLAudioElement | null = null;
-	/** 当前使用的 Blob URL（用于释放资源） */
+	/** Current Blob URL in use (for resource revocation) */
 	private currentBlobUrl: string | null = null;
-	/** 当前绑定到 audioElement 的事件处理器引用（用于正确移除监听器） */
+	/** Reference to current event handlers bound to audioElement (for proper removal) */
 	private currentHandlers: AudioEventHandlers | null = null;
 
 	/**
-	 * seek 完成后若已贴在媒体末尾（含解码对齐把 currentTime 推到 duration），
-	 * 部分环境不会触发 ended；此处补发与 ended 相同的回调。
+	 * When seek finishes near media end (including decode alignment pushing currentTime to duration),
+	 * some environments do not fire ended; this emits the same ended callback.
 	 */
 	private readonly onSeekedEmitEndedIfAtClose = (): void => {
 		const el = this.audioElement;
@@ -54,31 +54,30 @@ export class AudioService {
 			h.onEnded();
 			return;
 		}
-		// 解码对齐后可能停在 duration 却无法进入 ended；用极小余量判断“已在末尾”
+		// Decode alignment may stop at duration without entering ended; check with small epsilon
 		if (t > 0.02 && t >= d - 1e-4) {
 			h.onEnded();
 		}
 	};
 
 	/**
-	 * 创建音频服务实例
+	 * Creates an audio service instance.
 	 * 
-	 * @param app - Obsidian App 实例
+	 * @param app - Obsidian App instance
 	 */
 	constructor(private app: App) {}
 
 	/**
-	 * 创建并初始化音频元素
+	 * Creates and initializes the audio element.
 	 * 
-	 * 如果已存在音频元素，会先清理旧的元素。创建新元素后会绑定所有事件监听器。
+	 * Cleans up any existing audio element first. Binds all event listeners to the new element.
+	 * Uses Blob URL for playback so vault files are not locked, allowing them to be renamed or deleted.
 	 * 
-	 * 使用 Blob URL 来播放音频，这样不会直接占用文件，允许文件被重命名或删除。
-	 * 
-	 * @param trackFile - 要播放的音乐文件
-	 * @param volume - 初始音量（0-1）
-	 * @param playbackRate - 初始播放速率（0.25-4.0）
-	 * @param handlers - 事件处理器对象
-	 * @returns 创建的音频元素
+	 * @param trackFile - Audio file to play
+	 * @param volume - Initial volume (0-1)
+	 * @param playbackRate - Initial playback rate (0.25-4.0)
+	 * @param handlers - Event handler object
+	 * @returns Created audio element
 	 */
 	async createAudioElement(
 		trackFile: TFile,
@@ -86,26 +85,26 @@ export class AudioService {
 		playbackRate: number,
 		handlers: AudioEventHandlers
 	): Promise<HTMLAudioElement> {
-		// 清理旧的音频元素和 Blob URL（异步，等待清理完成）
+		// Clean up existing audio element and Blob URL
 		await this.cleanup();
 
-		// 读取文件到内存并创建 Blob URL
-		// 这样播放时不会直接占用文件，允许文件被重命名或删除
+		// Read file into memory and create Blob URL
+		// Prevents file lock so file can be safely renamed or removed
 		try {
 			const binary = await this.app.vault.readBinary(trackFile);
 			const blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
 			const blobUrl = URL.createObjectURL(blob);
 			this.currentBlobUrl = blobUrl;
 
-			// 创建新的音频元素
+			// Create new audio element
 			this.audioElement = new Audio(blobUrl);
 			this.audioElement.volume = volume;
 			this.audioElement.playbackRate = playbackRate;
 
-			// 记录当前事件处理器引用，方便 cleanup 时正确移除
+			// Store current handlers for proper cleanup
 			this.currentHandlers = handlers;
 
-			// 绑定事件监听器
+			// Bind event listeners
 			this.audioElement.addEventListener("timeupdate", handlers.onTimeUpdate);
 			this.audioElement.addEventListener("loadedmetadata", handlers.onLoadedMetadata);
 			this.audioElement.addEventListener("ended", handlers.onEnded);
@@ -113,17 +112,15 @@ export class AudioService {
 
 			return this.audioElement;
 		} catch (error) {
-			console.error(`创建音频元素失败，回退到直接文件路径: ${trackFile.path}`, error);
-			// 如果创建 Blob URL 失败，回退到使用文件路径
+			console.error(`Failed to create audio element via Blob URL, falling back to direct file path: ${trackFile.path}`, error);
+			// Fallback to vault resource path if Blob URL fails
 			const url = this.app.vault.getResourcePath(trackFile);
 			this.audioElement = new Audio(url);
 			this.audioElement.volume = volume;
 			this.audioElement.playbackRate = playbackRate;
 
-			// 记录当前事件处理器引用，方便 cleanup 时正确移除
 			this.currentHandlers = handlers;
 
-			// 绑定事件监听器
 			this.audioElement.addEventListener("timeupdate", handlers.onTimeUpdate);
 			this.audioElement.addEventListener("loadedmetadata", handlers.onLoadedMetadata);
 			this.audioElement.addEventListener("ended", handlers.onEnded);
@@ -134,9 +131,9 @@ export class AudioService {
 	}
 
 	/**
-	 * 将 seek 目标时间限制在 duration 略小处。
-	 * 若 currentTime 恰好等于 duration，常见实现不会触发 ended，且 play() 无法继续播放，表现为“卡死”。
-	 * ε 需足够大以吸收 MP3 等格式 seek 对齐把位置推到末尾的行为。
+	 * Clamps seek target time slightly before duration.
+	 * If currentTime equals duration, typical browsers do not fire ended and play() gets stuck.
+	 * Epsilon absorbs format-specific seek alignment margins (e.g. MP3 frames).
 	 */
 	private clampSeekTimeToPlayableEnd(time: number, duration: number): number {
 		if (!Number.isFinite(time) || !Number.isFinite(duration) || duration <= 0) return 0;
@@ -146,10 +143,10 @@ export class AudioService {
 	}
 
 	/**
-	 * 根据文件扩展名获取 MIME 类型
+	 * Resolves MIME type from file extension.
 	 *
-	 * @param extension - 文件扩展名（不含点）
-	 * @returns MIME 类型字符串
+	 * @param extension - File extension (without dot)
+	 * @returns MIME type string
 	 */
 	private getMimeType(extension: string): string {
 		const ext = extension?.toLowerCase() || '';
@@ -167,37 +164,30 @@ export class AudioService {
 	}
 
 	/**
-	 * 获取当前音频元素
+	 * Gets current audio element
 	 * 
-	 * @returns 当前音频元素，如果不存在则返回 null
+	 * @returns Current audio element, or null if absent
 	 */
 	getAudioElement(): HTMLAudioElement | null {
 		return this.audioElement;
 	}
 
 	/**
-	 * 清理音频元素
+	 * Cleans up audio element:
+	 * Pauses playback, removes event listeners, revokes Blob URL, and nullifies references.
+	 * Called when creating a new audio element or destroying the service.
 	 * 
-	 * 暂停播放、移除事件监听器、释放 Blob URL 并清空引用。
-
-	* 在创建新音频元素或服务销毁时调用。
-	 * 
-	 * 注意：此方法会优雅地处理正在播放的音频，避免 AbortError。
-	 * 如果音频正在播放，会先暂停并等待一小段时间，让 play() Promise 有时间完成或被正确处理。
+	 * Handles active playback gracefully to avoid AbortError when pause() interrupts pending play().
 	 */
 	async cleanup(): Promise<void> {
 		if (this.audioElement) {
-			// 如果音频正在播放，先暂停并等待一小段时间
-			// 这样可以避免在 play() Promise 还在进行时调用 pause() 导致的 AbortError
 			if (!this.audioElement.paused) {
 				this.audioElement.pause();
-				// 等待一小段时间，让 play() Promise 有时间完成或被正确处理
-				// 10ms 足够让 Promise 进入错误处理流程
+				// Short wait allows pending play() Promise to settle
 				await new Promise(resolve => window.setTimeout(resolve, 10));
 			}
 			
-			// 移除事件监听器
-			// 注意：必须使用与 addEventListener 相同的函数引用
+			// Remove event listeners
 			if (this.currentHandlers) {
 				this.audioElement.removeEventListener("timeupdate", this.currentHandlers.onTimeUpdate);
 				this.audioElement.removeEventListener("loadedmetadata", this.currentHandlers.onLoadedMetadata);
@@ -209,7 +199,7 @@ export class AudioService {
 			this.currentHandlers = null;
 		}
 		
-		// 释放 Blob URL，避免内存泄漏
+		// Revoke Blob URL to release memory
 		if (this.currentBlobUrl) {
 			URL.revokeObjectURL(this.currentBlobUrl);
 			this.currentBlobUrl = null;
@@ -217,16 +207,16 @@ export class AudioService {
 	}
 
 	/**
-	 * 暂停音频播放
+	 * Pauses audio playback
 	 */
 	pause(): void {
 		this.audioElement?.pause();
 	}
 
 	/**
-	 * 开始播放音频
+	 * Starts audio playback
 	 * 
-	 * @returns Promise，在播放开始时解析
+	 * @returns Promise that resolves when playback starts
 	 */
 	async play(): Promise<void> {
 		if (!this.audioElement) {
@@ -236,23 +226,21 @@ export class AudioService {
 		try {
 			await this.audioElement.play();
 		} catch (error) {
-			// 如果 play() 被 pause() 中断，这是正常情况，不需要报错
-			// 例如：切换曲目时，旧音频元素的 play() 可能被 cleanup() 中的 pause() 中断
+			// AbortError when pause() interrupts play() during track changes is normal
 			if (error instanceof DOMException && error.name === 'AbortError') {
-				console.debug('播放被中断（可能是切换曲目导致的）:', error.message);
+				console.debug('Playback aborted (likely caused by track change):', error.message);
 				return;
 			}
-			// 其他错误需要抛出
 			throw error;
 		}
 	}
 
 	/**
-	 * 设置音量
+	 * Sets playback volume
 	 * 
-	 * 音量值会被限制在 0-1 范围内。
+	 * Clamped to [0, 1].
 	 * 
-	 * @param volume - 音量值（0-1）
+	 * @param volume - Volume value (0-1)
 	 */
 	setVolume(volume: number): void {
 		if (this.audioElement) {
@@ -261,11 +249,11 @@ export class AudioService {
 	}
 
 	/**
-	 * 设置播放速度
+	 * Sets playback rate
 	 * 
-	 * 播放速率会被限制在 0.25-4.0 范围内。
+	 * Clamped to [0.25, 4.0].
 	 * 
-	 * @param rate - 播放速率（0.25-4.0）
+	 * @param rate - Playback rate (0.25-4.0)
 	 */
 	setPlaybackRate(rate: number): void {
 		if (this.audioElement) {
@@ -274,11 +262,9 @@ export class AudioService {
 	}
 
 	/**
-	 * 跳转到指定播放位置
+	 * Seeks to relative playback ratio
 	 * 
-	 * 根据比例（0-1）跳转到对应的播放位置。
-	 * 
-	 * @param ratio - 播放位置比例（0-1，0 为开始，1 为结束）
+	 * @param ratio - Playback position ratio (0-1, where 0 is start, 1 is end)
 	 */
 	seekToRatio(ratio: number): void {
 		if (!this.audioElement) return;
@@ -290,9 +276,9 @@ export class AudioService {
 	}
 
 	/**
-	 * 快进指定秒数
+	 * Fast-forwards audio by specified seconds
 	 * 
-	 * @param seconds - 要快进的秒数（正数）
+	 * @param seconds - Number of seconds to fast-forward (positive)
 	 */
 	seekForward(seconds: number): void {
 		if (!this.audioElement) return;
@@ -303,9 +289,9 @@ export class AudioService {
 	}
 
 	/**
-	 * 快退指定秒数
+	 * Rewinds audio by specified seconds
 	 * 
-	 * @param seconds - 要快退的秒数（正数）
+	 * @param seconds - Number of seconds to rewind (positive)
 	 */
 	seekBackward(seconds: number): void {
 		if (!this.audioElement) return;
@@ -313,4 +299,3 @@ export class AudioService {
 		this.audioElement.currentTime = newTime;
 	}
 }
-

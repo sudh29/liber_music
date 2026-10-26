@@ -1,16 +1,16 @@
 /**
- * 逐字时间歌词三行组件样式文件
+ * Word-by-word synchronized lyrics triplet view component styles
  * 
- * 包含逐字时间歌词三行显示的所有样式，包括：
- * - 逐字歌词文本样式
- * - 逐字字符容器样式
- * - 背景文字（未填充部分）样式
- * - 填充文字（已填充部分）样式
- * - 当前行高亮样式
- * - 卡拉OK 逐字高亮效果
+ * Contains styles for the three-line word-by-word lyrics display, including:
+ * - Word-by-word lyrics text styles
+ * - Character container styles
+ * - Background text (unfilled portion) styles
+ * - Fill text (filled portion) styles
+ * - Current line highlight styles
+ * - Karaoke highlight effect
  */
 
-/* ========== 逐字歌词文本样式 ========== */
+/* ========== Extended Lyrics Text Styles ========== */
 .music-player .lyrics-extended-triplet-text {
 	cursor: pointer;
 	color: var(--text-muted);
@@ -20,14 +20,14 @@
 	text-align: center;
 }
 
-/* 保留英文词间空格与连续空格 */
+/* Preserve whitespace between words */
 .music-player .lyrics-extended-triplet-plain,
 .music-player .lyrics-extended-triplet-karaoke {
 	white-space: pre-wrap;
 	word-break: break-word;
 }
 
-/* 中英文统一字格：略增字距，拉丁与汉字节奏接近 */
+/* Unified character grid: slight letter spacing */
 .music-player .lyrics-extended-triplet-karaoke {
 	letter-spacing: 0.04em;
 }
@@ -45,7 +45,7 @@
 	min-width: 0.35em;
 }
 
-/* 背景层（未唱到部分） */
+/* Background layer (unplayed portion) */
 .music-player .lyrics-extended-triplet-char-bg {
 	display: inline-block;
 	position: relative;
@@ -55,7 +55,7 @@
 	font-weight: 600;
 }
 
-/* 从左向右揭示：用宽度裁剪，避免 scaleX 横向拉伸字形 */
+/* Reveal from left to right: clip width to avoid horizontal scaleX distortion */
 .music-player .lyrics-extended-triplet-char-fill-clip {
 	position: absolute;
 	left: 0;
@@ -79,7 +79,7 @@
 	font-weight: 600;
 }
 
-/* 当前行：背景与填充层同一字重，保证叠字宽度一致 */
+/* Current line: matching font weights for consistent alignment */
 .music-player .lyric-line-current .lyrics-extended-triplet-char-bg,
 .music-player .lyric-line-current .lyrics-extended-triplet-char-fill {
 	color: var(--interactive-accent);
@@ -94,21 +94,21 @@
 	opacity: 1;
 }
 
-/* 上一行的文字颜色 */
+/* Previous line text color */
 .music-player .lyric-line-prev .lyrics-extended-triplet-text {
 	color: var(--interactive-accent);
 	font-weight: 600;
 	opacity: 0.5;
 }
 
-/* 当前行的文字颜色和样式 */
+/* Current line text color and style */
 .music-player .lyric-line-current .lyrics-extended-triplet-text {
 	color: var(--interactive-accent);
 	font-weight: 600;
 	font-size: 1.15em;
 }
 
-/* 英文整词一格：取消字距拉伸，略增词左右留白 */
+/* Word unit: standard letter spacing, slight padding */
 .music-player .lyrics-extended-triplet-char.is-word-unit {
 	letter-spacing: normal;
 	padding: 0 0.1em;

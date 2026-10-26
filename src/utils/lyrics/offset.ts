@@ -1,36 +1,36 @@
 /**
- * LRC 歌词偏移（[offset:±ms]）解析与应用模块
+ * LRC lyric offset ([offset:±ms]) parsing and application module.
  * 
- * 与常规播放器行为一致：
- * - 偏移信息是歌词参数，不显示在歌词中
- * - 正偏移表示歌词整体提前（所有时间戳减去偏移），负偏移表示整体延后
+ * Matches standard music player behavior:
+ * - Offset is a lyric parameter and not rendered in lyric text
+ * - Positive offset advances the lyrics (subtracts offset from all timestamps), negative offset delays lyrics
  */
 
 import type { LyricLine } from "./parser";
 import type { ExtendedLyricLine } from "./extendedParser";
 
-/** [offset:±ms] 标签的模式（大小写不敏感，允许 + 号与空白） */
+/** Pattern for [offset:±ms] tags (case-insensitive, allows + sign and whitespace) */
 const OFFSET_TAG_SOURCE = String.raw`\[\s*offset\s*:\s*([+-]?\d+)\s*\]`;
 
-/** 时间戳下限，避免偏移后出现负时间 */
+/** Timestamp lower bound to prevent negative time after offset application */
 const MIN_TIME = 0;
 
-/** 把时间 clamp 到不小于 0 */
+/** Clamps time to not fall below 0 */
 function clampTime(time: number): number {
 	return time < MIN_TIME ? MIN_TIME : time;
 }
 
 /**
- * 解析歌词文本中的偏移量（[offset:±ms]），返回秒。
+ * Parses offset value ([offset:±ms]) from lyric text, returning seconds.
  * 
- * 取第一个出现的偏移标签；无偏移或格式非法时返回 0。
+ * Takes the first offset tag found; returns 0 if absent or malformed.
  * 
- * @param text 原始歌词文本
- * @returns 偏移量（秒），正数表示歌词整体提前
+ * @param text Raw lyric text
+ * @returns Offset in seconds, positive value means lyrics advance earlier
  */
 export function parseLyricsOffset(text: string): number {
 	if (!text) return 0;
-	// 用非全局正则单次匹配，避免共享正则对象的 lastIndex 状态问题
+	// Use non-global RegExp single match to avoid shared lastIndex state issues
 	const match = new RegExp(OFFSET_TAG_SOURCE, "i").exec(text);
 	const raw = match?.[1];
 	if (!raw) return 0;
@@ -40,26 +40,26 @@ export function parseLyricsOffset(text: string): number {
 }
 
 /**
- * 移除歌词文本中所有 [offset:...] 标签。
+ * Removes all [offset:...] tags from lyric text.
  * 
- * 偏移是歌词参数而非内容，解析与展示前需要剔除。
+ * Offset is a parameter rather than content and should be stripped before parsing and display.
  * 
- * @param text 原始歌词文本
- * @returns 移除偏移标签后的文本
+ * @param text Raw lyric text
+ * @returns Text with offset tags removed
  */
 export function stripLyricsOffsetTags(text: string): string {
 	return text.replace(new RegExp(OFFSET_TAG_SOURCE, "gi"), "");
 }
 
 /**
- * 把偏移量应用到解析后的歌词数据（就地修改）。
+ * Applies offset to parsed lyric data (modifies in place).
  * 
- * 行数组已按时间排序，均匀平移不会破坏顺序，仅头部可能被 clamp 到 0。
- * 逐字歌词的行时间、每个字的时间以及行内时间戳会一并平移。
+ * Line array is already sorted by time; uniform shift preserves order, clamping only the head to 0.
+ * For word-by-word lyrics, line time, character times, and line timestamps are shifted together.
  * 
- * @param lyrics 普通歌词行数组
- * @param extendedLyrics 逐字歌词行数组
- * @param offsetSeconds 偏移量（秒），正数表示歌词整体提前
+ * @param lyrics Standard lyric line array
+ * @param extendedLyrics Extended lyric line array
+ * @param offsetSeconds Offset in seconds, positive value means lyrics advance earlier
  */
 export function applyLyricsOffset(
 	lyrics: LyricLine[],

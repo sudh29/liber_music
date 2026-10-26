@@ -1,20 +1,18 @@
 /**
- * 文本输入模态框组件样式文件
+ * Text input modal component stylesheet
  * 
- * 包含文本输入模态框的特定样式：
- * - 输入框容器样式
- * - 输入框样式和焦点状态
- * - 提示文本样式
+ * Contains styles specific to text input modal:
+ * - Input container layout
+ * - Input styling and focus states
+ * - Hint text styling
  * 
- * 注意：按钮样式和移动端适配已提取到 BaseModal.css
- * 注意：所有样式都限制在 .music-player-modal 类名下，避免影响 Obsidian 原生界面
+ * Note: Scoped under .music-player-modal
  */
 
-/* ========== 输入框样式 ========== */
-/* 限制在插件自己的 Modal 内 */
+/* ========== Input Styles ========== */
 .music-player-modal .prompt-input-container {
 	margin-bottom: 12px;
-	order: 1; /* 确保输入框在按钮上方 */
+	order: 1; /* Ensures input renders above buttons */
 }
 
 .music-player-modal .prompt-input {
@@ -25,7 +23,7 @@
 	background: var(--background-secondary);
 	color: var(--text-normal);
 	font-size: 14px;
-	margin-bottom: 0; /* 移除 margin-bottom，使用容器的 margin */
+	margin-bottom: 0;
 }
 
 .music-player-modal .prompt-input:focus {
@@ -39,5 +37,3 @@
 	color: var(--text-muted);
 	line-height: 1.4;
 }
-
-

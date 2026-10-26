@@ -1,8 +1,8 @@
 /**
- * 逐字时间歌词三行组件
+ * Word-by-word synchronized lyrics triplet view component
  * 
- * 显示逐字时间歌词的三行（上一行、当前行、下一行），支持逐字高亮的卡拉OK效果。
- * 当前行会逐字高亮显示，非当前行显示完整文字。
+ * Displays three lines of word-by-word lyrics (prev, current, next), supporting word-by-word karaoke highlights.
+ * The current line is highlighted word-by-word, while other lines display plain text.
  */
 
 import React from "react";
@@ -12,21 +12,21 @@ import { linearFillProgress } from "@/utils/lyrics/charFillProgress";
 import { buildKaraokeUnits } from "@/utils/lyrics/karaokeUnits";
 
 /**
- * 逐字时间歌词三行组件的属性接口
+ * Props interface for LyricsExtendedTriplet component
  */
 export interface LyricsExtendedTripletProps {
-	/** 上一行逐字歌词 */
+	/** Previous line of extended lyrics */
 	prev?: ExtendedLyricLine;
-	/** 当前行逐字歌词 */
+	/** Current line of extended lyrics */
 	current?: ExtendedLyricLine;
-	/** 下一行逐字歌词 */
+	/** Next line of extended lyrics */
 	next?: ExtendedLyricLine;
-	/** 当前播放时间（秒），用于计算逐字高亮进度 */
+	/** Current playback time in seconds, used to compute word fill progress */
 	currentTime: number;
 }
 
 /**
- * 单行歌词组件的属性接口（内部使用）
+ * Props interface for LineComponent (internal)
  */
 interface LineComponentProps {
 	line?: ExtendedLyricLine;
@@ -44,7 +44,7 @@ const LineComponent = React.memo(({ line, currentTime, isCurrent }: LineComponen
 		return buildKaraokeUnits(line.chars, line);
 	}, [line, isCurrent]);
 
-	// 对于非当前行，显示完整文字（不需要逐字效果）
+	// For non-current lines, display plain text (no word-by-word effect needed)
 	if (!isCurrent) {
 		return (
 			<span className="lyrics-extended-triplet-text lyrics-extended-triplet-plain">
@@ -53,7 +53,7 @@ const LineComponent = React.memo(({ line, currentTime, isCurrent }: LineComponen
 		);
 	}
 
-	// 当前行：从左向右揭示高亮（clip + width，避免 scaleX 拉伸拉丁字母）
+	// Current line: reveal highlight from left to right (clip + width, avoiding scaleX distortion on Latin characters)
 	return (
 		<div className="lyrics-extended-triplet-text lyrics-extended-triplet-karaoke">
 			{unitsData.map(({ text, charTime, charEndTime }, unitIndex) => {
@@ -91,11 +91,11 @@ const LineComponent = React.memo(({ line, currentTime, isCurrent }: LineComponen
 LineComponent.displayName = 'LineComponent';
 
 /**
- * 逐字时间歌词三行组件
+ * Word-by-word synchronized lyrics triplet view component
  * 
- * 显示三行逐字时间歌词，当前行支持逐字高亮的卡拉OK效果。
+ * Displays three lines of word-by-word lyrics, supporting karaoke word-by-word highlights on the current line.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function LyricsExtendedTriplet({ 
 	prev, 

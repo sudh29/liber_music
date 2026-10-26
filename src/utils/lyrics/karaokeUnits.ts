@@ -2,7 +2,7 @@ import type { ExtendedLyricChar, ExtendedLyricLine } from "./extendedParser";
 import { resolveCharEndTimes } from "./charFillProgress";
 
 /**
- * 卡拉 OK 展示单元：中文等一字一格；英文以「单词」为一格整体着色。
+ * Karaoke display unit: single character for CJK languages; whole word for Latin text.
  */
 export interface KaraokeUnit {
 	text: string;
@@ -15,7 +15,8 @@ function isLatinAlphanumeric(char: string): boolean {
 }
 
 /**
- * 是否属于「当前英文单词」的连续片段（字母数字；以及夹在字母/数字间的撇号、连字符）。
+ * Checks whether the character belongs to the current Latin word segment
+ * (alphanumeric, or apostrophe/hyphen sandwiched between alphanumeric characters).
  */
 function isLatinWordContinuation(
 	chars: ReadonlyArray<ExtendedLyricChar>,
@@ -40,7 +41,8 @@ function isLatinWordContinuation(
 }
 
 /**
- * 将解析后的逐字 `chars` 合并为展示单元；结束时间仅由本行 `lineTimeStamps` 与字开始时间决定。
+ * Merges parsed character array `chars` into display units;
+ * end times are determined solely by line `lineTimeStamps` and character start times.
  */
 export function buildKaraokeUnits(
 	chars: ReadonlyArray<ExtendedLyricChar>,

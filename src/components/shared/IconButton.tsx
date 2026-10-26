@@ -2,35 +2,35 @@ import React from "react";
 import { type IconName, setIcon } from "obsidian";
 
 /**
- * 图标按钮组件的属性接口
+ * Props interface for IconButton component
  */
 export interface IconButtonProps {
-	/** Obsidian 图标名称 */
+	/** Obsidian icon name */
 	icon: IconName;
-	/** 按钮的标签文本（用于无障碍访问） */
+	/** Button label text (for accessibility) */
 	label: string;
-	/** 自定义 CSS 类名（可选） */
+	/** Custom CSS class name (optional) */
 	className?: string;
-	/** 点击按钮时的回调函数（可选） */
+	/** Click event callback (optional) */
 	onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-	/** 双击按钮时的回调函数（可选） */
+	/** Double click event callback (optional) */
 	onDoubleClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 /**
- * 通用图标按钮组件
+ * Generic icon button component
  * 
- * 一个可复用的图标按钮组件，使用 Obsidian 内置图标系统。
- * 通过 ref 和 useEffect 自动设置图标，支持自定义样式和点击事件。
+ * A reusable icon button component using Obsidian's built-in icon system.
+ * Automatically sets the icon via ref and useEffect, supporting custom styles and click events.
  * 
- * @param props 按钮属性
- * @returns 返回一个带有 Obsidian 图标的按钮元素
+ * @param props Button properties
+ * @returns Button element rendered with Obsidian icon
  * 
  * @example
  * ```tsx
  * <IconButton 
  *   icon="play" 
- *   label="播放" 
+ *   label="Play" 
  *   onClick={() => handlePlay()} 
  * />
  * ```

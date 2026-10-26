@@ -1,7 +1,7 @@
 /**
- * 播放列表项渲染工具
+ * Track item renderer utility
  * 
- * 提供统一的播放列表项 DOM 创建逻辑，供 QueueModal 和 TrackSearchModal 使用
+ * Provides unified DOM rendering logic for track items in QueueModal and TrackSearchModal.
  */
 
 import { TFile } from "obsidian";
@@ -9,9 +9,9 @@ import type { TrackInfo } from "@/types";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 创建 SVG 播放占位符图标
+ * Creates SVG play icon placeholder
  * 
- * @param el 与列表项同一窗口的 HTMLElement（弹窗场景用 contentEl，勿直接用全局 document）
+ * @param el Window-scoped HTMLElement
  */
 export function createPlayPlaceholderSVG(el: HTMLElement): SVGSVGElement {
 	const svg = el.createSvg("svg", {
@@ -41,15 +41,14 @@ export function createPlayPlaceholderSVG(el: HTMLElement): SVGSVGElement {
 	});
 	svg.appendChild(polygon);
 
-	// 仅创建元素，移除自动挂载到 el 的引用，由调用方自行挂载
 	svg.remove();
 	return svg;
 }
 
 /**
- * 创建播放指示器（均衡器动画）
+ * Creates animated equalizer playing indicator
  * 
- * @param container 容器元素
+ * @param container Container element
  */
 export function createPlayingIndicator(container: HTMLElement): void {
 	container.setAttribute("aria-label", t("playback.playing"));
@@ -60,27 +59,27 @@ export function createPlayingIndicator(container: HTMLElement): void {
 }
 
 /**
- * 渲染播放列表项的选项
+ * Options for rendering a track item
  */
 export interface RenderTrackItemOptions {
-	/** 文件对象 */
+	/** Track file object */
 	file: TFile;
-	/** 曲目信息（可选） */
+	/** Track metadata (optional) */
 	track?: TrackInfo;
-	/** 是否是当前播放的曲目 */
+	/** Whether this is the active playing track */
 	isActive: boolean;
-	/** 封面 URL 缓存 */
+	/** Cover URL cache map */
 	coverCache: Map<string, string>;
-	/** Intersection Observer 实例（可选） */
+	/** IntersectionObserver instance for lazy loading (optional) */
 	observer?: IntersectionObserver | null;
 }
 
 /**
- * 渲染播放列表项的内容
+ * Renders track item DOM content into container
  * 
- * @param contentEl 内容容器元素
- * @param options 渲染选项
- * @returns 返回封面容器元素，用于后续的 Intersection Observer 观察
+ * @param contentEl Container element
+ * @param options Render options
+ * @returns Cover container element for IntersectionObserver
  */
 export function renderTrackItemContent(
 	contentEl: HTMLElement, 
@@ -88,18 +87,14 @@ export function renderTrackItemContent(
 ): HTMLElement {
 	const { file, track, isActive, coverCache, observer } = options;
 	
-	// 创建内容容器
 	const container = contentEl.createDiv("playlist-item-container");
 	
-	// 创建封面图片容器（异步加载，但先创建占位容器）
 	const coverContainerEl = container.createDiv("playlist-item-cover");
-	// 添加 data-track-path 属性，用于 Intersection Observer
 	coverContainerEl.setAttribute("data-track-path", file.path);
-	// 先显示占位图标（播放图标），然后异步加载封面
+	
 	const placeholder = coverContainerEl.createDiv("playlist-item-placeholder");
 	placeholder.appendChild(createPlayPlaceholderSVG(contentEl));
 	
-	// 如果已经有缓存的封面，直接加载
 	if (coverCache.has(file.path)) {
 		const coverUrl = coverCache.get(file.path);
 		if (coverUrl) {
@@ -108,21 +103,14 @@ export function renderTrackItemContent(
 			coverImg.src = coverUrl;
 			coverImg.alt = track?.title || file.basename;
 		}
-	} else {
-		// 使用 Intersection Observer 来懒加载封面
-		// 只有在可见时才加载封面
-		if (observer) {
-			observer.observe(coverContainerEl);
-		}
+	} else if (observer) {
+		observer.observe(coverContainerEl);
 	}
 
-	// 创建文本信息容器
 	const textContainer = container.createDiv("playlist-item-text");
 	
-	// 创建并设置曲目标题
 	const titleEl = textContainer.createDiv("playlist-item-title");
 	const title = track?.title || file.basename;
-	// 如果是当前播放的曲目，在标题前添加播放指示器
 	if (isActive) {
 		titleEl.empty();
 		const indicatorContainer = titleEl.createDiv("playing-indicator");
@@ -132,7 +120,6 @@ export function renderTrackItemContent(
 		titleEl.setText(title);
 	}
 	
-	// 创建并设置艺术家和专辑信息（缺省存空串；未知用 meta.* 词条）
 	const metaEl = textContainer.createDiv("playlist-item-meta");
 	const artistStr = (track?.artist ?? "").trim();
 	const artist = artistStr === "" ? t("meta.unknownArtist") : artistStr;
@@ -149,4 +136,3 @@ export function renderTrackItemContent(
 	
 	return coverContainerEl;
 }
-

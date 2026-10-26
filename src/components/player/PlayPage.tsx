@@ -1,9 +1,9 @@
 /**
- * 播放页面组件
+ * Play page component
  * 
- * 合并了 DiscPage 和 LyricsPage 的功能，通过 viewMode 控制显示模式
- * - "disc": 显示唱片封面和三行歌词
- * - "lyrics": 显示完整歌词列表
+ * Combines DiscPage and LyricsPage functionality, toggling modes via viewMode:
+ * - "disc": Displays album disc cover and triplet lyrics
+ * - "lyrics": Displays full scrollable lyrics list
  */
 
 import React from "react";
@@ -25,22 +25,22 @@ import type { ExtendedLyricLine } from "@/utils/lyrics/extendedParser";
 export type PlayPageViewMode = "disc" | "lyrics";
 
 export interface PlayPageProps {
-	/** 显示模式 */
+	/** Display view mode */
 	viewMode: PlayPageViewMode;
-	/** 切换到另一个模式 */
+	/** Switch to alternate mode */
 	onSwitchViewMode: () => void;
 	
-	// 基本信息
+	// Basic track info
 	title: string;
 	artist: string;
 	
-	// 播放状态
+	// Playback state
 	isPlaying: boolean;
 	currentTime: number;
 	duration: number;
 	playMode: PlayMode;
 	
-	// 唱片模式相关
+	// Disc mode props
 	coverUrl?: string;
 	prevCoverUrl?: string;
 	nextCoverUrl?: string;
@@ -52,16 +52,16 @@ export interface PlayPageProps {
 	nextExtendedLyric?: ExtendedLyricLine;
 	lastAction?: "next" | "prev" | null;
 	
-	// 歌词模式相关
+	// Lyrics mode props
 	fullLyrics: LyricLine[];
 	fullExtendedLyrics: ExtendedLyricLine[];
 	playingIndex: number;
-	/** 是否是首次切换到歌词模式 */
+	/** Whether this is initial mount to lyrics mode */
 	isInitialMount?: boolean;
-	/** 首次切换完成的回调 */
+	/** Callback when initial mount completes */
 	onInitialMountComplete?: () => void;
 	
-	// 播放控制
+	// Playback controls
 	onPrev: () => void;
 	onNext: () => void;
 	onTogglePlay: () => void;
@@ -71,7 +71,7 @@ export interface PlayPageProps {
 	onSeekBackward: (seconds: number) => void;
 	onSeekForward: (seconds: number) => void;
 	
-	// 歌曲信息
+	// Track metadata and secondary controls
 	currentPath: string | null;
 	sectionId?: string | null;
 	isFavorite: boolean;
@@ -125,7 +125,7 @@ export function PlayPage({
 	onVolumeChange,
 	onPlaybackRateChange,
 }: PlayPageProps) {
-	// 判断是否使用逐字歌词
+	// Determine whether to use extended lyrics
 	const useExtendedLyrics = viewMode === "disc" 
 		? currentExtendedLyric !== undefined
 		: fullExtendedLyrics && fullExtendedLyrics.length > 0;
@@ -134,7 +134,7 @@ export function PlayPage({
 		? (useExtendedLyrics ? fullExtendedLyrics : fullLyrics)
 		: null;
 
-	// 使用歌词自动滚动 Hook
+	// Use lyrics auto-scroll Hook
 	const { scrollRef, lineRefs } = useLyricsAutoScroll({
 		viewMode,
 		lyricsToUse,
@@ -143,24 +143,24 @@ export function PlayPage({
 		onInitialMountComplete,
 	});
 
-	// 跟踪当前歌曲路径，用于检测歌曲切换
+	// Track current track path to detect track switching
 	const prevPathRef = React.useRef<string | null>(currentPath);
 
-	// 计算有效的 playingIndex：如果刚切换歌曲，返回 -1，否则返回实际的 playingIndex
-	// 由于容器通过 key={currentPath} 重新创建，新容器首次渲染时 effectivePlayingIndex 为 -1 即可
-	// 容器创建后，playingIndex 会正常同步，无需延迟清除标记
+	// Compute effective playingIndex: return -1 immediately after track switch, otherwise return actual playingIndex
+	// Because container is remounted via key={currentPath}, new container mounts with effectivePlayingIndex = -1
+	// Once mounted, playingIndex synchronizes normally without delayed cleanup flags
 	const effectivePlayingIndex = React.useMemo(() => {
-		// 检测歌曲切换：如果 currentPath 与 ref 中的值不同，说明刚切换了歌曲
+		// Detect track switch: if currentPath differs from ref, a track change just occurred
 		if (prevPathRef.current !== currentPath) {
-			// 歌曲刚切换，更新 ref 并返回 -1
-			// 新容器会通过 key 重新创建，首次渲染时使用 -1，之后正常同步 playingIndex
+			// Track switched, update ref and return -1
+			// New container remounts via key, using -1 on initial render, then syncing playingIndex
 			prevPathRef.current = currentPath;
 			return -1;
 		}
 		
-		// 正常情况，返回实际的 playingIndex
+		// Normal case: return actual playingIndex
 		return playingIndex;
-	}, [playingIndex, currentPath]); // 依赖 currentPath 确保歌曲切换时重新计算
+	}, [playingIndex, currentPath]); // Dependent on currentPath to recalculate on track change
 
 	const activeIndex = viewMode === "lyrics" ? effectivePlayingIndex : -1;
 
@@ -177,7 +177,7 @@ export function PlayPage({
 		<div className={`play-page-wrapper play-page-${viewMode}`}>
 			<TrackHeader title={title} artist={artist} />
 			
-			{/* 唱片模式：同时渲染，通过CSS控制显示/隐藏 */}
+			{/* Disc mode: rendered simultaneously, display toggled via CSS */}
 			<div 
 				className={`disc-and-lyrics-triplet-wrapper ${viewMode === "disc" ? "visible" : "hidden"}`} 
 				onClick={onSwitchViewMode}
@@ -209,8 +209,8 @@ export function PlayPage({
 				</div>
 			</div>
 
-			{/* 歌词模式：同时渲染，通过CSS控制显示/隐藏 */}
-			{/* 使用 currentPath 作为 key，歌曲切换时重新创建容器，滚动位置自动重置 */}
+			{/* Lyrics mode: rendered simultaneously, display toggled via CSS */}
+			{/* Use currentPath as key so container remounts on track change, auto-resetting scroll position */}
 			<div 
 				key={currentPath || "no-track"}
 				className={`lyrics-list-wrapper ${viewMode === "lyrics" ? "visible" : "hidden"}`} 

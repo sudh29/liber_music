@@ -1,9 +1,9 @@
 /**
- * 快照生成服务
+ * Snapshot generation service
  * 
- * 负责生成 React 组件需要的快照数据，包括：
- * - 播放状态快照
- * - 音乐库快照
+ * Generates snapshot states consumed by React components:
+ * - Playback state snapshot
+ * - Music library snapshot
  */
 
 import { App, TFile } from "obsidian";
@@ -21,59 +21,58 @@ import { getOrCreateTrackId, getTrackPath } from "@/utils/track/id";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 快照状态接口
+ * Snapshot state interface
  * 
- * 定义生成快照时需要的完整状态信息
+ * Defines state fields required to construct playback and library snapshots.
  */
 export interface SnapshotState {
-	/** 当前播放的曲目 */
+	/** Currently playing track */
 	currentTrack: TFile | null;
-	/** 当前曲目在列表中的索引 */
+	/** Current track index in trackList */
 	currentIndex: number;
-	/** 是否正在播放 */
+	/** Whether audio is currently playing */
 	isPlaying: boolean;
-	/** 播放模式 */
+	/** Playback mode */
 	playMode: PlayMode;
-	/** 当前曲目的普通歌词 */
+	/** Standard lyrics for current track */
 	currentLyrics: LyricLine[];
-	/** 当前曲目的逐字歌词 */
+	/** Word-by-word lyrics for current track */
 	currentExtendedLyrics: ExtendedLyricLine[];
-	/** 音量 */
+	/** Playback volume */
 	volume: number;
-	/** 播放速率 */
+	/** Playback rate */
 	playbackRate: number;
-	/** 音频元素 */
+	/** HTML Audio element */
 	audioElement: HTMLAudioElement | null;
-	/** 所有曲目列表 */
+	/** All tracks list */
 	trackList: TFile[];
-	/** 当前列表上下文 */
+	/** Current list context */
 	currentList: CurrentList | null;
-	/** 收藏的曲目列表 */
+	/** Favorites list */
 	favorites: TFile[];
-	/** 当前列表标识符 */
+	/** Current list identifier */
 	currentListId: string | null;
-	/** 当前播放列表的 section ID */
+	/** Section ID for current playlist */
 	currentSectionIdForPlaylist: string | null;
-	/** 临时存储的下一首封面 URL（用于切换动画） */
+	/** Pending next track cover URL for transition animations */
 	pendingNextCoverUrl?: string;
-	/** 临时存储的上一首封面 URL（用于切换动画） */
+	/** Pending previous track cover URL for transition animations */
 	pendingPrevCoverUrl?: string;
 }
 
 /**
- * 快照生成服务类
+ * Snapshot generation service class
  * 
- * 负责生成 React 组件需要的快照数据，将内部状态转换为 React 组件可用的格式。
- * 包括播放状态快照和音乐库快照。
+ * Converts internal application state into immutable snapshots for React components.
  */
 export class SnapshotService {
 	/**
-	 * 创建快照生成服务实例
+	 * Creates a snapshot service instance.
 	 * 
-	 * @param app - Obsidian App 实例，用于查找封面等资源
-	 * @param plugin - 插件实例，用于访问设置数据
-	 * @param listService - 列表服务，用于获取当前播放列表
-	 * @param libraryService - 库服务，用于获取排序后的分类数据
+	 * @param app - Obsidian App instance for resource resolution
+	 * @param plugin - Plugin instance for settings access
+	 * @param listService - List service for current queue retrieval
+	 * @param libraryService - Library service for categorized collections
 	 */
 	constructor(
 		private app: App,
@@ -83,23 +82,22 @@ export class SnapshotService {
 	) {}
 
 	/**
-	 * 解析歌曲封面 URL（同步，返回 undefined，由组件层面异步获取内嵌封面）
+	 * Resolves track cover URL synchronously.
+	 * Returns undefined; embedded covers are loaded asynchronously at component level.
 	 * 
-	 * 封面只从音频文件的元数据中提取，不在同步方法中获取。
-	 * 
-	 * @param trackFile - 音乐文件
-	 * @returns 始终返回 undefined，封面由异步方法获取
+	 * @param trackFile - Track file
+	 * @returns Always returns undefined for async loading
 	 */
 	private resolveTrackCoverUrl(trackFile: TFile | null | undefined): string | undefined {
-		// 封面只从音频文件的元数据中提取，不在同步方法中获取
 		return undefined;
 	}
 
 	/**
-	 * 异步获取歌曲封面（优先文件夹中的 cover 文件，其次内嵌封面）
+	 * Asynchronously retrieves track cover (folder cover prioritized over embedded tag cover).
 	 * 
-	 * @param trackFile - 音乐文件
-	 * @returns 封面图片 URL（可能是文件路径或 base64 Data URL），如果未找到则返回 undefined
+	 * @param trackFile - Track file
+	 * @param options - Optional resolution options
+	 * @returns Cover image URL (file path or base64 Data URL), or undefined if not found
 	 */
 	public async getTrackCoverAsync(
 		trackFile: TFile | null | undefined,
@@ -110,14 +108,14 @@ export class SnapshotService {
 	}
 
 	/**
-	 * 生成播放状态快照
+	 * Generates playback snapshot.
 	 * 
-	 * 将内部播放状态转换为 React 组件可用的格式，包括：
-	 * - 歌曲信息（标题、艺术家、封面）
-	 * - 播放进度和时间
-	 * - 歌词信息（当前行、上一行、下一行、完整歌词）
-	 * - 播放状态和模式
-	 * - 音量和播放速率
+	 * Converts playback state to React-friendly format:
+	 * - Track details (title, artist, cover)
+	 * - Progress and timing
+	 * - Lyrics context (previous, current, next, full)
+	 * - Playback status and mode
+	 * - Volume and playback rate
 	 */
 	getPlaybackSnapshot(state: SnapshotState): ReactPlaybackSnapshot {
 		const {
@@ -132,7 +130,6 @@ export class SnapshotService {
 		} = state;
 
 		const currentPath = currentTrack?.path;
-		// 通过路径获取 ID，然后通过 ID 获取 track 信息
 		const trackId = currentPath ? getOrCreateTrackId(currentPath, this.plugin.settings) : null;
 		const track = trackId ? this.plugin.settings.tracks[trackId] : undefined;
 
@@ -144,39 +141,34 @@ export class SnapshotService {
 		const currentTime = audioElement?.currentTime ?? 0;
 		const duration = audioElement?.duration ?? track?.duration ?? 0;
 
-		// 判断是否使用逐字歌词
 		const useExtendedLyrics = currentExtendedLyrics && currentExtendedLyrics.length > 0;
 		
-		// 使用统一的工具函数计算歌词索引
 		const idx = calculateLyricsIndex({
 			fullLyrics: currentLyrics,
 			fullExtendedLyrics: currentExtendedLyrics,
 			currentTime,
 		});
 
-		// 普通歌词的三行文本（文本在 LyricsService 入库前已清理，直接取用）
+		// Standard triplet lyric text
 		const prevLyric = idx > 0 && !useExtendedLyrics ? currentLyrics[idx - 1]?.text ?? "" : "";
 		const currentLyric = idx >= 0 && !useExtendedLyrics ? currentLyrics[idx]?.text ?? "" : "";
 		const nextLyric = idx >= 0 && !useExtendedLyrics ? currentLyrics[idx + 1]?.text ?? "" : "";
 
-		// 逐字歌词的三行数据
+		// Word-by-word extended triplet lyric data
 		const prevExtendedLyric = idx > 0 && useExtendedLyrics ? currentExtendedLyrics[idx - 1] : undefined;
 		const currentExtendedLyric = idx >= 0 && useExtendedLyrics ? currentExtendedLyrics[idx] : undefined;
 		const nextExtendedLyric = idx >= 0 && useExtendedLyrics ? currentExtendedLyrics[idx + 1] : undefined;
 
-		// 检查是否已收藏（favorites 在设置中以 trackId 的形式存储，这里统一按 ID 判断）
+		// Check favorite status
 		const favoriteIds = new Set(this.plugin.settings.favorites || []);
 		const isFavorite = trackId ? favoriteIds.has(trackId) : false;
 
-		// 获取上一首和下一首的封面（从当前播放列表中获取）
-		// 优先使用临时存储的封面 URL（用于切换动画），否则从当前播放列表计算
+		// Resolve prev/next covers for sliding animations
 		let prevCoverUrl: string | undefined = state.pendingPrevCoverUrl;
 		let nextCoverUrl: string | undefined = state.pendingNextCoverUrl;
 
-		// 如果没有临时存储的封面 URL，从当前播放列表计算
 		if (!prevCoverUrl || !nextCoverUrl) {
 			if (currentTrack) {
-				// 获取当前播放列表
 				const { list } = this.listService.getCurrentPlaylistForTrack(
 					currentTrack,
 					state.currentList,
@@ -185,11 +177,9 @@ export class SnapshotService {
 				);
 
 				if (list.length > 0) {
-					// 在当前播放列表中查找当前曲目的索引
 					const currentIdxInList = list.findIndex((f) => f.path === currentTrack.path);
 					
 					if (currentIdxInList >= 0) {
-						// 上一首（基于当前播放列表）
 						if (!prevCoverUrl) {
 							const prevIdxInList = currentIdxInList > 0 ? currentIdxInList - 1 : list.length - 1;
 							const prevTrack = list[prevIdxInList];
@@ -198,7 +188,6 @@ export class SnapshotService {
 							}
 						}
 
-						// 下一首（基于当前播放列表）
 						if (!nextCoverUrl) {
 							const nextIdxInList = currentIdxInList < list.length - 1 ? currentIdxInList + 1 : 0;
 							const nextTrack = list[nextIdxInList];
@@ -238,18 +227,16 @@ export class SnapshotService {
 	}
 
 	/**
-	 * 生成音乐库快照
+	 * Generates library snapshot.
 	 */
 	getLibrarySnapshot(
 		trackList: TFile[],
 		currentTrack: TFile | null,
 		currentListId: string | null
 	): ReactLibrarySnapshot {
-		// 过滤掉 undefined 和 null 值，防止后续处理出错
 		const validTrackList = trackList.filter((file): file is TFile => file != null);
 		
 		const mapToTrack = (file: TFile): ReactTrackInfo => {
-			// 通过路径获取 ID，然后通过 ID 获取 track 信息
 			const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
 			const meta = this.plugin.settings.tracks[trackId];
 			const artistStr = (meta?.artist ?? "").trim();
@@ -269,7 +256,6 @@ export class SnapshotService {
 			};
 		};
 
-		// 创建路径到 ID 的映射，用于快速查找
 		const pathToIdMap = new Map<string, string>();
 		validTrackList.forEach(file => {
 			const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
@@ -278,7 +264,6 @@ export class SnapshotService {
 
 		const favoritesSet = new Set(this.plugin.settings.favorites || []);
 		const allTracks = validTrackList.map(mapToTrack);
-		// 通过 ID 过滤收藏列表
 		const favorites = validTrackList
 			.filter((f) => {
 				const trackId = pathToIdMap.get(f.path);
@@ -286,33 +271,27 @@ export class SnapshotService {
 			})
 			.map(mapToTrack);
 
-		// 使用 LibraryService 获取排序后的播放列表、艺术家和专辑数据
 		const playlistsData = Object.entries(this.plugin.settings.playlists || {}).map(([name, trackIds]) => {
-			// 通过 ID 获取路径，然后查找文件
 			const playlistFiles = trackIds
 				.map(id => {
 					const path = getTrackPath(id, this.plugin.settings);
 					return path ? validTrackList.find(f => f.path === path) : null;
 				})
-				.filter((file): file is TFile => file != null); // 同时过滤 null 和 undefined
-			// 对播放列表进行排序
+				.filter((file): file is TFile => file != null);
 			const sortedTracks = sortTracksByTrack(playlistFiles, this.plugin.settings);
 			return {
 				name,
 				tracks: sortedTracks.map(mapToTrack),
 			};
 		});
-		// 播放列表按名称排序
-		const playlists = playlistsData.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
+		const playlists = playlistsData.sort((a, b) => a.name.localeCompare(b.name, "en"));
 
-		// 使用 LibraryService 获取排序后的艺术家数据
 		const artistsData = this.libraryService.getArtists(validTrackList);
 		const artists = artistsData.map(({ name, tracks }) => ({
 			name,
 			tracks: tracks.map(mapToTrack),
 		}));
 
-		// 使用 LibraryService 获取排序后的专辑数据
 		const albumsData = this.libraryService.getAlbums(validTrackList);
 		const albums = albumsData.map(({ name, tracks }) => ({
 			name,
@@ -330,4 +309,3 @@ export class SnapshotService {
 		};
 	}
 }
-

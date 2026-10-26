@@ -1,8 +1,8 @@
 /**
- * 判断单段歌词文本更接近「逐字/卡拉 OK」还是「逐句 LRC」。
+ * Determines whether a lyric text snippet resembles word-by-word/karaoke or standard line-by-line LRC.
  *
- * 逐字：同一行内出现尖括号时间戳 <mm:ss.xx>，或一行内出现两个及以上 [mm:ss.xx]。
- * 逐句：通常每行仅一个行首 [mm:ss.xx]，且无尖括号时间戳。
+ * Word-by-word: Angle bracket timestamps <mm:ss.xx> appear within a line, or two or more [mm:ss.xx] appear in one line.
+ * Line-by-line: Typically only one leading [mm:ss.xx] per line with no angle bracket timestamps.
  */
 export function isTimestampedKaraokeLyrics(text: string): boolean {
 	if (!text?.trim()) return false;

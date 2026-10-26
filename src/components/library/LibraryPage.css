@@ -1,9 +1,9 @@
 /**
- * 音乐库页面样式（工具栏、列表、分区、曲目行）。
- * 播放指示器外观见 PlayingIndicator.css。
+ * Music library page styles (toolbar, list, sections, track rows).
+ * Playing indicator appearance is defined in PlayingIndicator.css.
  */
 
-/* ========== 页面容器 ========== */
+/* ========== Page Container ========== */
 .music-player .tracklist {
 	flex: 1;
 	display: flex;
@@ -11,7 +11,7 @@
 	min-height: 0;
 }
 
-/* ========== 工具栏 / 标签栏 ========== */
+/* ========== Toolbar / Tabs Bar ========== */
 .music-player .toolbar {
 	display: flex;
 	align-items: flex-end;
@@ -109,7 +109,7 @@
 	overflow-x: hidden;
 }
 
-/* ========== 曲目行 ========== */
+/* ========== Track Row ========== */
 .music-player .track-item {
 	display: flex;
 	padding: 12px 16px;

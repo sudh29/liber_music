@@ -1,24 +1,19 @@
 /**
- * 播放控制工具函数
+ * Playback control utility functions
  * 
- * 包含播放控制相关的纯函数，不依赖任何服务或状态。
- * 提供播放列表导航、播放模式切换等功能。
+ * Pure functions managing track index navigation, play mode toggling, and track-end transitions.
  */
 
 import type { PlayMode } from "@/main";
 import { TFile } from "obsidian";
 
 /**
- * 计算上一首歌曲的索引
+ * Calculates previous track index based on play mode.
  * 
- * 根据当前播放模式和索引，计算应该播放的上一首歌曲的索引。
- * - 随机模式：返回随机索引
- * - 其他模式：返回当前索引减1，如果已经是第一首则返回最后一首（循环播放）
- * 
- * @param currentIndex 当前播放的歌曲索引
- * @param list 播放列表（歌曲文件数组）
- * @param playMode 播放模式（normal、repeat-all、repeat-one、shuffle）
- * @returns 返回上一首歌曲的索引
+ * @param currentIndex Current track index
+ * @param list Track files array
+ * @param playMode Active playback mode
+ * @returns Index of previous track
  */
 export function getPreviousIndex(
 	currentIndex: number,
@@ -32,16 +27,12 @@ export function getPreviousIndex(
 }
 
 /**
- * 计算下一首歌曲的索引
+ * Calculates next track index based on play mode.
  * 
- * 根据当前播放模式和索引，计算应该播放的下一首歌曲的索引。
- * - 随机模式：返回随机索引
- * - 其他模式：返回当前索引加1，如果已经是最后一首则返回第一首（循环播放）
- * 
- * @param currentIndex 当前播放的歌曲索引
- * @param list 播放列表（歌曲文件数组）
- * @param playMode 播放模式（normal、repeat-all、repeat-one、shuffle）
- * @returns 返回下一首歌曲的索引
+ * @param currentIndex Current track index
+ * @param list Track files array
+ * @param playMode Active playback mode
+ * @returns Index of next track
  */
 export function getNextIndex(
 	currentIndex: number,
@@ -55,21 +46,12 @@ export function getNextIndex(
 }
 
 /**
- * 根据播放模式处理歌曲结束后的行为
+ * Determines playback transition when a track reaches end of stream.
  * 
- * 根据不同的播放模式，决定歌曲播放结束后应该执行的操作：
- * - repeat-one：单曲循环，重复播放当前歌曲
- * - repeat-all：列表循环，播放下一首
- * - normal：正常模式，如果是最后一首则停止，否则播放下一首
- * - shuffle：随机模式，播放下一首（随机选择）
- * 
- * @param playMode 播放模式
- * @param currentIndex 当前播放的歌曲索引
- * @param list 播放列表（歌曲文件数组）
- * @returns 返回包含三个布尔值的对象：
- *   - shouldPlayNext: 是否应该播放下一首
- *   - shouldRepeat: 是否应该重复播放当前歌曲
- *   - shouldStop: 是否应该停止播放
+ * @param playMode Active playback mode
+ * @param currentIndex Current track index
+ * @param list Track files array
+ * @returns Action flags: shouldPlayNext, shouldRepeat, shouldStop
  */
 export function handleTrackEnd(
 	playMode: PlayMode,
@@ -94,13 +76,10 @@ export function handleTrackEnd(
 }
 
 /**
- * 切换播放模式
+ * Cycles through play modes: normal -> repeat-all -> repeat-one -> shuffle -> normal
  * 
- * 在四种播放模式之间循环切换：
- * normal -> repeat-all -> repeat-one -> shuffle -> normal
- * 
- * @param currentMode 当前播放模式
- * @returns 返回下一个播放模式
+ * @param currentMode Active playback mode
+ * @returns Next playback mode
  */
 export function togglePlayMode(currentMode: PlayMode): PlayMode {
 	const modes: Array<"normal" | "repeat-all" | "repeat-one" | "shuffle"> = [
@@ -113,22 +92,18 @@ export function togglePlayMode(currentMode: PlayMode): PlayMode {
 	const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % modes.length;
 	const nextMode = modes[nextIndex];
 	if (!nextMode) {
-		// 理论上不会发生，但为了类型安全
 		return "normal";
 	}
 	return nextMode;
 }
 
 /**
- * 在全局播放列表中查找指定歌曲的索引
+ * Resolves index of track in global playlist by file path matching.
  * 
- * 通过比较文件路径来查找歌曲在列表中的位置。
- * 
- * @param track 要查找的歌曲文件
- * @param globalList 全局播放列表（歌曲文件数组）
- * @returns 返回歌曲在列表中的索引，如果未找到则返回 -1
+ * @param track Target track file
+ * @param globalList Global track list
+ * @returns Index in playlist, or -1 if not found
  */
 export function findTrackIndexInGlobalList(track: TFile, globalList: TFile[]): number {
 	return globalList.findIndex((f) => f.path === track.path);
 }
-

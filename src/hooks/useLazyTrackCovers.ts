@@ -1,11 +1,11 @@
 /**
- * 封面懒加载 Hook
+ * Lazy track cover loading hook
  * 
- * 负责管理歌曲封面的懒加载逻辑，包括：
- * - IntersectionObserver 检测可见区域
- * - 并发控制（限制同时加载的封面数量）
- * - 封面缓存（按路径和专辑名称）
- * - 停止加载机制（双击切换页面时停止额外 I/O）
+ * Manages lazy loading of track album covers:
+ * - IntersectionObserver visible viewport detection
+ * - Concurrency throttling (limits concurrent cover extraction)
+ * - Cover caching (by file path and album name)
+ * - Cancellation mechanism (aborts queued loading when navigating away)
  */
 
 import React from "react";
@@ -13,72 +13,61 @@ import { App, TFile } from "obsidian";
 import type { ReactTrackInfo } from "@/types";
 
 /**
- * Hook 的输入参数
+ * Hook input parameters
  */
 export interface UseLazyTrackCoversParams {
-	/** 要加载封面的歌曲列表 */
+	/** Tracks list to load covers for */
 	tracks: ReactTrackInfo[];
-	/** Obsidian App 实例（用于从路径获取文件） */
+	/** Obsidian App instance */
 	app?: App;
-	/** 异步获取歌曲封面的函数（优先文件夹中的 cover 文件，其次内嵌封面） */
+	/** Asynchronous cover loader function */
 	getTrackCover?: (file: TFile) => Promise<string | undefined>;
 }
 
 /**
- * Hook 的返回值
+ * Hook return values
  */
 export interface UseLazyTrackCoversReturn {
-	/** 已加载的封面 URL Map：path → coverUrl */
+	/** Loaded covers Map: path -> coverUrl */
 	embeddedCovers: Map<string, string>;
-	/** 每个 track 的 ref Map：path → React.RefObject<HTMLDivElement> */
+	/** Track element ref Map: path -> React.RefObject<HTMLDivElement> */
 	trackRefs: Map<string, React.RefObject<HTMLDivElement>>;
-	/** 停止加载封面（双击切换页面时调用） */
+	/** Aborts ongoing and queued cover loading */
 	stopLoading: () => void;
 }
 
 /**
- * 封面懒加载 Hook
+ * Lazy track covers hook
  * 
- * 使用 IntersectionObserver 检测可见区域，只加载可见的封面。
- * 支持并发控制、缓存机制和停止加载功能。
+ * Uses IntersectionObserver to load covers only for visible track items.
  * 
- * @param params Hook 参数
- * @returns Hook 返回值
+ * @param params Hook parameters
+ * @returns Hook return values
  */
 export function useLazyTrackCovers({
 	tracks,
 	app,
 	getTrackCover,
 }: UseLazyTrackCoversParams): UseLazyTrackCoversReturn {
-	// 封面缓存：按路径缓存
 	const coverCacheRef = React.useRef<Map<string, string>>(new Map());
-	// 专辑封面缓存：按专辑名称缓存（同一专辑的歌曲共享封面）
 	const albumCoverCacheRef = React.useRef<Map<string, string>>(new Map());
-	// 存储异步获取的封面 URL（用于触发重新渲染）
 	const [embeddedCovers, setEmbeddedCovers] = React.useState<Map<string, string>>(new Map());
-	// 使用 ref 来快速检查封面是否已加载（避免在 callback 中依赖 state）
 	const embeddedCoversRef = React.useRef<Map<string, string>>(new Map());
-	// 用于跟踪正在加载的封面请求（需要在点击播放后清理）
 	const loadingPromisesRef = React.useRef<Set<Promise<void>>>(new Set());
-	// 用于标记是否应该停止加载（点击播放后设置；此处仅在双击跳转时使用）
 	const shouldStopLoadingRef = React.useRef<boolean>(false);
-	// 限制封面加载的并发数量，避免一次触发过多 I/O 导致主线程长时间卡顿
 	const MAX_CONCURRENT_COVER_LOADS = 2;
 	const activeCoverLoadsRef = React.useRef<number>(0);
 	const coverLoadQueueRef = React.useRef<Array<() => void>>([]);
-	// 用于存储每个 track 的 ref，用于 Intersection Observer
 	const trackRefsRef = React.useRef<Map<string, React.RefObject<HTMLDivElement>>>(new Map());
 
-	// 初始化 track refs
+	// Initialize track refs
 	React.useEffect(() => {
 		const refs = trackRefsRef.current;
-		// 为新的 tracks 创建 ref
 		for (const track of tracks) {
 			if (!refs.has(track.path)) {
 				refs.set(track.path, React.createRef<HTMLDivElement>());
 			}
 		}
-		// 清理不再存在的 track refs
 		const trackPaths = new Set(tracks.map(t => t.path));
 		for (const [path] of refs) {
 			if (!trackPaths.has(path)) {
@@ -87,7 +76,7 @@ export function useLazyTrackCovers({
 		}
 	}, [tracks]);
 
-	// 封面加载调度函数：限制并发加载数量
+	// Cover load scheduler: throttles concurrent loading tasks
 	const enqueueCoverLoad = React.useCallback((task: () => Promise<void>) => {
 		if (shouldStopLoadingRef.current) {
 			return;
@@ -106,7 +95,6 @@ export function useLazyTrackCovers({
 				loadingPromisesRef.current.delete(p);
 				activeCoverLoadsRef.current -= 1;
 
-				// 继续执行队列中的下一个任务
 				const next = coverLoadQueueRef.current.shift();
 				if (next && !shouldStopLoadingRef.current) {
 					next();
@@ -121,14 +109,12 @@ export function useLazyTrackCovers({
 		}
 	}, []);
 
-	// 设置 Intersection Observer 来检测可见元素
-	// 直接在 Observer 回调中加载封面，避免通过 state 触发，减少 React 渲染开销
+	// Setup IntersectionObserver for visible elements
 	React.useEffect(() => {
 		if (!getTrackCover || !app) return;
 
 		const observer = new IntersectionObserver(
 			(entries) => {
-				// 使用 requestAnimationFrame 批量处理，提升性能
 				window.requestAnimationFrame(() => {
 					entries.forEach((entry) => {
 						if (!entry.isIntersecting || shouldStopLoadingRef.current) return;
@@ -137,11 +123,9 @@ export function useLazyTrackCovers({
 						const trackPath = trackElement.getAttribute('data-track-path');
 						if (!trackPath) return;
 
-						// 找到对应的 track
 						const track = tracks.find(t => t.path === trackPath);
 						if (!track) return;
 
-						// 如果已经有封面，直接更新 state
 						if (track.coverUrl) {
 							if (!embeddedCoversRef.current.has(trackPath)) {
 								embeddedCoversRef.current.set(trackPath, track.coverUrl);
@@ -156,7 +140,6 @@ export function useLazyTrackCovers({
 							return;
 						}
 
-						// 检查缓存
 						if (coverCacheRef.current.has(trackPath)) {
 							const cachedUrl = coverCacheRef.current.get(trackPath);
 							if (cachedUrl && !embeddedCoversRef.current.has(trackPath)) {
@@ -172,13 +155,12 @@ export function useLazyTrackCovers({
 							return;
 						}
 
-						// 如果已经在加载中，跳过
 						if (embeddedCoversRef.current.has(trackPath)) {
 							observer.unobserve(trackElement);
 							return;
 						}
 
-						// 优化：如果同一专辑的其他歌曲已经有封面，直接复用
+						// Reuse cached cover for matching album
 						if (track.album) {
 							const albumCover = albumCoverCacheRef.current.get(track.album);
 							if (albumCover) {
@@ -195,13 +177,10 @@ export function useLazyTrackCovers({
 							}
 						}
 
-						// 开始加载封面（通过调度函数，限制并发数量）
-						// 标记为正在加载，避免重复请求
 						coverCacheRef.current.set(trackPath, "");
 
 						const loadTask = async () => {
 							try {
-								// 如果此时已经要求停止加载，直接跳过
 								if (shouldStopLoadingRef.current) {
 									coverCacheRef.current.delete(trackPath);
 									return;
@@ -233,7 +212,6 @@ export function useLazyTrackCovers({
 										albumCoverCacheRef.current.set(track.album, coverUrl);
 									}
 
-									// 只通过 React state 更新，不直接操作 DOM
 									setEmbeddedCovers(prev => {
 										if (prev.has(trackPath)) return prev;
 										const next = new Map(prev);
@@ -246,7 +224,7 @@ export function useLazyTrackCovers({
 								}
 							} catch (err) {
 								if (!shouldStopLoadingRef.current) {
-									console.error(`获取封面失败 (${trackPath}):`, err);
+									console.error(`Failed to load track cover (${trackPath}):`, err);
 								}
 								coverCacheRef.current.delete(trackPath);
 							}
@@ -259,15 +237,12 @@ export function useLazyTrackCovers({
 				});
 			},
 			{
-				// 提前 100px 开始加载，提升用户体验
 				rootMargin: '100px',
 				threshold: 0.01,
 			}
 		);
 
-		// 使用 requestAnimationFrame 确保 DOM 已经更新
 		const rafId = window.requestAnimationFrame(() => {
-			// 观察所有 track 元素
 			const refs = trackRefsRef.current;
 			for (const [, ref] of refs) {
 				if (ref.current) {
@@ -280,10 +255,8 @@ export function useLazyTrackCovers({
 			cancelAnimationFrame(rafId);
 			observer.disconnect();
 		};
-		// Note: getTrackCover and app are stable references
 	}, [tracks, getTrackCover, app, enqueueCoverLoad]);
 
-	// 停止加载封面
 	const stopLoading = React.useCallback(() => {
 		shouldStopLoadingRef.current = true;
 		loadingPromisesRef.current.clear();
@@ -295,4 +268,3 @@ export function useLazyTrackCovers({
 		stopLoading,
 	};
 }
-

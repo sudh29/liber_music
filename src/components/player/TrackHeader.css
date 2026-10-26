@@ -1,10 +1,10 @@
 /**
- * 曲目标题头部组件样式文件
+ * Track header component styles
  * 
- * 包含曲目标题和艺术家名称的样式，支持左对齐和居中对齐两种布局。
+ * Contains styles for track title and artist name display.
  */
 
-/* ========== 标题头部样式 ========== */
+/* ========== Header Styles ========== */
 .music-player .track-header {
 	text-align: center;
 	margin-bottom: 24px;

@@ -1,14 +1,13 @@
 /**
- * 确认对话框组件样式文件
+ * Confirm modal component stylesheet
  * 
- * 包含确认对话框的特定样式：
- * - 消息文本容器样式
+ * Contains styles specific to confirm dialog:
+ * - Message text container styling
  * 
- * 注意：按钮样式和移动端适配已提取到 BaseModal.css
- * 注意：所有样式都限制在 .music-player-modal 类名下，避免影响 Obsidian 原生界面
+ * Note: Scoped under .music-player-modal
  */
 
-/* ========== 确认对话框消息样式 ========== */
+/* ========== Confirm Dialog Message Styles ========== */
 .music-player-modal .prompt-message-container {
 	margin-bottom: 12px;
 }
@@ -18,8 +17,7 @@
 	color: var(--text-normal);
 	font-size: 14px;
 	line-height: 1.5;
-	white-space: pre-wrap; /* 保留换行，同时允许自动换行 */
+	white-space: pre-wrap; /* Preserves newlines while wrapping */
 	word-break: break-word;
-	font-family: inherit; /* 避免使用等宽字体 */
+	font-family: inherit;
 }
-

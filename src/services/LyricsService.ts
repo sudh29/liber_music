@@ -1,13 +1,13 @@
 /**
- * 歌词管理服务
+ * Lyrics management service
  * 
- * 负责管理歌词相关的业务逻辑，包括：
- * - 加载歌词（从插件设置中读取，或从同目录伴生 .lrc 文件回退读取）
- * - 解析歌词（LRC 格式和逐字歌词）
- * - 处理歌词格式转换与时间轴偏移
+ * Manages lyrics-related business logic, including:
+ * - Loading lyrics (from plugin settings or fallback to companion .lrc file in the same directory)
+ * - Parsing lyrics (LRC format and word-by-word karaoke lyrics)
+ * - Handling format transformation and timeline offset shifts
  * 
- * 歌词优先从音频内嵌元数据标签（LYRICS/USLT/TXXX）读取，若缺失则自动在同目录下
- * 查找同名伴生 `.lrc` 文本文件并同步到设置中。
+ * Lyrics are prioritized from audio embedded metadata (LYRICS/USLT/TXXX),
+ * falling back to companion `.lrc` files in the same directory when absent.
  */
 
 import { LyricLine, LyricsParser } from "@/utils/lyrics/parser";
@@ -21,23 +21,24 @@ import { getCompanionLrcFile, readCompanionLrc } from "@/utils/audio/companionLr
 import { TFile } from "obsidian";
 
 /**
- * 歌词管理服务类
+ * Lyrics management service class
  * 
- * 提供歌词的加载和解析功能，支持 LRC 格式和逐字歌词格式。
+ * Provides lyric loading and parsing functions, supporting standard LRC and word-by-word karaoke formats.
  */
 export class LyricsService {
 	/**
-	 * 创建歌词管理服务实例
+	 * Creates a lyrics management service instance.
 	 * 
-	 * @param plugin - 插件实例，用于访问设置中的歌词数据与 Vault 文件接口
+	 * @param plugin - Plugin instance for accessing settings and vault file APIs
 	 */
 	constructor(private plugin: MusicPlayerPlugin) {}
 
 	/**
-	 * 解析任意原始歌词文本，自动识别逐字（卡拉OK）或普通 LRC 格式，并应用 offset 时间平移
+	 * Parses raw lyric text, automatically distinguishing word-by-word (karaoke) or line-by-line LRC format,
+	 * and applies timeline offset shifting.
 	 * 
-	 * @param rawLyrics 原始歌词字符串
-	 * @returns 普通歌词与逐字歌词解析结果
+	 * @param rawLyrics Raw lyrics string
+	 * @returns Standard and extended parsed lyric lines
 	 */
 	parseLyrics(rawLyrics: string): {
 		lyrics: LyricLine[];
@@ -50,7 +51,7 @@ export class LyricsService {
 			return { lyrics, extendedLyrics };
 		}
 
-		// [offset:±ms] 是歌词参数：解析后用于整体平移时间轴，但不显示在歌词中
+		// [offset:±ms] is a lyric parameter: shifts timeline without rendering in lyrics
 		const offsetSeconds = parseLyricsOffset(rawLyrics);
 		const lyricsText = stripLeadingLyricsMetadata(stripLyricsOffsetTags(rawLyrics));
 		if (!lyricsText.trim()) {
@@ -85,19 +86,18 @@ export class LyricsService {
 			}
 		}
 
-		// 应用偏移（正偏移 = 歌词整体提前）
+		// Apply offset (positive = lyrics appear earlier)
 		applyLyricsOffset(lyrics, extendedLyrics, offsetSeconds);
 
 		return { lyrics, extendedLyrics };
 	}
 
 	/**
-	 * 同步加载歌词（供已有缓存或快速渲染使用）
+	 * Synchronously loads lyrics (for existing cache or fast rendering).
+	 * If settings lack lyrics, checks vault for companion `.lrc` and triggers background load.
 	 * 
-	 * 若设置中未缓存歌词，则检查 Vault 中是否存在伴生 `.lrc` 文件并触发后台加载
-	 * 
-	 * @param trackPath - 音乐文件路径
-	 * @returns 包含普通歌词和逐字歌词的对象
+	 * @param trackPath - Audio file path
+	 * @returns Object containing standard and extended lyrics
 	 */
 	loadLyrics(trackPath: string): {
 		lyrics: LyricLine[];
@@ -108,7 +108,6 @@ export class LyricsService {
 		const rawLyrics = track?.lyrics && track.lyrics.trim() !== "" ? track.lyrics : "";
 
 		if (!rawLyrics.trim()) {
-			// 检查同目录下是否有伴生 .lrc 文件，异步加载并缓存
 			const companionFile = getCompanionLrcFile(this.plugin.app, trackPath);
 			if (companionFile) {
 				void this.loadCompanionLrcAsync(trackPath, companionFile);
@@ -120,10 +119,10 @@ export class LyricsService {
 	}
 
 	/**
-	 * 异步加载歌词：优先使用设置缓存，若无则自动读取 Vault 同目录下的伴生 `.lrc` 文件
+	 * Asynchronously loads lyrics: checks settings first, then companion `.lrc` file in same directory.
 	 * 
-	 * @param trackPath - 音乐文件路径
-	 * @returns 包含普通歌词和逐字歌词的 Promise
+	 * @param trackPath - Audio file path
+	 * @returns Promise resolving to standard and extended lyrics
 	 */
 	async loadLyricsAsync(trackPath: string): Promise<{
 		lyrics: LyricLine[];
@@ -137,7 +136,6 @@ export class LyricsService {
 			return this.parseLyrics(rawLyrics);
 		}
 
-		// 尝试从伴生 .lrc 文件读取
 		const companionText = await readCompanionLrc(this.plugin.app, trackPath);
 		if (companionText && companionText.trim()) {
 			if (track) {
@@ -145,7 +143,7 @@ export class LyricsService {
 				try {
 					await this.plugin.saveSettings();
 				} catch (err) {
-					console.warn("保存伴生歌词到设置失败:", err);
+					console.warn("Failed to save companion lyrics to settings:", err);
 				}
 			}
 			return this.parseLyrics(companionText);
@@ -155,7 +153,7 @@ export class LyricsService {
 	}
 
 	/**
-	 * 后台加载伴生 .lrc 文件并同步到设置与当前播放状态
+	 * Background loader for companion .lrc file, persisting to settings.
 	 */
 	private async loadCompanionLrcAsync(trackPath: string, lrcFile: TFile): Promise<void> {
 		try {
@@ -169,7 +167,7 @@ export class LyricsService {
 				}
 			}
 		} catch (error) {
-			console.warn(`加载伴生歌词失败 (${trackPath}):`, error);
+			console.warn(`Failed to load companion lyrics (${trackPath}):`, error);
 		}
 	}
 }

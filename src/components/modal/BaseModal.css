@@ -1,22 +1,22 @@
 /**
- * 基础模态框组件公共样式文件
+ * Base modal component shared stylesheet
  * 
- * 包含所有模态框共享的样式，包括：
- * - 按钮容器布局
- * - 确定和取消按钮样式
- * - 移动端适配
+ * Contains common styling shared across plugin modal dialogs:
+ * - Button container layout
+ * - Confirm and cancel button styles
+ * - Mobile layout adaptations
  * 
- * 注意：所有样式都限制在 .music-player-modal 类名下，避免影响 Obsidian 原生界面
+ * Note: Scoped under .music-player-modal to avoid polluting Obsidian native UI
  */
 
-/* ========== 按钮容器样式 ========== */
+/* ========== Button Container Styles ========== */
 .music-player-modal .prompt-button-container {
 	display: flex;
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 12px;
-	order: 2; /* 确保按钮在内容下方 */
-	flex-shrink: 0; /* 防止按钮被压缩 */
+	order: 2; /* Ensures buttons render below content */
+	flex-shrink: 0; /* Prevents button compression */
 }
 
 .music-player-modal .prompt-button-container button {
@@ -45,15 +45,14 @@
 	background: var(--background-modifier-hover);
 }
 
-/* ========== 移动端适配 ========== */
-/* 确保 Modal 内容区域使用 flex 布局，保持正确的顺序 - 仅限插件自己的 Modal */
-/* .modal.music-player-modal 提高特异性，压过 Obsidian 默认模态样式 */
+/* ========== Mobile Adaptations ========== */
+/* Flex column layout on mobile to maintain proper ordering */
 .is-phone .modal.music-player-modal .modal-content {
 	display: flex;
 	flex-direction: column;
 }
 
-/* 移动端按钮容器样式 */
+/* Mobile button container */
 .is-phone .modal.music-player-modal .prompt-button-container {
 	margin-top: 16px;
 	margin-bottom: 0;
@@ -63,4 +62,3 @@
 	width: 100%;
 	flex-shrink: 0;
 }
-

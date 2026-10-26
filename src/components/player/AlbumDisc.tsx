@@ -1,22 +1,22 @@
 /**
- * 专辑唱片组件
+ * Album disc component
  * 
- * 显示专辑封面和唱片动画效果，包括：
- * - 唱片旋转动画（播放时）
- * - 切换动画（上一首/下一首时的滑动效果）
- * - 唱针动画（播放/暂停时的唱针移动）
- * - 支持拖动封面调整播放进度
+ * Displays album cover and disc animation effects, including:
+ * - Disc rotation animation (when playing)
+ * - Switch animation (sliding effect on prev/next track)
+ * - Tonearm animation (needle movement on play/pause)
+ * - Supports dragging cover to adjust playback progress
  * 
- * 封面切换逻辑：
- * - 组件同时接收三个封面：prevCoverUrl（前一个）、coverUrl（当前）、nextCoverUrl（后一个）
- * - 点击上一首时，prevCoverUrl 从左侧滑入
- * - 点击下一首时，nextCoverUrl 从右侧滑入
- * - 切换完成后，coverUrl 更新为新的当前封面
+ * Cover switch logic:
+ * - Component receives three covers simultaneously: prevCoverUrl, coverUrl, nextCoverUrl
+ * - On previous track, prevCoverUrl slides in from the left
+ * - On next track, nextCoverUrl slides in from the right
+ * - Upon completion, coverUrl is updated to the new current cover
  * 
- * 动画说明：
- * - 播放时唱片会持续旋转
- * - 切换歌曲时会有滑动切换动画
- * - 唱针在播放时会移动到唱片上，暂停时返回原位
+ * Animation notes:
+ * - Disc rotates continuously during playback
+ * - Sliding transition animation when switching tracks
+ * - Tonearm moves onto the record when playing and returns when paused
  */
 
 import React from "react";
@@ -26,35 +26,35 @@ import { t } from "@/utils/i18n/i18n";
 import { useDiscSwitchAnimation } from "@/hooks/useDiscSwitchAnimation";
 
 /**
- * 专辑唱片组件的属性接口
+ * Props interface for AlbumDisc component
  */
 export interface AlbumDiscProps {
-	/** 当前曲目的封面图片 URL */
+	/** Cover image URL for the current track */
 	coverUrl?: string;
-	/** 当前曲目的唯一标识（例如路径），用于在封面相同但歌曲不同的情况下也能触发动画 */
+	/** Unique track key (e.g. path) to trigger animation even when cover URL is identical */
 	trackKey?: string;
-	/** 是否正在播放 */
+	/** Whether playback is active */
 	isPlaying: boolean;
-	/** 播放上一首的回调函数（可选） */
+	/** Callback function to play previous track (optional) */
 	onPrev?: () => void;
-	/** 播放下一首的回调函数（可选） */
+	/** Callback function to play next track (optional) */
 	onNext?: () => void;
-	/** 切换播放/暂停的回调函数（可选） */
+	/** Callback function to toggle play/pause (optional) */
 	onTogglePlay?: () => void;
-	/** 上一首的封面图片 URL（用于切换动画） */
+	/** Previous track cover image URL (for switch animation) */
 	prevCoverUrl?: string;
-	/** 下一首的封面图片 URL（用于切换动画） */
+	/** Next track cover image URL (for switch animation) */
 	nextCoverUrl?: string;
-	/** 最后一次操作（"next" 或 "prev"），用于触发切换动画 */
+	/** Last action ("next" or "prev") triggering switch animation */
 	lastAction?: "next" | "prev" | null;
 }
 
 /**
- * 专辑唱片组件
+ * Album disc component
  * 
- * 显示专辑封面和唱片动画效果，支持播放时的旋转动画和切换时的滑动动画。
+ * Displays album cover and vinyl disc animations, supporting rotation on playback and slide animation on track changes.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTogglePlay, prevCoverUrl, nextCoverUrl, lastAction }: AlbumDiscProps) {
 	const containerRef = React.useRef<HTMLDivElement>(null);
@@ -63,10 +63,10 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 	const panContainerRef = React.useRef<HTMLDivElement>(null);
 	const [workspaceLeafWidth, setWorkspaceLeafWidth] = React.useState(0);
 
-	// 使用唱片旋转 Hook
+	// Use disc rotation Hook
 	const { rotationAngle, currentDiscRef, resetRotation } = useDiscRotation({ isPlaying });
 
-	// 使用唱片切换动画 Hook
+	// Use disc switch animation Hook
 	const {
 		displayCoverUrl,
 		currentDiscOffset,
@@ -88,7 +88,7 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 		onResetRotation: resetRotation,
 	});
 
-	// 获取 workspace-leaf 宽度（侧栏重新打开时初始宽度可能为 0，需持续监听尺寸变化）
+	// Get workspace-leaf width (initial width may be 0 when sidebar is reopened, observe size changes continuously)
 	React.useEffect(() => {
 		const panContainer = panContainerRef.current;
 		if (!panContainer) return;
@@ -125,12 +125,12 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 
 	const discClasses = [
 		"album-image",
-		// 不再使用 "playing" 类，改用JavaScript控制旋转
+		// No longer using "playing" class, rotation is controlled via JavaScript
 	].filter(Boolean).join(" ");
 
-	// 使用JavaScript控制旋转，无论是播放还是暂停都应用角度
+	// Use JavaScript to control rotation, applying angle regardless of play or pause
 	const discStyle: React.CSSProperties = {
-		transition: "none", // 不要过渡动画，直接应用角度
+		transition: "none", // Do not animate transition, apply angle directly
 		transform: `rotate(${rotationAngle}deg)`,
 	};
 
@@ -140,12 +140,12 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 
 	return (
 		<div className="album-container-wrapper">
-			{/* 固定的半透明背景 */}
+			{/* Fixed semi-transparent background */}
 			<div className="disc-shadow"></div>
 
-			{/* 滑动容器 - 包含needle和disc */}
+			{/* Sliding container - contains needle and disc */}
 			<div className="pan-container" ref={panContainerRef}>
-				{/* 唱针 - 相对于disc定位 */}
+				{/* Tonearm - positioned relative to disc */}
 				<div className={`needle ${isNeedlePlaying ? "playing" : ""}`}>
 					<div
 						role="img"
@@ -154,7 +154,7 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 					/>
 				</div>
 				
-				{/* 左侧影子控件（上一首） */}
+				{/* Left shadow disc (previous track) */}
 				<div 
 					ref={shadowLeftRef}
 					className="album-container shadow-disc"
@@ -185,7 +185,7 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 					</div>
 				</div>
 
-				{/* 当前播放的唱片（点击不再控制播放，仅用于展示和动画） */}
+				{/* Currently playing disc (clicks no longer toggle playback, display and animation only) */}
 				<div 
 					className="album-container"
 					ref={containerRef}
@@ -199,14 +199,14 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 						willChange: isAnimating ? 'transform' : 'auto',
 					}}
 				>
-					{/* 黑胶唱片背景图片 */}
+					{/* Vinyl disc background image */}
 					<div
 						role="img"
 						aria-label={t("a11y.vinyl")}
 						className="disc-background disc-background-embedded"
 					/>
 
-					{/* 专辑封面 */}
+					{/* Album cover */}
 					<div 
 						ref={currentDiscRef}
 						className={discClasses} 
@@ -220,7 +220,7 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 					</div>
 				</div>
 
-				{/* 下一个唱片（用于切换动画） */}
+				{/* Next disc (for switch animation) */}
 				{nextDiscVisible && (
 					<div 
 						className="album-container"
@@ -234,14 +234,14 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 							willChange: shouldAnimate ? 'transform' : 'auto',
 						}}
 					>
-						{/* 黑胶唱片背景图片 */}
+						{/* Vinyl disc background image */}
 						<div
 							role="img"
 							aria-label={t("a11y.vinyl")}
 							className="disc-background disc-background-embedded"
 						/>
 
-						{/* 专辑封面 */}
+						{/* Album cover */}
 						<div 
 							className={discClasses}
 							style={{
@@ -259,7 +259,7 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 					</div>
 				)}
 
-				{/* 右侧影子控件（下一首） */}
+				{/* Right shadow disc (next track) */}
 				<div 
 					ref={shadowRightRef}
 					className="album-container shadow-disc"

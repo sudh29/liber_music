@@ -1,14 +1,14 @@
 /**
- * 曲目列表项样式
+ * Track list item styles
  * 
- * 用于音乐播放器中的曲目列表项显示，包括：
- * - 封面图片
- * - 曲目标题
- * - 艺术家和专辑信息
- * - 激活状态和悬停效果
+ * Used for track list item display in the music player, including:
+ * - Cover image
+ * - Track title
+ * - Artist and album info
+ * - Active state and hover effects
  */
 
-/* 曲目列表项容器 */
+/* Track list item container */
 .music-player .playlist-item {
 	padding: 8px 12px;
 	min-height: 64px;
@@ -16,12 +16,12 @@
 	align-items: center;
 }
 
-/* 当前激活的曲目项样式 */
+/* Active track item style */
 .music-player .playlist-item.is-active {
 	border-left: 3px solid var(--interactive-accent);
 }
 
-/* 曲目项内容容器 */
+/* Track item content container */
 .music-player .playlist-item-container {
 	display: flex;
 	align-items: center;
@@ -29,7 +29,7 @@
 	width: 100%;
 }
 
-/* 封面图片容器 */
+/* Cover image container */
 .music-player .playlist-item-cover {
 	width: 48px;
 	height: 48px;
@@ -42,14 +42,14 @@
 	justify-content: center;
 }
 
-/* 封面图片样式 */
+/* Cover image style */
 .music-player .playlist-item-cover img {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 }
 
-/* 封面占位符（当没有封面图片时显示） */
+/* Cover placeholder (shown when no cover image is available) */
 .music-player .playlist-item-placeholder {
 	width: 100%;
 	height: 100%;
@@ -59,13 +59,13 @@
 	color: var(--text-muted);
 }
 
-/* 封面占位符中的图标 */
+/* Icon in cover placeholder */
 .music-player .playlist-item-placeholder svg {
 	width: 24px;
 	height: 24px;
 }
 
-/* 文本信息容器（标题和元数据） */
+/* Text info container (title and metadata) */
 .music-player .playlist-item-text {
 	flex: 1;
 	min-width: 0;
@@ -74,7 +74,7 @@
 	gap: 4px;
 }
 
-/* 曲目标题样式 */
+/* Track title style */
 .music-player .playlist-item-title {
 	font-size: 14px;
 	font-weight: 500;
@@ -87,13 +87,13 @@
 	align-items: center;
 }
 
-/* 激活状态下的标题样式 */
+/* Active title style */
 .music-player .playlist-item.is-active .playlist-item-title {
 	color: var(--interactive-accent);
 	font-weight: 600;
 }
 
-/* 元数据样式（艺术家、专辑等信息） */
+/* Metadata style (artist, album, etc.) */
 .music-player .playlist-item-meta {
 	font-size: 12px;
 	line-height: 1.4;
@@ -106,7 +106,7 @@
 	color: var(--interactive-accent);
 }
 
-/* 悬停效果 */
+/* Hover effect */
 .music-player .playlist-item:hover:not(.is-active) {
 	background: var(--background-modifier-hover);
 }

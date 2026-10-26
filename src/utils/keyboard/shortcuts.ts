@@ -1,57 +1,43 @@
 import { MusicPlayerView } from "@/views/MusicPlayerView";
 
 /**
- * 键盘快捷键处理器接口
- * 
- * 提供清理函数，用于移除事件监听器
+ * Keyboard shortcut handler interface
  */
 export interface KeyboardShortcutHandler {
-	/** 清理函数，移除所有键盘事件监听器 */
+	/** Cleans up and removes all keyboard event listeners */
 	cleanup: () => void;
 }
 
 /**
- * 设置键盘快捷键
+ * Registers keyboard shortcuts for the music player view:
+ * - Space: toggle play/pause
+ * - ArrowUp: previous track
+ * - ArrowDown: next track
+ * - ArrowLeft: seek backward 5s
+ * - ArrowRight: seek forward 5s
+ * - Ctrl + ArrowLeft: seek backward 15s
+ * - Ctrl + ArrowRight: seek forward 15s
  * 
- * 为音乐播放器视图注册全局键盘快捷键，支持以下操作：
- * - 空格键：播放/暂停
- * - ↑：上一首
- * - ↓：下一首
- * - ←：快退 5 秒
- * - →：快进 5 秒
- * - Ctrl + ←：快退 15 秒
- * - Ctrl + →：快进 15 秒
+ * Shortcuts are only handled when:
+ * 1. View is mounted and connected to DOM
+ * 2. View is currently active
+ * 3. Focus is not within an input or textarea
  * 
- * 快捷键只在以下条件下生效：
- * 1. 视图已激活且已连接到 DOM
- * 2. 视图是当前活动的视图
- * 3. 用户不在输入框或文本编辑区域中
- * 
- * @param view 音乐播放器视图实例
- * @returns 返回处理器对象，包含 cleanup 方法用于移除事件监听器
- * 
- * @example
- * ```typescript
- * const handler = setupKeyboardShortcuts(view);
- * // 使用完毕后清理
- * handler.cleanup();
- * ```
+ * @param view MusicPlayerView instance
+ * @returns KeyboardShortcutHandler with cleanup method
  */
 export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutHandler {
 	const handleKeyDown = (e: KeyboardEvent) => {
-		// 检查视图是否激活且已连接
 		if (!view.containerEl || !view.containerEl.isConnected) {
 			return;
 		}
 
-		// 检查视图的 leaf 是否是当前活动的 leaf
 		const app = view.plugin.app;
 		const activeLeaf = app.workspace.getActiveViewOfType(MusicPlayerView);
 		if (!activeLeaf || activeLeaf !== view) {
 			return;
 		}
 
-		// 如果用户正在输入框中输入，不处理快捷键
 		const target = e.target as HTMLElement;
 		if (
 			target.tagName === "INPUT" ||
@@ -63,7 +49,7 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// 空格键：播放/暂停
+		// Space: Play / Pause
 		if (e.code === "Space" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -71,7 +57,7 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// ↑：上一首
+		// ArrowUp: Previous track
 		if (e.code === "ArrowUp" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -79,7 +65,7 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// ↓：下一首
+		// ArrowDown: Next track
 		if (e.code === "ArrowDown" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -87,7 +73,7 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// ←：快退 5 秒
+		// ArrowLeft: Seek backward 5s
 		if (e.code === "ArrowLeft" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -95,7 +81,7 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// →：快进 5 秒
+		// ArrowRight: Seek forward 5s
 		if (e.code === "ArrowRight" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -103,7 +89,7 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// Ctrl + ←：快退 15 秒
+		// Ctrl + ArrowLeft: Seek backward 15s
 		if (e.code === "ArrowLeft" && e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -111,7 +97,7 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// Ctrl + →：快进 15 秒
+		// Ctrl + ArrowRight: Seek forward 15s
 		if (e.code === "ArrowRight" && e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -120,7 +106,6 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 		}
 	};
 
-	// 监听键盘事件
 	window.addEventListener("keydown", handleKeyDown, true);
 
 	return {
@@ -129,4 +114,3 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 		},
 	};
 }
-

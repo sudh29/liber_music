@@ -1,5 +1,5 @@
 
-/* ========== 导航栏图标 ========== */
+/* ========== Navigation Bar Icons ========== */
 
 .music-player .nav-buttons-container {
 	display: flex;
@@ -18,7 +18,7 @@
 	pointer-events: none;
 }
 
-/* ========== 导航栏提示圆点 ========== */
+/* ========== Navigation Bar Badge Dot ========== */
 
 .music-player .nav-icon-badge {
 	position: absolute;

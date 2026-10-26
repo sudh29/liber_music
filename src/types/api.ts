@@ -1,96 +1,93 @@
 /**
- * API 接口类型定义
+ * API interface definitions
  * 
- * 定义 React 组件与播放器视图之间的 API 接口契约
+ * Defines the contract between React components and player services.
  */
 
 import type { ReactTrackInfo } from "./library";
 
 /**
- * React API 接口
+ * React API interface
  * 
- * 统一封装所有 React 组件需要的方法接口，提供：
- * - 播放控制（通过路径播放、播放分类）
- * - 收藏管理（切换收藏状态）
- * - 播放列表管理（添加、移除、创建、编辑、删除）
- * - 音频控制（音量、播放速率）
- * 
- * 这些方法由 ReactApiService 实现，通过 MusicPlayerView.reactApi 访问。
+ * Exposes core player operations to React hooks:
+ * - Playback control (by path, by category)
+ * - Favorite management (toggle)
+ * - Playlist management (add, remove, create, edit, delete)
+ * - Audio parameters (volume, playback rate)
  */
 export interface ReactApi {
 	/** 
-	 * 通过文件路径播放歌曲
-	 * @param path - 音乐文件路径
-	 * @param sectionId - 可选的 section ID，用于设置列表上下文
+	 * Plays a track by its vault file path
+	 * @param path - Music file path
+	 * @param sectionId - Optional section ID for list context
 	 */
 	playByPath: (path: string, sectionId?: string) => Promise<void>;
 	
 	/** 
-	 * 播放分类（艺术家、专辑、歌单）
-	 * @param categoryType - 分类类型（"artist", "album", "playlist"）
-	 * @param categoryName - 分类名称
-	 * @param tracks - 该分类下的曲目列表（内部会自动转换为 TFile[]）
+	 * Plays a category (artist, album, playlist)
+	 * @param categoryType - Category type ("artist", "album", "playlist")
+	 * @param categoryName - Category name
+	 * @param tracks - List of tracks in this category
 	 */
 	playCategory: (categoryType: string, categoryName: string, tracks: ReactTrackInfo[]) => Promise<void>;
 	
 	/** 
-	 * 切换收藏状态
-	 * @param path - 音乐文件路径
-	 * @param sectionId - 可选的 section ID，用于更新列表上下文
+	 * Toggles favorite state of a track
+	 * @param path - Music file path
+	 * @param sectionId - Optional section ID for updating list context
 	 */
 	toggleFavorite: (path: string, sectionId?: string) => Promise<void>;
 	
 	/** 
-	 * 将歌曲添加到播放列表
-	 * @param path - 音乐文件路径
-	 * @param sectionId - 可选的 section ID，用于更新列表上下文
+	 * Adds track to a playlist
+	 * @param path - Music file path
+	 * @param sectionId - Optional section ID for list context
 	 */
 	addToPlaylist: (path: string, sectionId?: string) => Promise<void>;
 	
 	/** 
-	 * 从播放列表中移除歌曲
-	 * @param path - 音乐文件路径
-	 * @param playlistName - 播放列表名称
+	 * Removes a track from a playlist
+	 * @param path - Music file path
+	 * @param playlistName - Target playlist name
 	 */
 	removeFromPlaylist: (path: string, playlistName: string) => Promise<void>;
 	
-	/** 创建新的播放列表 */
+	/** Creates a new playlist */
 	createPlaylist: () => Promise<void>;
 	
 	/** 
-	 * 编辑播放列表名称
-	 * @param oldName - 旧的播放列表名称
+	 * Renames a playlist
+	 * @param oldName - Current playlist name
 	 */
 	editPlaylistName: (oldName: string) => Promise<void>;
 	
 	/** 
-	 * 删除播放列表
-	 * @param playlistName - 要删除的播放列表名称
+	 * Deletes a playlist
+	 * @param playlistName - Name of playlist to delete
 	 */
 	deletePlaylist: (playlistName: string) => Promise<void>;
 	
 	/** 
-	 * 设置音量
-	 * @param volume - 音量值（0-1），会自动限制在此范围内
+	 * Sets volume level
+	 * @param volume - Volume level (0.0 - 1.0)
 	 */
 	setVolume: (volume: number) => Promise<void>;
 	
 	/** 
-	 * 获取当前音量
-	 * @returns 音量值（0-1），如果音频元素不存在则返回状态中的音量或默认值 1.0
+	 * Gets current volume level
+	 * @returns Volume level (0.0 - 1.0)
 	 */
 	getVolume: () => number;
 	
 	/** 
-	 * 设置播放速率
-	 * @param rate - 播放速率（0.25-4.0），会自动限制在此范围内
+	 * Sets playback rate
+	 * @param rate - Playback rate (0.25 - 4.0)
 	 */
 	setPlaybackRate: (rate: number) => Promise<void>;
 	
 	/** 
-	 * 获取当前播放速率
-	 * @returns 播放速率（0.25-4.0），如果音频元素不存在则返回状态中的速率或默认值 1.0
+	 * Gets current playback rate
+	 * @returns Playback rate (0.25 - 4.0)
 	 */
 	getPlaybackRate: () => number;
 }
-

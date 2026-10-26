@@ -1,15 +1,11 @@
 /**
- * 音乐库更新工具模块
+ * Music library updater utility module
  * 
- * 提供音乐库扫描和更新的功能，包括：
- * - 扫描音乐文件
- * - 提取音频元数据（标题、艺术家、专辑、歌词等）
- * - 生成艺术家和专辑信息
- * - 更新插件设置
- * 
- * 注意：
- * - 封面图片只从音频文件的元数据中提取内嵌封面，实时获取，不保存到 data.json 中。
- * - 歌词只从音频文件的元数据标签中提取，不从外部 .lrc 文件读取。
+ * Provides library scanning and rebuild functionality:
+ * - Scans audio files
+ * - Extracts audio metadata (title, artist, album, lyrics, replay gain)
+ * - Generates artist and album index structures
+ * - Updates plugin settings
  */
 
 import { App, Notice } from "obsidian";
@@ -25,21 +21,14 @@ import { scanVaultAudioFiles } from "./scanVaultAudio";
 import { t, tWithParams } from "@/utils/i18n/i18n";
 
 /**
- * 重建所有数据
+ * Rebuilds all music library data.
  * 
- * 完全重建音乐库的所有数据，包括：
- * - 重新扫描所有音乐文件
- * - 重新提取元数据（标题、艺术家、专辑、歌词等）
- * - 重新生成艺术家和专辑分类
- * - 清理收藏列表和歌单中的无效项
- * - 完全重写 JSON 文件
+ * Completely scans music files, extracts metadata, indexes categories,
+ * removes obsolete tracks from playlists and favorites, and persists data.json.
  * 
- * 封面图片只从音频文件的元数据中提取内嵌封面，实时获取，不存储在 data.json 中。
- * 这个过程可能比较耗时，会显示进度通知。
- * 
- * @param app Obsidian 应用实例
- * @param plugin 插件实例
- * @returns 返回处理成功的歌曲数量
+ * @param app Obsidian App instance
+ * @param plugin MusicPlayerPlugin instance
+ * @returns Number of successfully indexed tracks
  */
 export async function rebuildAllData(
 	app: App,
@@ -48,13 +37,12 @@ export async function rebuildAllData(
 	const notice = new Notice(t("notice.scanning"), 0);
 	
 	try {
-		// 1. 按音乐文件夹设置扫描音频文件（文件夹树遍历，非 vault.getFiles）
+		// 1. Scan audio files matching music folder configuration
 		const filteredFiles = scanVaultAudioFiles(app, plugin.settings.musicFolder ?? "");
 
-		// 2. 如果没有找到音乐文件，清空所有数据并保存
+		// 2. If no audio files are found, reset data structures
 		if (filteredFiles.length === 0) {
-			console.warn("未找到任何音乐文件，请检查音乐文件夹设置");
-			// 清空所有数据，确保 JSON 文件与实际情况一致
+			console.warn("No audio files found. Check music folder configuration.");
 			plugin.settings.musicFolder = plugin.settings.musicFolder || '';
 			plugin.settings.trackIndex = {};
 			plugin.settings.tracks = {};
@@ -62,27 +50,24 @@ export async function rebuildAllData(
 			plugin.settings.playlists = {};
 			plugin.settings.artists = {};
 			plugin.settings.albums = {};
-			// 保存清空后的数据
 			await plugin.saveSettings();
 			new Notice(t("notice.noMusicCleared"), 5000);
 			return 0;
 		}
 
-		// 5. 初始化数据结构
-		
+		// 3. Initialize state structures
 		plugin.settings.musicFolder = plugin.settings.musicFolder || '';
-		plugin.settings.trackIndex = {}; // 清空 ID 映射表，重新构建
+		plugin.settings.trackIndex = {};
 		plugin.settings.tracks = {};
 		plugin.settings.favorites = plugin.settings.favorites || [];
 		plugin.settings.playlists = plugin.settings.playlists || {};
 		plugin.settings.artists = {};
 		plugin.settings.albums = {};
-		
 
 		let processed = 0;
 		const total = filteredFiles.length;
 		
-		// 6. 处理每个音乐文件
+		// 4. Process each audio file
 		for (const file of filteredFiles) {
 			try {
 				notice.setMessage(
@@ -93,11 +78,11 @@ export async function rebuildAllData(
 					})
 				);
 				
-				// 优先仅读取 256KB 音频头部探测元数据，大幅降低移动端与无损大文件内存占用
+				// Read 256KB header slice first to conserve memory on mobile and lossless files
 				let binary = await readAudioFileHeaderBinary(app, file);
 				let audioMetadata = binary ? await getEmbeddedAudioMetadataFromBuffer(binary) : null;
 
-				// 若头部未能识别有效信息（如特殊尾置标签），回退至全量读取
+				// Fallback to full binary read if header does not contain valid metadata
 				if (!audioMetadata || (!audioMetadata.title && !audioMetadata.artist)) {
 					const fullBinary = await readAudioFileBinary(app, file);
 					if (fullBinary) {
@@ -109,24 +94,18 @@ export async function rebuildAllData(
 				}
 
 				if (!audioMetadata) {
-					console.warn(`无法提取文件 ${file.path} 的元数据`);
+					console.warn(`Unable to extract metadata for ${file.path}`);
 					continue;
 				}
 
-				// 如果仍然没有标题，记录警告以便调试
 				if (!audioMetadata.title) {
-					console.warn(`文件 ${file.path} 未找到标题元数据，将使用文件名: ${file.basename}`);
+					console.warn(`No title tag found for ${file.path}, using filename: ${file.basename}`);
 				}
 
-				// 更新曲目元数据
-				// 注意：
-				// - 封面图片只从音频文件的元数据中提取内嵌封面，实时获取，不保存到 data.json 中
-				// - 歌词只从音频文件的 LYRICS 标签提取（写入 lyrics）
-				// - 使用 ID 系统：获取或创建曲目 ID，然后使用 ID 作为键
 				const { getOrCreateTrackId } = await import("@/utils/track/id");
 				const trackId = getOrCreateTrackId(file.path, plugin.settings);
 
-				// 优先使用内嵌歌词，若缺失则回退到同目录伴生 .lrc 文件
+				// Embedded lyrics take priority; fallback to companion .lrc file in same directory
 				let lyrics = audioMetadata.lyricsText || '';
 				if (!lyrics.trim()) {
 					const companion = await readCompanionLrc(app, file);
@@ -149,29 +128,26 @@ export async function rebuildAllData(
 				};
 
 				processed++;
-				console.debug(`成功处理文件: ${file.path}, 已处理 ${processed}/${total}`);
+				console.debug(`Processed file: ${file.path} (${processed}/${total})`);
 				
-				// 每处理5个文件更新一次进度
 				if (processed % 5 === 0 || processed === total) {
 					notice.setMessage(tWithParams("notice.progressTracks", { current: processed, total }));
 				}
 			} catch (error) {
-				console.error(`处理文件 ${file.path} 时出错:`, error);
-				// 继续处理下一个文件
+				console.error(`Error processing file ${file.path}:`, error);
 			}
 		}
 
-		// 7. 生成艺术家和专辑信息
+		// 5. Generate artist and album index maps
 		notice.setMessage(t("notice.generatingCategories"));
 		const { artists, albums } = generateArtistsAndAlbums(plugin.settings);
 		plugin.settings.artists = artists;
 		plugin.settings.albums = albums;
 
-		// 8. 清理无效的数据
+		// 6. Clean up obsolete IDs from index, favorites, and playlists
 		notice.setMessage(t("notice.cleaningInvalid"));
 		const validTrackIds = new Set(Object.keys(plugin.settings.tracks));
 		
-		// 清理 trackIndex：只保留存在的曲目 ID
 		if (plugin.settings.trackIndex) {
 			const originalTrackIndexCount = Object.keys(plugin.settings.trackIndex).length;
 			const cleanedTrackIndex: Record<string, string> = {};
@@ -183,21 +159,19 @@ export async function rebuildAllData(
 			plugin.settings.trackIndex = cleanedTrackIndex;
 			const removedTrackIndexCount = originalTrackIndexCount - Object.keys(plugin.settings.trackIndex).length;
 			if (removedTrackIndexCount > 0) {
-				console.debug(`已从 trackIndex 中移除 ${removedTrackIndexCount} 个无效的 ID 映射`);
+				console.debug(`Removed ${removedTrackIndexCount} stale IDs from trackIndex`);
 			}
 		}
 		
-		// 清理收藏列表：只保留存在的曲目 ID
 		if (plugin.settings.favorites) {
 			const originalFavoritesCount = plugin.settings.favorites.length;
 			plugin.settings.favorites = plugin.settings.favorites.filter(id => validTrackIds.has(id));
 			const removedFavoritesCount = originalFavoritesCount - plugin.settings.favorites.length;
 			if (removedFavoritesCount > 0) {
-				console.debug(`已从收藏列表中移除 ${removedFavoritesCount} 首不存在的曲目`);
+				console.debug(`Removed ${removedFavoritesCount} missing tracks from favorites`);
 			}
 		}
 		
-		// 清理歌单：只保留存在的曲目 ID
 		if (plugin.settings.playlists) {
 			let totalRemovedFromPlaylists = 0;
 			for (const [playlistName, trackIds] of Object.entries(plugin.settings.playlists)) {
@@ -208,16 +182,16 @@ export async function rebuildAllData(
 					const removedCount = originalCount - (updatedPlaylist?.length ?? 0);
 					if (removedCount > 0) {
 						totalRemovedFromPlaylists += removedCount;
-						console.debug(`已从歌单 "${playlistName}" 中移除 ${removedCount} 首不存在的曲目`);
+						console.debug(`Removed ${removedCount} missing tracks from playlist "${playlistName}"`);
 					}
 				}
 			}
 			if (totalRemovedFromPlaylists > 0) {
-				console.debug(`共从所有歌单中移除了 ${totalRemovedFromPlaylists} 首不存在的歌曲`);
+				console.debug(`Removed ${totalRemovedFromPlaylists} missing tracks from all playlists`);
 			}
 		}
 
-		// 9. 保存设置到 data.json
+		// 7. Save settings
 		notice.setMessage(t("notice.saving"));
 		await plugin.saveSettings();
 
@@ -226,12 +200,10 @@ export async function rebuildAllData(
 		return processed;
 		
 	} catch (error) {
-		console.error("重建数据时出错:", error);
+		console.error("Error rebuilding music library:", error);
 		new Notice(t("notice.rebuildError"), 5000);
 		throw error;
 	} finally {
-		// 关闭进度通知
 		notice.hide();
 	}
 }
-

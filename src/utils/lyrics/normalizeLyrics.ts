@@ -1,10 +1,11 @@
 /**
- * 歌词原文预处理：在交给 LRC / 逐字解析器之前归一化内嵌标签文本。
+ * Raw lyric preprocessing: normalizes embedded tag text before passing to LRC/karaoke parsers.
  */
 
 /**
- * 丢弃首个 `[mm:ss.xx]`（含百分秒）之前的全部文本；可跨行或去掉同行左缀。
- * 未出现该模式则原样返回。用于去掉 [ar:]、[hash:]、[language:] 等非演唱内容。
+ * Strips all text preceding the first `[mm:ss.xx]` timestamp (including centiseconds);
+ * handles multi-line prefixes or inline left padding.
+ * Returns text unchanged if pattern is not present. Used to remove [ar:], [hash:], [language:] non-song headers.
  */
 export function stripLeadingLyricsMetadata(text: string): string {
 	const match = /\[\d{2}:\d{2}\.\d{2}\]/.exec(text);

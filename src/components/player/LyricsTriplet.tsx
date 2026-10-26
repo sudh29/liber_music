@@ -1,31 +1,31 @@
 /**
- * 三行歌词组件
+ * Triplet lyrics view component
  * 
- * 显示上一行、当前行、下一行歌词，用于唱片页面的歌词显示。
- * 当前行会高亮显示，提供简洁的歌词浏览体验。
+ * Displays previous, current, and next lines of lyrics for the disc view.
+ * The current line is highlighted, providing a clean lyrics browsing experience.
  */
 
 import React from "react";
 import "./LyricsTriplet.css";
 
 /**
- * 三行歌词组件的属性接口
+ * Props interface for LyricsTriplet component
  */
 export interface LyricsTripletProps {
-	/** 上一行歌词文本 */
+	/** Previous line text */
 	prev?: string;
-	/** 当前行歌词文本 */
+	/** Current line text */
 	current?: string;
-	/** 下一行歌词文本 */
+	/** Next line text */
 	next?: string;
 }
 
 /**
- * 三行歌词组件
+ * Triplet lyrics view component
  * 
- * 显示三行歌词（上一行、当前行、下一行），当前行会高亮显示。
+ * Displays three lines of lyrics (prev, current, next), with current line highlighted.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function LyricsTriplet({ prev = "", current = "", next = "" }: LyricsTripletProps) {
 	return (

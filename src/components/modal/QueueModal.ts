@@ -1,12 +1,12 @@
 /**
- * 播放队列模态框模块
+ * Playback queue modal dialog module
  * 
- * 提供一个带模糊搜索功能的播放队列对话框，用户可以：
- * - 查看当前播放队列中的所有歌曲
- * - 通过输入关键词搜索队列中的歌曲
- * - 查看歌曲的封面、标题、艺术家、专辑信息
- * - 高亮显示当前正在播放的歌曲
- * - 选择队列中的歌曲进行播放
+ * Provides a fuzzy search queue modal dialog:
+ * - View all tracks in current queue
+ * - Search tracks via keywords
+ * - View track cover, title, artist, and album
+ * - Highlight currently playing track
+ * - Select track to play
  */
 
 import { App, FuzzyMatch, FuzzySuggestModal, TFile } from "obsidian";
@@ -17,40 +17,29 @@ import { renderTrackItemContent } from "@/utils/ui/trackItemRenderer";
 import "@/components/shared/TrackItem.css";
 
 /**
- * 播放队列模态框类
+ * Playback queue modal class
  * 
- * 继承自 Obsidian 的 FuzzySuggestModal，提供模糊搜索和选择功能
- * 用于显示和选择当前播放队列中的歌曲
+ * Extends Obsidian FuzzySuggestModal for displaying and selecting queued tracks.
  */
 export class QueueModal extends FuzzySuggestModal<TFile> {
-	/** Promise 的 resolve 函数，用于返回用户选择的歌曲文件 */
 	private resolve: ((value: TFile | null) => void) | null;
-	/** 播放队列中的歌曲文件数组 */
 	private items: TFile[] = [];
-	/** 当前正在播放的歌曲文件（用于高亮显示） */
 	private currentTrack: TFile | null = null;
-	/** 标记用户是否已通过点击选择了项目（用于区分点击选择和取消） */
 	private chosen: boolean = false;
-	/** 插件实例引用，用于访问设置和歌曲数据 */
 	private plugin: MusicPlayerPlugin;
-	/** 封面图片缓存，避免重复获取同一首歌曲的封面 */
 	private coverCache: Map<string, string> = new Map();
-	/** 专辑封面缓存，按专辑名称缓存（同一专辑的歌曲共享封面） */
 	private albumCoverCache: Map<string, string> = new Map();
-	/** 用于跟踪正在加载的封面请求，以便在选择时取消 */
 	private loadingPromises: Set<Promise<void>> = new Set();
-	/** 用于标记是否应该停止加载（选择时设置） */
 	private shouldStopLoading: boolean = false;
-	/** Intersection Observer 实例，用于检测可见元素 */
 	private observer: IntersectionObserver | null = null;
 
 	/**
-	 * 构造函数
+	 * Constructor
 	 * 
-	 * @param app Obsidian 应用实例
-	 * @param plugin 插件实例
-	 * @param playlist 要显示的播放队列（歌曲文件数组）
-	 * @param currentTrack 当前正在播放的曲目（可选，用于高亮显示）
+	 * @param app Obsidian App instance
+	 * @param plugin Plugin instance
+	 * @param playlist Queued tracks array
+	 * @param currentTrack Currently playing track (optional, for active highlight)
 	 */
 	constructor(
 		app: App,
@@ -67,18 +56,18 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 	}
 
 	/**
-	 * 获取可搜索的项目列表
-	 * @returns 返回播放队列中的歌曲文件数组
+	 * Returns items available for fuzzy search
+	 * @returns Array of queued track files
 	 */
 	getItems(): TFile[] {
 		return this.items;
 	}
 
 	/**
-	 * 获取项目的显示文本（用于搜索匹配）
+	 * Returns display text for search matching
 	 * 
-	 * @param item 歌曲文件对象
-	 * @returns 返回歌曲标题，如果没有则返回文件名
+	 * @param item Track file
+	 * @returns Track title, or filename if missing
 	 */
 	getItemText(item: TFile): string {
 		const trackId = getOrCreateTrackId(item.path, this.plugin.settings);
@@ -87,27 +76,22 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 	}
 
 	/**
-	 * 获取歌曲的封面图片 URL
+	 * Retrieves cover image URL for track
 	 * 
-	 * 从歌曲文件所在文件夹中查找封面图片
-	 * 使用缓存机制，避免重复查找同一首歌曲的封面
-	 * 支持专辑缓存优化（同一专辑的歌曲共享封面）
+	 * Checks cache, album cover cache, and resolves cover via getTrackCover.
 	 * 
-	 * @param file 歌曲文件对象
-	 * @returns 返回封面图片的 URL，如果没有封面则返回 null
+	 * @param file Track file
+	 * @returns Cover image URL, or null if not found
 	 */
 	async getCoverImageUrl(file: TFile): Promise<string | null> {
-		// 如果应该停止加载，直接返回 null
 		if (this.shouldStopLoading) {
 			return null;
 		}
 
-		// 检查缓存中是否已有该歌曲的封面
 		if (this.coverCache.has(file.path)) {
 			return this.coverCache.get(file.path) || null;
 		}
 
-		// 优化：如果同一专辑的其他歌曲已经有封面，直接复用
 		const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
 		const track = this.plugin.settings.tracks[trackId];
 		if (track?.album) {
@@ -118,74 +102,52 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 			}
 		}
 
-		// 再次检查是否应该停止加载
 		if (this.shouldStopLoading) {
 			return null;
 		}
 
-		// 获取封面（优先文件夹中的 cover 文件，其次内嵌封面）
 		const coverUrl = await getTrackCover(this.app, file) || null;
 		
-		// 最后一次检查是否应该停止加载
 		if (this.shouldStopLoading) {
 			return null;
 		}
 
 		if (coverUrl) {
-			// 将封面 URL 存入缓存
 			this.coverCache.set(file.path, coverUrl);
-			
-			// 如果该歌曲有专辑信息，也缓存到专辑缓存中
 			if (track?.album) {
 				this.albumCoverCache.set(track.album, coverUrl);
 			}
-			
 			return coverUrl;
 		}
 
-		// 如果没有找到封面，返回 null
 		return null;
 	}
 
 	/**
-	 * 渲染播放队列建议项
+	 * Renders playlist queue suggestion item.
 	 * 
-	 * 为每个列表项创建自定义的 UI，包括：
-	 * - 封面图片（异步加载）
-	 * - 歌曲标题（当前播放的歌曲会显示播放图标）
-	 * - 艺术家和专辑信息
-	 * - 当前播放歌曲的高亮样式
-	 * 
-	 * @param item 模糊匹配结果对象，包含歌曲文件和匹配信息
-	 * @param el 要渲染到的 DOM 元素
+	 * @param item Fuzzy match result object
+	 * @param el DOM element to render into
 	 */
 	renderSuggestion(item: FuzzyMatch<TFile>, el: HTMLElement): void {
 		const file = item.item;
 		const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
 		const track = this.plugin.settings.tracks[trackId];
-		// 检查是否是当前正在播放的曲目
 		const isActive = !!(this.currentTrack && file.path === this.currentTrack.path);
 		
-		// 添加容器类，用于样式控制
 		el.addClass("playlist-item");
-		// 如果是当前播放的歌曲，添加激活状态类
 		if (isActive) {
 			el.addClass("is-active");
 		}
 
-		// 先调用父类方法生成基础结构（这会创建 suggestion-content 等必要的元素）
 		super.renderSuggestion(item, el);
 		
-		// 查找 suggestion-content 容器，如果不存在，尝试直接使用 el 的内容
 		let contentEl = el.querySelector(".suggestion-content") as HTMLElement;
 		if (!contentEl) {
-			// 如果找不到 suggestion-content，直接使用 el 本身
 			contentEl = el;
-			// 清空 el 的内容，准备重新创建
 			el.empty();
 		}
 
-		// 使用工具函数渲染播放列表项内容
 		renderTrackItemContent(contentEl, {
 			file,
 			track,
@@ -193,57 +155,40 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 			coverCache: this.coverCache,
 			observer: this.observer,
 		});
-		
-		// 如果 observer 还没创建，会在 setupIntersectionObserver 中统一观察
 	}
 
 	/**
-	 * 当用户从列表中选择歌曲时调用（点击或按 Enter）
+	 * Called when user selects track from list (click or Enter)
 	 * 
-	 * @param item 被选择的歌曲文件
-	 * @param evt 鼠标或键盘事件对象
+	 * @param item Selected track file
+	 * @param evt Mouse or keyboard event
 	 */
 	onChooseItem(item: TFile, evt: MouseEvent | KeyboardEvent): void {
-		// 立即停止所有封面加载
 		this.shouldStopLoading = true;
 		this.loadingPromises.clear();
-		
-		// 立即设置 chosen 标志，必须在任何异步操作之前
-		// 这用于区分是通过列表选择还是通过取消操作
 		this.chosen = true;
 		
-		// 保存 resolve 函数的引用
 		const resolve = this.resolve;
-		
-		// 如果 resolve 已经被清除（可能是在 onClose 中），说明用户取消了操作
 		if (!resolve) {
 			this.close();
 			return;
 		}
 		
-		// 清除 resolve，防止 onClose 中再次调用
 		this.resolve = null;
-		
-		// 立即 resolve，确保值被传递
 		resolve(item);
 		
-		// 延迟关闭模态框，确保 resolve 先执行
 		window.setTimeout(() => {
 			this.close();
 		}, 0);
 	}
 
 	/**
-	 * 当模态框关闭时调用
-	 * 
-	 * 处理用户取消操作的情况（按 Escape 或关闭对话框）
+	 * Called when modal closes.
 	 */
 	onClose(): void {
-		// 停止所有封面加载
 		this.shouldStopLoading = true;
 		this.loadingPromises.clear();
 		
-		// 断开 Intersection Observer
 		if (this.observer) {
 			this.observer.disconnect();
 			this.observer = null;
@@ -251,16 +196,12 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 		
 		super.onClose();
 		
-		// 延迟检查，给 onChooseItem 一个机会先执行
-		// 这样可以避免重复处理
 		window.setTimeout(() => {
-			// 如果已经通过 onChooseItem 选择了，不再处理
 			if (this.chosen) {
 				this.chosen = false;
 				return;
 			}
 			
-			// 用户取消了（按了 Escape 或关闭了对话框）
 			if (this.resolve) {
 				const resolve = this.resolve;
 				this.resolve = null;
@@ -270,14 +211,13 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 	}
 
 	/**
-	 * 当封面容器可见时加载封面
+	 * Loads cover when cover container is visible.
 	 * 
-	 * @param coverContainer 封面容器元素
-	 * @param file 歌曲文件
-	 * @param track 歌曲元数据
+	 * @param coverContainer Cover container element
+	 * @param file Track file
+	 * @param track Track metadata
 	 */
 	private loadCoverWhenVisible(coverContainer: HTMLElement, file: TFile, track: { title?: string } | undefined): void {
-		// 如果已经有缓存，直接加载
 		if (this.coverCache.has(file.path)) {
 			const coverUrl = this.coverCache.get(file.path);
 			if (coverUrl && coverContainer.parentElement) {
@@ -289,41 +229,33 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 			return;
 		}
 
-		// 创建加载 Promise
 		const loadPromise = (async () => {
 			try {
-				// 检查是否应该停止加载
 				if (this.shouldStopLoading) {
 					return;
 				}
 
 				const coverUrl = await this.getCoverImageUrl(file);
 
-				// 再次检查是否应该停止加载
 				if (this.shouldStopLoading) {
 					return;
 				}
 
-				// 检查容器是否仍然存在（防止在加载过程中元素被移除）
 				if (coverUrl && coverContainer.parentElement) {
-					// 清空占位符
 					coverContainer.empty();
-					// 创建图片元素并设置源
 					const coverImg = coverContainer.createEl("img");
 					coverImg.src = coverUrl;
 					coverImg.alt = track?.title || file.basename;
 				}
 			} catch (err) {
 				if (!this.shouldStopLoading) {
-					console.error(`获取封面失败 (${file.path}):`, err);
+					console.error(`Failed to load cover (${file.path}):`, err);
 				}
 			}
 		})();
 
-		// 将 Promise 添加到跟踪集合中
 		this.loadingPromises.add(loadPromise);
 		
-		// 在 Promise 完成后从集合中移除
 		loadPromise.finally(() => {
 			this.loadingPromises.delete(loadPromise);
 		}).catch(() => {
@@ -332,15 +264,13 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 	}
 
 	/**
-	 * 设置 Intersection Observer 来检测可见元素
+	 * Sets up Intersection Observer for visible cover containers.
 	 */
 	private setupIntersectionObserver(): void {
-		// 如果已经存在 observer，先断开
 		if (this.observer) {
 			this.observer.disconnect();
 		}
 
-		// 创建新的 Intersection Observer
 		this.observer = new IntersectionObserver(
 			(entries) => {
 				entries.forEach((entry) => {
@@ -349,7 +279,6 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 						const trackPath = coverContainer.getAttribute("data-track-path");
 						if (!trackPath) return;
 
-						// 检查是否已经有封面
 						if (this.coverCache.has(trackPath)) {
 							const coverUrl = this.coverCache.get(trackPath);
 							if (coverUrl && coverContainer.parentElement) {
@@ -363,31 +292,26 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 									coverImg.alt = track?.title || file.basename;
 								}
 							}
-							// 停止观察，因为已经加载完成
 							this.observer?.unobserve(coverContainer);
 							return;
 						}
 
-						// 加载封面
 						const file = this.items.find(f => f.path === trackPath);
 						if (file) {
 							const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
 							const track = this.plugin.settings.tracks[trackId];
 							this.loadCoverWhenVisible(coverContainer, file, track);
-							// 停止观察，因为已经开始加载
 							this.observer?.unobserve(coverContainer);
 						}
 					}
 				});
 			},
 			{
-				// 提前 100px 开始加载，提升用户体验
 				rootMargin: '100px',
 				threshold: 0.01,
 			}
 		);
 
-		// 观察所有已存在的封面容器
 		window.setTimeout(() => {
 			if (this.observer && this.modalEl) {
 				const coverContainers = this.modalEl.querySelectorAll('[data-track-path]');
@@ -399,26 +323,21 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 	}
 
 	/**
-	 * 显示播放队列模态框并等待用户选择
+	 * Displays queue modal and awaits user selection.
 	 * 
-	 * @returns 返回 Promise，解析为用户选择的歌曲文件，如果取消则返回 null
+	 * @returns Promise resolving to selected track file, or null if cancelled
 	 */
 	async prompt(): Promise<TFile | null> {
-		// 重置状态
 		this.shouldStopLoading = false;
 		this.loadingPromises.clear();
 		
 		return new Promise((resolve) => {
 			this.resolve = resolve;
 			this.chosen = false;
-			// 打开模态框
 			this.open();
 			
-			// 在模态框打开后设置 Intersection Observer
 			window.setTimeout(() => {
 				this.setupIntersectionObserver();
-				// 使用 window.setTimeout 确保在模态框打开后再设置 resolve
-				// 这样可以避免在打开过程中 onClose 被调用
 				if (!this.resolve) {
 					this.resolve = resolve;
 				}
@@ -426,4 +345,3 @@ export class QueueModal extends FuzzySuggestModal<TFile> {
 		});
 	}
 }
-

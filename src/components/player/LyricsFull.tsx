@@ -1,11 +1,10 @@
 /**
- * 完整歌词列表组件
+ * Full lyrics list component
  * 
- * 显示完整的歌词列表，支持：
- * - 自动滚动到当前播放的歌词行
- * - 高亮显示当前播放的歌词行
- * - 点击歌词行跳转到对应时间点
- * - 卡拉OK 效果（逐字高亮）
+ * Displays the full lyrics list, supporting:
+ * - Auto-scroll to currently playing lyric line
+ * - Highlight currently playing lyric line
+ * - Click lyric line to seek to timestamp
  */
 
 import React from "react";
@@ -14,31 +13,31 @@ import type { LyricLine } from "@/utils/lyrics/parser";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 完整歌词列表组件的属性接口
+ * Props interface for LyricsFull component
  */
 export interface LyricsFullProps {
-	/** 完整的歌词列表 */
+	/** Full list of lyric lines */
 	fullLyrics: LyricLine[];
-	/** 当前激活的歌词行索引（用于滚动定位） */
+	/** Currently active lyric line index (used for scroll positioning) */
 	activeIndex: number;
-	/** 当前播放的歌词索引，用于加大字号高亮 */
+	/** Currently playing lyric line index, used for enlarged font highlight */
 	playingIndex: number;
-	/** 切换显示模式的回调函数 */
+	/** Callback function to toggle display mode */
 	onToggleMode: () => void;
-	/** 点击歌词行时的跳转（不强制开始播放） */
+	/** Seek callback when a lyric line is clicked (does not force playback to start) */
 	onSeek: (time: number) => void;
-	/** 滚动容器的 ref */
+	/** Ref to scroll container */
 	scrollRef: React.RefObject<HTMLDivElement>;
-	/** 歌词行的 ref 数组，用于滚动定位 */
+	/** Array of line refs for scroll targeting */
 	lineRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
 }
 
 /**
- * 完整歌词列表组件
+ * Full lyrics list component
  * 
- * 显示完整歌词列表，支持自动滚动、高亮显示和点击跳转。
+ * Displays full lyrics list, supporting auto-scroll, highlights, and click seeking.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function LyricsFull({
 	fullLyrics,
@@ -49,10 +48,9 @@ export function LyricsFull({
 	scrollRef,
 	lineRefs,
 }: LyricsFullProps) {
-	// 在首/尾各放置一段等于容器可视高度一半的空白，使第一行与最后一行
-	// 都能滚动到容器正中央（否则首行贴顶、尾行贴底，无法居中）
-	// 注意：hooks 必须在提前 return 之前调用，避免歌词从空变非空时
-	// 触发 React "rendered fewer hooks than expected" 错误
+	// Place half-container-height padding at top and bottom so the first and last
+	// lines can be scrolled to the center (otherwise first line clamps to top, last to bottom)
+	// Note: hooks must be called before early return to avoid React "rendered fewer hooks than expected" error
 	const [halfHeight, setHalfHeight] = React.useState(0);
 	React.useLayoutEffect(() => {
 		const container = scrollRef.current;
@@ -64,8 +62,8 @@ export function LyricsFull({
 		return () => ro.disconnect();
 	}, [scrollRef, fullLyrics]);
 
-	// 如果没有歌词，显示提示信息
-	// 空状态时不处理点击，让父级的 onClick 处理（切换到唱片页）
+	// If no lyrics, display placeholder message
+	// Do not intercept clicks on empty state; let parent onClick handle it (switch to disc view)
 	if (!fullLyrics || fullLyrics.length === 0) {
 		return (
 			<div className="lyrics lyrics-empty">
@@ -78,7 +76,7 @@ export function LyricsFull({
 		<div className="lyrics lyrics-scroll" ref={scrollRef}>
 			<div className="lyrics-spacer" style={{ height: halfHeight }} aria-hidden="true" />
 			{fullLyrics.map((line, index) => {
-				// 文本在 LyricsService 入库前已清理（含杂括号），直接展示
+				// Text has been sanitized prior to storage in LyricsService (including bracket noise); display directly
 				const displayText = line.text;
 				const isActive = index === activeIndex;
 				const isPlaying = index === playingIndex;

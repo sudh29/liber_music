@@ -1,9 +1,9 @@
 /**
- * 文件监听服务
+ * Vault file event listener service
  * 
- * 负责监听文件系统变化（删除、创建、重命名、修改），
- * 当检测到音乐文件变化时，自动触发一致性检查或更新元数据。
- * 根据音乐文件夹设置决定监听范围。
+ * Listens for vault filesystem changes (delete, create, rename, modify),
+ * triggering consistency checks or metadata updates when music files change.
+ * Scope is restricted to configured music folder, or full vault if unset.
  */
 
 import { App, TAbstractFile, TFile } from "obsidian";
@@ -15,11 +15,10 @@ import { type AudioEventHandlers, AudioService } from "./AudioService";
 import { LyricsService } from "./LyricsService";
 
 /**
- * 文件监听服务类
+ * Vault file event listener service class
  * 
- * 监听音乐文件的变化，并在检测到变化时触发一致性检查。
- * 监听范围根据音乐文件夹设置决定：如果设置了音乐文件夹，只监听该文件夹内的音乐文件；
- * 如果未设置，则监听整个 vault 中的音乐文件。
+ * Monitors audio file changes and triggers updates.
+ * Restricted to the configured music folder, or the entire vault if unset.
  */
 export class ListenerService {
 	private vaultEventListeners: Array<() => void> = [];
@@ -35,10 +34,10 @@ export class ListenerService {
 	) {}
 
 	/**
-	 * 检查文件是否是音乐文件
+	 * Checks whether file is an audio file.
 	 * 
-	 * @param file - 要检查的文件
-	 * @returns 如果是音乐文件返回 true，否则返回 false
+	 * @param file - File to check
+	 * @returns True if audio file, false otherwise
 	 */
 	private isMusicFile(file: TAbstractFile): boolean {
 		if (!(file instanceof TFile)) {
@@ -49,182 +48,149 @@ export class ListenerService {
 	}
 
 	/**
-	 * 检查文件是否在音乐文件夹中
+	 * Checks whether file resides within the configured music folder.
 	 * 
-	 * @param file - 要检查的文件
-	 * @returns 如果在音乐文件夹中返回 true，否则返回 false
+	 * @param file - File to check
+	 * @returns True if within music folder, false otherwise
 	 */
 	private isInMusicFolder(file: TAbstractFile): boolean {
 		if (!this.plugin.settings.musicFolder) {
-			return true; // 如果没有设置音乐文件夹，则所有文件都算在内
+			return true; // If no folder configured, all files apply
 		}
 		const folder = this.plugin.settings.musicFolder.replace(/\/$/, "");
 		return file.path.startsWith(folder + "/") || file.path === folder;
 	}
 
 	/**
-	 * 检查路径是否在音乐文件夹中
+	 * Checks whether path resides within the configured music folder.
 	 * 
-	 * @param path - 要检查的路径
-	 * @returns 如果在音乐文件夹中返回 true，否则返回 false
+	 * @param path - Path to check
+	 * @returns True if within music folder, false otherwise
 	 */
 	private isPathInMusicFolder(path: string): boolean {
 		if (!this.plugin.settings.musicFolder) {
-			return true; // 如果没有设置音乐文件夹，则所有文件都算在内
+			return true;
 		}
 		const folder = this.plugin.settings.musicFolder.replace(/\/$/, "");
 		return path.startsWith(folder + "/") || path === folder;
 	}
 
 	/**
-	 * 处理文件删除事件
+	 * Handles file delete events.
 	 * 
-	 * 当检测到音乐文件被删除时，立即清理相关数据。
-	 * 
-	 * @param filePath - 被删除的文件路径
+	 * @param filePath - Deleted file path
 	 */
 	private async handleFileDelete(filePath: string): Promise<void> {
 		try {
-			// 立即清理已删除的歌曲数据
 			await this.libraryService.removeTrackFromLibrary(filePath);
 		} catch (error) {
-			console.error(`处理文件删除时出错: ${filePath}`, error);
+			console.error(`Error handling file deletion: ${filePath}`, error);
 		}
 	}
 
 	/**
-	 * 处理文件创建事件
+	 * Handles file create events.
 	 * 
-	 * 当检测到新的音乐文件被创建时，立即提取元数据并添加到库中。
-	 * 
-	 * @param filePath - 新创建的文件路径
+	 * @param filePath - Newly created file path
 	 */
 	private async handleFileCreate(filePath: string): Promise<void> {
 		try {
-			// 提取元数据并添加到库中（updateTrackMetadata 方法会处理新文件的添加）
 			await this.libraryService.updateTrackMetadata(filePath);
-			console.debug(`已自动添加新音乐文件到库: ${filePath}`);
+			console.debug(`Added new audio file to library: ${filePath}`);
 		} catch (error) {
-			console.error(`处理文件创建时出错: ${filePath}`, error);
+			console.error(`Error handling file creation: ${filePath}`, error);
 		}
 	}
 
 	/**
-	 * 处理文件修改事件
+	 * Handles file modify events.
 	 * 
-	 * 当检测到音乐文件被修改时，重新提取元数据并更新库中的信息。
-	 * 如果当前正在播放该文件，会自动更新当前播放信息。
-	 * 
-	 * @param filePath - 被修改的文件路径
+	 * @param filePath - Modified file path
 	 */
 	private async handleFileModify(filePath: string): Promise<void> {
 		try {
-			// 更新文件的元数据
 			await this.libraryService.updateTrackMetadata(filePath);
 		} catch (error) {
-			console.error(`处理文件修改时出错: ${filePath}`, error);
+			console.error(`Error handling file modification: ${filePath}`, error);
 		}
 	}
 
 	/**
-	 * 处理文件重命名事件
+	 * Handles file rename events.
 	 * 
-	 * 当检测到音乐文件被重命名时，更新库中所有相关的路径引用。
+	 * Updates vault path mappings across library data.
 	 * 
-	 * 注意：由于现在使用 Blob URL 播放音频，文件不会被直接占用，
-	 * 所以重命名操作可以正常进行，不会出现 EBUSY 错误。
-	 * 
-	 * @param oldPath - 旧的文件路径
-	 * @param newPath - 新的文件路径
+	 * @param oldPath - Old file path
+	 * @param newPath - New file path
 	 */
 	private async handleFileRename(oldPath: string, newPath: string): Promise<void> {
 		try {
-			// 更新文件重命名后的路径引用
 			await this.libraryService.renameTrackInLibrary(oldPath, newPath);
-			console.debug(`文件重命名完成: ${oldPath} -> ${newPath}`);
+			console.debug(`Completed file rename: ${oldPath} -> ${newPath}`);
 		} catch (error) {
-			// 记录错误，但不抛出异常，避免影响其他监听器
-			console.error(`处理文件重命名时出错: ${oldPath} -> ${newPath}`, error);
+			console.error(`Error handling file rename: ${oldPath} -> ${newPath}`, error);
 		}
 	}
 
 	/**
-	 * 设置文件系统监听器
+	 * Sets up vault filesystem listeners.
 	 * 
-	 * 监听文件变化（删除、创建、重命名、修改），
-	 * 当检测到音乐文件变化时，自动触发一致性检查或立即处理。
-	 * 
-	 * 注意：如果之前已经设置过监听器，会先清理旧的监听器再设置新的。
+	 * Listens for delete, create, rename, and modify events.
+	 * Cleans up any prior listeners first.
 	 */
 	public setup(): void {
-		// 先清理可能存在的旧监听器，避免重复注册
 		this.cleanup();
-		// 监听文件删除事件
-		// 注意：删除事件在文件被删除前触发，此时文件对象仍然可用
+
+		// File delete event
 		const deleteHandler = (file: TAbstractFile) => {
-			// 检查是否是音乐文件且在音乐文件夹中
 			if (file instanceof TFile) {
 				const ext = file.extension?.toLowerCase() || '';
 				const isMusic = isSupportedAudioExtension(ext);
 				if (isMusic && this.isInMusicFolder(file)) {
-					// 立即清理已删除的歌曲数据（已自动处理，不需要再检查）
 					void this.handleFileDelete(file.path);
-					// 删除操作已经自动更新了库，不需要触发一致性检查
 				}
 			}
 		};
 		this.app.vault.on('delete', deleteHandler);
 
-		// 监听文件创建事件
+		// File create event
 		const createHandler = (file: TAbstractFile) => {
-			// 检查是否是音乐文件且在音乐文件夹中
 			if (this.isMusicFile(file) && this.isInMusicFolder(file)) {
-				// 立即提取元数据并添加到库中
 				void this.handleFileCreate(file.path);
 			}
 		};
 		this.app.vault.on('create', createHandler);
 
-		// 监听文件重命名事件（包括文件移动）
-		// 注意：由于现在使用 Blob URL 播放音频，文件不会被直接占用，
-		// 所以重命名操作可以正常进行，不会出现 EBUSY 错误。
-		// Obsidian 中文件移动也会触发 rename 事件
+		// File rename event (including move)
 		const renameHandler = async (file: TAbstractFile, oldPath: string) => {
-			// 检查旧路径和新路径是否是音乐文件
 			const wasMusicFile = oldPath && SUPPORTED_AUDIO_FORMATS.some(ext => 
 				oldPath.toLowerCase().endsWith(ext)
 			);
 			const isMusicFile = this.isMusicFile(file);
 			
-			// 如果都不是音乐文件，直接返回
 			if (!wasMusicFile && !isMusicFile) {
 				return;
 			}
 
-			// 检查旧路径和新路径是否在音乐文件夹中
 			const wasInMusicFolder = this.isPathInMusicFolder(oldPath);
 			const isInMusicFolder = this.isInMusicFolder(file);
 
-			// 情况1：文件从音乐文件夹移出
+			// Case 1: File moved out of music folder
 			if (wasMusicFile && wasInMusicFolder && !isInMusicFolder) {
-				console.debug(`检测到音乐文件从音乐文件夹移出: ${oldPath} -> ${file.path}`);
-				// 从库中删除该文件
+				console.debug(`Audio file moved out of music folder: ${oldPath} -> ${file.path}`);
 				await this.handleFileDelete(oldPath);
 				return;
 			}
 
-			// 情况2：文件移入音乐文件夹
+			// Case 2: File moved into music folder
 			if (isMusicFile && !wasInMusicFolder && isInMusicFolder) {
-				console.debug(`检测到音乐文件移入音乐文件夹: ${oldPath} -> ${file.path}`);
-				// 添加到库中
+				console.debug(`Audio file moved into music folder: ${oldPath} -> ${file.path}`);
 				await this.handleFileCreate(file.path);
 				return;
 			}
 
-			// 情况3：文件在音乐文件夹内重命名或移动（都在音乐文件夹内）
+			// Case 3: File renamed or moved within music folder
 			if ((wasMusicFile || isMusicFile) && wasInMusicFolder && isInMusicFolder) {
-				// 如果文件正在播放，需要更新播放状态和重新创建音频元素
-				// 由于使用 Blob URL，文件不会被占用，所以重命名应该可以正常进行
 				let wasPlaying = false;
 				let savedCurrentTime = 0;
 				let savedVolume = 1.0;
@@ -233,9 +199,8 @@ export class ListenerService {
 				if (this.stateService && this.audioService) {
 					const state = this.stateService.getState();
 					if (state.currentTrack && state.currentTrack.path === oldPath) {
-						console.debug(`检测到正在播放的文件被重命名: ${oldPath} -> ${file.path}`);
+						console.debug(`Active playing track renamed: ${oldPath} -> ${file.path}`);
 						
-						// 在清理之前保存播放状态
 						wasPlaying = state.isPlaying;
 						const audioElement = this.audioService.getAudioElement();
 						if (audioElement) {
@@ -247,27 +212,23 @@ export class ListenerService {
 							savedPlaybackRate = state.playbackRate ?? 1.0;
 						}
 						
-						// 暂停播放（如果正在播放）
 						if (wasPlaying) {
 							this.audioService.pause();
 							this.stateService.setIsPlaying(false);
 						}
 						
-						// 清理旧的音频元素（释放 Blob URL）
 						await this.audioService.cleanup();
 					}
 				}
 				
-				// 更新文件重命名后的路径引用
 				await this.handleFileRename(oldPath, file.path);
 				
-				// 如果文件正在播放，重新创建音频元素使用新路径
+				// If track was playing, recreate audio element with new path
 				if (wasPlaying && this.stateService && this.audioService && this.lyricsService && this.audioEventHandlers && file instanceof TFile) {
 					const state = this.stateService.getState();
 					if (state.currentTrack && state.currentTrack.path === file.path) {
-						console.debug(`重新创建音频元素使用新路径: ${file.path}`);
+						console.debug(`Recreating audio element with new path: ${file.path}`);
 						
-						// 重新创建音频元素使用新路径
 						await this.audioService.createAudioElement(
 							file,
 							savedVolume,
@@ -275,46 +236,37 @@ export class ListenerService {
 							this.audioEventHandlers
 						);
 						
-						// 恢复播放位置
 						const newAudioElement = this.audioService.getAudioElement();
 						if (newAudioElement && savedCurrentTime > 0) {
 							newAudioElement.currentTime = savedCurrentTime;
 						}
 						
-						// 重新加载歌词
 						const { lyrics, extendedLyrics } = this.lyricsService.loadLyrics(file.path);
 						this.stateService.setLyrics(lyrics, extendedLyrics);
 						
-						// 恢复播放
 						try {
 							await this.audioService.play();
 							this.stateService.setIsPlaying(true);
-							console.debug(`已恢复播放，使用新路径: ${file.path}`);
+							console.debug(`Resumed playback with new path: ${file.path}`);
 						} catch (playError) {
-							console.error(`恢复播放时出错: ${file.path}`, playError);
+							console.error(`Error resuming playback: ${file.path}`, playError);
 						}
 					}
 				}
 				return;
 			}
-
-			// 情况4：文件从非音乐文件夹移动到非音乐文件夹（都不在音乐文件夹内）
-			// 这种情况不需要处理，因为文件不在音乐文件夹中
 		};
 		this.app.vault.on('rename', renameHandler);
 
-		// 监听文件修改事件
+		// File modify event
 		const modifyHandler = (file: TAbstractFile) => {
-			// 检查是否是音乐文件且在音乐文件夹中
 			if (this.isMusicFile(file) && this.isInMusicFolder(file)) {
-				// 立即更新文件的元数据
-				// updateTrackMetadata 方法会检查当前是否正在播放该文件，如果是则更新播放信息
 				void this.handleFileModify(file.path);
 			}
 		};
 		this.app.vault.on('modify', modifyHandler);
 
-		// 保存监听器移除函数
+		// Store remover callbacks
 		this.vaultEventListeners.push(
 			() => this.app.vault.off('delete', deleteHandler),
 			() => this.app.vault.off('create', createHandler),
@@ -324,14 +276,10 @@ export class ListenerService {
 	}
 
 	/**
-	 * 清理文件系统监听器
-	 * 
-	 * 移除所有已注册的监听器。
+	 * Cleans up vault filesystem listeners.
 	 */
 	public cleanup(): void {
-		// 移除所有监听器
 		this.vaultEventListeners.forEach(remove => remove());
 		this.vaultEventListeners = [];
 	}
 }
-

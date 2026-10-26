@@ -1,6 +1,7 @@
 /**
- * 根据本行内所有时间戳，计算每个字/词高亮结束时间：
- * 取严格大于该字「开始时间」的下一个时间戳（即标签流中的后一时间戳），不用下一行时间。
+ * Resolves the highlight end time for each character/word based on all timestamps in the line:
+ * Picks the next timestamp strictly greater than the character's start time from the tag stream,
+ * without using the next line's time.
  */
 export function resolveCharEndTimes(
 	chars: ReadonlyArray<{ time: number }>,
@@ -29,7 +30,7 @@ export function resolveCharEndTimes(
 }
 
 /**
- * 按真实时间区间 [t0, t1] 线性映射的填充比例（0～1）。
+ * Linear fill progress (0 - 1) mapped across real time interval [t0, t1].
  */
 export function linearFillProgress(
 	currentTime: number,

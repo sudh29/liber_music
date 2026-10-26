@@ -1,34 +1,34 @@
 /**
- * 收藏管理服务
+ * Favorite management service
  * 
- * 负责管理收藏相关的业务逻辑，包括：
- * - 切换收藏状态
- * - 检查是否已收藏
+ * Manages favorite-related business logic, including:
+ * - Toggling favorite status
+ * - Checking if a track is favorited
  * 
- * 收藏数据存储在插件的设置中，通过 favorites 数组保存收藏的曲目 ID。
+ * Favorite data is persisted in plugin settings via the favorites array storing track IDs.
  */
 
 import MusicPlayerPlugin from "@/main";
 
 /**
- * 收藏管理服务类
+ * Favorite management service class
  * 
- * 提供收藏功能的增删查操作，所有操作都会持久化到插件设置中。
- * 使用 ID 系统，所有操作都基于曲目 ID。
+ * Provides add/remove/check operations for track favorites persisted to plugin settings.
+ * Operations are based on unique track IDs.
  */
 export class FavoriteService {
 	/**
-	 * 创建收藏管理服务实例
+	 * Creates a favorite management service instance.
 	 * 
-	 * @param plugin - 插件实例，用于访问和保存设置
+	 * @param plugin - Plugin instance for accessing and persisting settings
 	 */
 	constructor(private plugin: MusicPlayerPlugin) {}
 
 	/**
-	 * 检查歌曲是否已收藏
+	 * Checks whether a track is favorited.
 	 * 
-	 * @param trackId - 曲目 ID
-	 * @returns 如果已收藏返回 true，否则返回 false
+	 * @param trackId - Track ID
+	 * @returns True if favorited, false otherwise
 	 */
 	isFavorite(trackId: string): boolean {
 		const favoriteIds = new Set(this.plugin.settings.favorites || []);
@@ -36,19 +36,19 @@ export class FavoriteService {
 	}
 
 	/**
-	 * 切换收藏状态
+	 * Toggles track favorite status.
 	 * 
-	 * 如果歌曲已收藏，则取消收藏；如果未收藏，则添加到收藏。
-	 * 操作后会保存设置到持久化存储。
+	 * If favorited, unfavorites; if not favorited, marks as favorite.
+	 * Persists settings to storage immediately.
 	 * 
-	 * @param trackId - 曲目 ID
-	 * @returns 返回新的收藏状态（true 表示已收藏，false 表示未收藏）
+	 * @param trackId - Track ID
+	 * @returns New favorite status (true if favorited, false otherwise)
 	 */
 	async toggleFavorite(trackId: string): Promise<boolean> {
 		const ids = new Set(this.plugin.settings.favorites || []);
 		const wasFavorite = ids.has(trackId);
 
-		// 切换收藏状态
+		// Toggle status
 		if (wasFavorite) {
 			ids.delete(trackId);
 		} else {
@@ -57,16 +57,15 @@ export class FavoriteService {
 
 		this.plugin.settings.favorites = Array.from(ids);
 		await this.plugin.saveSettings();
-		return !wasFavorite; // 返回新的收藏状态
+		return !wasFavorite;
 	}
 
 	/**
-	 * 获取所有收藏的曲目 ID
+	 * Retrieves all favorited track IDs.
 	 * 
-	 * @returns 收藏的曲目 ID 数组
+	 * @returns Array of favorited track IDs
 	 */
 	getFavoriteIds(): string[] {
 		return this.plugin.settings.favorites || [];
 	}
 }
-

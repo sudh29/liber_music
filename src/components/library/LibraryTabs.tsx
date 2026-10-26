@@ -1,5 +1,5 @@
 /**
- * 音乐库顶部标签栏（role="tablist" / role="tab"）。
+ * Music library top tab bar (role="tablist" / role="tab").
  */
 
 import React from "react";
@@ -12,7 +12,7 @@ export type TabId = "all" | "favorites" | "playlists" | "artists" | "albums";
 export interface LibraryTabsProps {
 	activeTab: TabId;
 	onChangeTab: (tabId: TabId) => void;
-	/** 与 currentList 一致且正在播放时，在对应标签上显示指示器 */
+	/** Display playing indicator on corresponding tab when matching currentList and playing */
 	currentList?: string;
 	activePath?: string | null;
 }

@@ -1,10 +1,10 @@
 /**
- * 播放进度条组件样式文件
+ * Playback progress bar component styles
  *
- * 包含进度条布局、底条与已播放填充、时间文字样式。
+ * Contains progress bar layout, track base and played fill, and time text styles.
  */
 
-/* ========== 进度条样式 ========== */
+/* ========== Progress Bar Styles ========== */
 .music-player .play-progress-container {
 	display: flex;
 	align-items: center;
@@ -19,7 +19,7 @@
 	height: 2px;
 	padding: 4px 0;
 	box-sizing: content-box;
-	/* 背景只画在 content-box（中间 2px），padding 带透明「空气层」可点但不可见 */
+	/* Background drawn only on content-box (center 2px); padding provides invisible touch target */
 	background: var(--background-modifier-border);
 	background-clip: content-box;
 	background-origin: content-box;
@@ -48,7 +48,7 @@
 	border-radius: 2px;
 	width: 0%;
 	min-width: 0;
-	/* 非拖动时略有过渡；拖动时由 .is-dragging 关闭过渡以立即跟随 */
+	/* Smooth transition during regular playback; disabled during dragging via .is-dragging to follow pointer */
 	transition: width 0.04s linear;
 	position: relative;
 }
@@ -57,7 +57,7 @@
 	transition: none;
 }
 
-/* 当前播放位置：小圆点（略大于条高，便于辨认） */
+/* Current playback position: small indicator dot */
 .music-player .play-progress-fill::after {
 	content: "";
 	position: absolute;

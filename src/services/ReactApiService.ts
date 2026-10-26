@@ -1,13 +1,13 @@
 /**
- * React API 服务
+ * React API service
  * 
- * 负责封装 React 组件需要的统一 API 接口，提供：
- * - 播放控制（通过路径播放、播放分类）
- * - 收藏管理（切换收藏状态）
- * - 播放列表管理（添加、移除、创建、编辑、删除）
- * - 音频控制（音量、播放速率）
+ * Provides unified API interfaces consumed by React components:
+ * - Playback control (play by path, play category)
+ * - Favorite management (toggle favorite status)
+ * - Playlist management (add, remove, create, edit, delete)
+ * - Audio controls (volume, playback rate)
  * 
- * 本服务将复杂的业务逻辑封装为简单的 API，供 React 组件通过 hooks 调用。
+ * Encapsulates complex service interactions into simple hooks-ready APIs.
  */
 
 import { TFile } from "obsidian";
@@ -22,34 +22,34 @@ import { PlaylistService } from "./PlaylistService";
 import { getOrCreateTrackId } from "@/utils/track/id";
 
 /**
- * React API 服务回调接口
+ * React API service callbacks interface
  */
 export interface ReactApiServiceCallbacks {
-	/** 库更新时的回调函数 */
+	/** Callback function on library updates */
 	onLibraryUpdated: () => Promise<void>;
-	/** 直接选择歌曲时的回调函数（用于清除 lastAction） */
+	/** Callback when selecting song directly (clears lastAction) */
 	onDirectPlay?: () => void;
-	/** 显示通知的回调函数 */
+	/** Callback to display notice */
 	onShowNotice?: (message: string, timeout?: number) => void;
 }
 
 /**
- * React API 服务类
+ * React API service class
  * 
- * 封装所有 React 组件需要的 API 方法，统一管理状态更新和库更新事件
+ * Encapsulates API methods needed by React components with unified state and library updates.
  */
 export class ReactApiService {
 	/**
-	 * 创建 React API 服务实例
+	 * Creates a React API service instance.
 	 * 
-	 * @param plugin - 插件实例
-	 * @param stateService - 状态管理服务
-	 * @param listService - 列表服务
-	 * @param playbackService - 播放服务
-	 * @param audioService - 音频服务
-	 * @param favoriteService - 收藏服务
-	 * @param playlistService - 播放列表服务
-	 * @param callbacks - 回调函数集合
+	 * @param plugin - Plugin instance
+	 * @param stateService - State management service
+	 * @param listService - List service
+	 * @param playbackService - Playback service
+	 * @param audioService - Audio service
+	 * @param favoriteService - Favorite service
+	 * @param playlistService - Playlist service
+	 * @param callbacks - Callbacks collection
 	 */
 	constructor(
 		private plugin: MusicPlayerPlugin,
@@ -63,17 +63,14 @@ export class ReactApiService {
 	) {}
 
 	/**
-	 * 获取 React API 接口对象
+	 * Returns unified React API interface object.
 	 * 
-	 * 返回一个包含所有 React 组件需要的方法的对象。
-	 * 每次调用都会返回一个新的对象，确保方法内部能获取到最新的状态。
-	 * 
-	 * @returns React API 接口对象
+	 * @returns React API interface object
 	 */
 	getApi(): ReactApi {
 		return {
 			playByPath: async (path: string, sectionId?: string) => {
-				// 清除 lastAction，直接更新封面，不显示动画
+				// Clear lastAction to update cover directly without sliding animation
 				if (this.callbacks.onDirectPlay) {
 					this.callbacks.onDirectPlay();
 				}
@@ -91,19 +88,15 @@ export class ReactApiService {
 						this.stateService.setCurrentListId(listId);
 					}
 				}
-				// 说明：
-				// - 对于 React 入口（库页面点击）来说，我们希望“立即开始播放”，而不是等封面预加载+动画完成或同步库刷新
-				// - 因此这里显式传入 delayPlay=false 且 skipLibraryUpdate=true，跳过动画等待并异步刷新库
-				// - 其它非 React 入口（例如搜索模态框、队列模态框）仍使用默认的 delayPlay=true 行为
+				// Pass delayPlay=false and skipLibraryUpdate=true for immediate response in React clicks
 				await this.playbackService.playByPath(path, false, true);
 			},
 			playCategory: async (categoryType: string, categoryName: string, tracks: ReactTrackInfo[]) => {
-				// 清除 lastAction，直接更新封面，不显示动画
 				if (this.callbacks.onDirectPlay) {
 					this.callbacks.onDirectPlay();
 				}
 				const state = this.stateService.getState();
-				// 将 ReactTrackInfo[] 转换为 TFile[]，根据 path 查找对应的 TFile
+				// Convert ReactTrackInfo[] to TFile[] by looking up path in trackList
 				const toFiles: TFile[] = (tracks || [])
 					.map((t: ReactTrackInfo) => {
 						if (t?.path) {
@@ -139,7 +132,7 @@ export class ReactApiService {
 				const audioElement = this.audioService.getAudioElement();
 				if (audioElement) audioElement.volume = clampedVolume;
 				this.stateService.setVolume(clampedVolume);
-				// 持久化到 data.json
+				// Persist to data.json
 				this.plugin.settings.volume = clampedVolume;
 				await this.plugin.saveData(this.plugin.settings);
 			},
@@ -153,7 +146,7 @@ export class ReactApiService {
 				const audioElement = this.audioService.getAudioElement();
 				if (audioElement) audioElement.playbackRate = clampedRate;
 				this.stateService.setPlaybackRate(clampedRate);
-				// 持久化到 data.json
+				// Persist to data.json
 				this.plugin.settings.playbackRate = clampedRate;
 				await this.plugin.saveData(this.plugin.settings);
 			},
@@ -166,9 +159,9 @@ export class ReactApiService {
 	}
 
 	/**
-	 * 更新当前播放列表的 section ID
+	 * Updates section ID for playlist context.
 	 * 
-	 * @param sectionId - 可选的 section ID，如果提供则更新状态
+	 * @param sectionId - Optional section ID
 	 */
 	private updateSectionId(sectionId?: string) {
 		if (sectionId !== undefined) {
@@ -178,27 +171,23 @@ export class ReactApiService {
 	}
 
 	/**
-	 * 通过路径切换收藏状态
+	 * Toggles track favorite status by path.
 	 * 
-	 * @param path - 音乐文件路径
+	 * @param path - Track path
 	 */
 	private async toggleFavoriteByPath(path: string) {
 		const state = this.stateService.getState();
 		const file = state.trackList.find((f) => f.path === path);
 		if (!file) return;
-		// 从路径获取 ID，然后使用 ID 操作
 		const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
 		await this.favoriteService.toggleFavorite(trackId);
 		await this.callbacks.onLibraryUpdated();
 	}
 
 	/**
-	 * 执行播放列表操作并刷新库状态
+	 * Executes playlist action and refreshes library state.
 	 * 
-	 * 这是一个通用的辅助方法，用于执行播放列表相关的操作（添加、移除、编辑、删除），
-	 * 并在操作成功后更新状态和触发库更新事件。
-	 * 
-	 * @param action - 返回 Promise<boolean> 的操作函数，true 表示成功
+	 * @param action - Action function returning Promise<boolean>
 	 */
 	private async updatePlaylistAndRefresh(action: () => Promise<boolean>) {
 		const success = await action();
@@ -209,35 +198,31 @@ export class ReactApiService {
 	}
 
 	/**
-	 * 通过路径将歌曲添加到播放列表
+	 * Adds track to playlist by path.
 	 * 
-	 * @param path - 音乐文件路径
+	 * @param path - Track path
 	 */
 	private async addToPlaylistByPath(path: string) {
 		const state = this.stateService.getState();
 		const file = state.trackList.find((f) => f.path === path);
 		if (!file) return;
-		// 从路径获取 ID，然后使用 ID 操作
 		const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
 		await this.updatePlaylistAndRefresh(() => this.playlistService.addToPlaylist(trackId));
 	}
 
 	/**
-	 * 从播放列表中移除歌曲
+	 * Removes track from playlist by path.
 	 * 
-	 * @param path - 音乐文件路径
-	 * @param playlistName - 播放列表名称
+	 * @param path - Track path
+	 * @param playlistName - Playlist name
 	 */
 	private async removeFromPlaylistByPath(path: string, playlistName: string) {
-		// 从路径获取 ID，然后使用 ID 操作
 		const trackId = getOrCreateTrackId(path, this.plugin.settings);
 		await this.updatePlaylistAndRefresh(() => this.playlistService.removeFromPlaylist(trackId, playlistName));
 	}
 
 	/**
-	 * 创建新的播放列表
-	 * 
-	 * 如果创建成功，会更新状态并触发库更新事件。
+	 * Creates new playlist.
 	 */
 	private async createPlaylist() {
 		const playlistName = await this.playlistService.createPlaylist();
@@ -248,21 +233,20 @@ export class ReactApiService {
 	}
 
 	/**
-	 * 编辑播放列表名称
+	 * Edits playlist name.
 	 * 
-	 * @param oldName - 旧的播放列表名称
+	 * @param oldName - Old playlist name
 	 */
 	private async editPlaylistName(oldName: string) {
 		await this.updatePlaylistAndRefresh(() => this.playlistService.editPlaylistName(oldName));
 	}
 
 	/**
-	 * 删除播放列表
+	 * Deletes playlist.
 	 * 
-	 * @param playlistName - 要删除的播放列表名称
+	 * @param playlistName - Playlist name to delete
 	 */
 	private async deletePlaylist(playlistName: string) {
 		await this.updatePlaylistAndRefresh(() => this.playlistService.deletePlaylist(playlistName));
 	}
 }
-

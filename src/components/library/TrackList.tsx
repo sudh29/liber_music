@@ -1,11 +1,11 @@
 /**
- * 歌曲列表组件
+ * Track list component
  * 
- * 显示歌曲列表，支持：
- * - 封面图片显示（懒加载，只加载可见区域的封面）
- * - 歌曲信息显示（标题、艺术家、专辑）
- * - 当前播放歌曲高亮
- * - 歌曲操作（播放、收藏、添加到歌单、从歌单移除）
+ * Displays list of tracks, supporting:
+ * - Cover image display (lazy loaded, only visible tracks)
+ * - Track information display (title, artist, album)
+ * - Active track highlight
+ * - Track actions (play, favorite, add to playlist, remove from playlist)
  */
 
 import React from "react";
@@ -18,43 +18,43 @@ import "./LibraryPage.css";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * TrackList 组件的属性接口
+ * Props interface for TrackList component
  */
 export interface TrackListProps {
-	/** 要显示的歌曲列表 */
+	/** Track list to display */
 	tracks: ReactTrackInfo[];
-	/** 当前正在播放的歌曲路径 */
+	/** Currently playing track path */
 	activePath: string | null;
-	/** 列表的 section ID（用于匹配 currentList） */
+	/** List section ID (used to match currentList) */
 	sectionId: string;
-	/** 当前播放列表标识 */
+	/** Current playing list identifier */
 	currentList?: string;
-	/** 播放歌曲的回调函数 */
+	/** Callback function to play track */
 	onPlay: (path: string, sectionId?: string) => void;
-	/** 双击歌曲的回调函数（播放并切换到唱片页面） */
+	/** Callback function on double click (play and switch to disc view) */
 	onDoubleClick?: (path: string, sectionId?: string) => void;
-	/** 切换收藏状态的回调函数 */
+	/** Callback function to toggle favorite status */
 	onToggleFavorite: (path: string, sectionId?: string) => void;
-	/** 添加到歌单的回调函数 */
+	/** Callback function to add track to playlist */
 	onAddToPlaylist: (path: string, sectionId?: string) => void;
-	/** 从歌单移除的回调函数（可选） */
+	/** Callback function to remove track from playlist (optional) */
 	onRemoveFromPlaylist?: (path: string, playlistName: string) => void;
-	/** 歌单名称（用于从歌单移除功能） */
+	/** Playlist name (used for removing from playlist) */
 	playlistName?: string;
-	/** 音乐库快照数据 */
+	/** Music library snapshot data */
 	library: ReactLibrarySnapshot;
-	/** 异步获取歌曲封面的函数（优先文件夹中的 cover 文件，其次内嵌封面） */
+	/** Async function to fetch track cover (folder cover preferred, embedded cover secondary) */
 	getTrackCover?: (file: TFile) => Promise<string | undefined>;
-	/** Obsidian App 实例（用于从路径获取文件） */
+	/** Obsidian App instance */
 	app?: App;
 }
 
 /**
- * 歌曲列表组件
+ * Track list component
  * 
- * 显示歌曲列表，支持封面懒加载、播放控制、收藏和歌单操作。
+ * Displays track list, supporting lazy cover loading, playback, favorites, and playlists.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function TrackList({
 	tracks,
@@ -71,33 +71,32 @@ export function TrackList({
 	getTrackCover,
 	app,
 }: TrackListProps) {
-	// 使用封面懒加载 Hook
+	// Use lazy track covers hook
 	const { embeddedCovers, trackRefs, stopLoading } = useLazyTrackCovers({
 		tracks,
 		app,
 		getTrackCover,
 	});
 
-	// 单击/双击冲突处理：
-	// React 的双击会先触发两次 click，再触发 dblclick。
-	// 如果 click 里直接播放，会导致一次双击触发多次"切歌"，进而在异步播放链路下产生并发播放。
-	// 方案：单击延迟触发；双击时取消尚未执行的单击播放。
+	// Handle single-click vs double-click conflict:
+	// React double click fires two click events followed by dblclick.
+	// Delay single click to allow double click to cancel pending single play.
 	const clickTimerRef = React.useRef<number | null>(null);
 	const lastClickPathRef = React.useRef<string | null>(null);
 
-	// 处理双击：停止封面加载并交给上层执行"播放并切换页面"
+	// Handle double click: cancel pending single play, stop cover loading, and delegate to onDoubleClick
 	const handleDoubleClick = React.useCallback(
 		(e: React.MouseEvent<HTMLDivElement>, path: string) => {
 			e.stopPropagation();
 
-			// 取消尚未触发的单击播放（避免双击导致重复播放）
+			// Cancel pending single-click play
 			if (clickTimerRef.current) {
 				window.clearTimeout(clickTimerRef.current);
 				clickTimerRef.current = null;
 				lastClickPathRef.current = null;
 			}
 
-			// 双击时会切换页面，库列表可以停止继续加载封面
+			// Stop cover loading on double click as view will navigate away
 			stopLoading();
 
 			if (onDoubleClick) {
@@ -107,21 +106,21 @@ export function TrackList({
 		[onDoubleClick, sectionId, stopLoading]
 	);
 
-	// 处理单击：仅播放当前歌曲，不切换页面
+	// Handle single click: play current track without switching page
 	const handleClick = React.useCallback(
 		(e: React.MouseEvent<HTMLDivElement>, path: string) => {
 			e.stopPropagation();
 
-			// 如果存在上一次的定时器，先清理（避免快速点击不同歌曲导致多次触发）
+			// Clear existing timer if clicked rapidly
 			if (clickTimerRef.current) {
 				window.clearTimeout(clickTimerRef.current);
 			}
 
 			lastClickPathRef.current = path;
 
-			// 这里 220ms 是经验值：既能让双击可靠取消，又不至于让单击感觉明显迟滞
+			// 220ms delay allows double-click cancellation without noticeable lag
 			clickTimerRef.current = window.setTimeout(() => {
-				// 确保仍是同一个待播放目标
+				// Ensure target is still identical
 				if (lastClickPathRef.current === path) {
 					onPlay(path, sectionId);
 				}
@@ -132,7 +131,7 @@ export function TrackList({
 		[onPlay, sectionId]
 	);
 
-	// 组件卸载时清理定时器，避免泄漏
+	// Clean up timer on unmount
 	React.useEffect(() => {
 		return () => {
 			if (clickTimerRef.current) {
@@ -146,13 +145,13 @@ export function TrackList({
 		return <div className="empty">{t("library.empty.noTracks")}</div>;
 	}
 
-	// 判断当前 sectionId 是否匹配 currentList
-	// 只有当匹配时，才高亮当前歌曲
+	// Check if current sectionId matches currentList
+	// Only highlight active track when sectionId matches
 	const isSectionMatched = React.useMemo(() => {
 		if (!currentList || !activePath) return false;
 		
-		// 处理 currentList 格式："all", "favorites", "playlist:名称", "artist:名称", "album:名称"
-		// 处理 sectionId 格式："all", "favorites", "playlist-名称", "artist-名称", "album-名称"
+		// Handles formats: "all", "favorites", "playlist:name", "artist:name", "album:name"
+		// vs "all", "favorites", "playlist-name", "artist-name", "album-name"
 		
 		if (currentList === "all" && sectionId === "all") {
 			return true;
@@ -162,7 +161,6 @@ export function TrackList({
 			return true;
 		}
 		
-		// 处理分类列表：playlist、artist、album
 		if (currentList.startsWith("playlist:")) {
 			const listName = currentList.replace("playlist:", "");
 			return sectionId === `playlist-${listName}`;
@@ -181,24 +179,24 @@ export function TrackList({
 		return false;
 	}, [currentList, sectionId, activePath]);
 
-	// 创建收藏路径集合，用于快速判断
+	// Create favorite path set for O(1) lookup
 	const favoritesSet = new Set(library.favorites.map((f: ReactTrackInfo) => f.path));
 
 	return (
 		<div className="track-list">
 			{tracks.map((track) => {
 				const isFavorite = favoritesSet.has(track.path);
-				// 只有当 sectionId 匹配 currentList 时，才高亮当前歌曲
+				// Only highlight track when section matches currentList
 				const isActive = isSectionMatched && activePath === track.path;
-				// 获取该 track 的 ref（应该在 useEffect 中已经初始化）
+				// Retrieve ref for track
 				let trackRef = trackRefs.get(track.path);
 				if (!trackRef) {
-					// 如果 ref 不存在，创建一个（这种情况理论上不应该发生）
+					// Fallback if ref does not exist
 					trackRef = React.createRef<HTMLDivElement>();
 					trackRefs.set(track.path, trackRef);
 				}
 				
-				// 获取封面 URL（优先使用已有的 coverUrl，其次使用加载的封面）
+				// Get cover URL (explicit coverUrl takes precedence over loaded cover)
 				const coverUrl = track.coverUrl || embeddedCovers.get(track.path);
 				
 				return (

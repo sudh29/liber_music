@@ -1,8 +1,7 @@
 /**
- * 歌词索引计算 Hook
+ * Lyrics index calculation hook
  * 
- * 根据当前播放时间计算"正在播放"的歌词行索引
- * 使用统一的工具函数进行计算，避免重复逻辑
+ * Computes active playing lyric line index based on current playback time.
  */
 
 import * as React from "react";
@@ -11,26 +10,25 @@ import type { ExtendedLyricLine } from "@/utils/lyrics/extendedParser";
 import { calculateLyricsIndex } from "@/utils/lyrics/indexCalculator";
 
 export interface UseLyricsIndexOptions {
-	/** 普通歌词列表 */
+	/** Standard lyrics list */
 	fullLyrics: LyricLine[];
-	/** 逐字歌词列表 */
+	/** Word-by-word lyrics list */
 	fullExtendedLyrics: ExtendedLyricLine[];
-	/** 当前播放时间（秒） */
+	/** Current playback time in seconds */
 	currentTime: number;
 }
 
 /**
- * 歌词索引计算 Hook
+ * Lyrics index calculation hook
  * 
- * @param options 歌词数据和时间
- * @returns 当前播放的歌词行索引（-1 表示没有匹配的歌词）
+ * @param options Lyrics data and playback time
+ * @returns Active playing lyric line index (-1 if no matching lyric)
  */
 export function useLyricsIndex({
 	fullLyrics,
 	fullExtendedLyrics,
 	currentTime,
 }: UseLyricsIndexOptions): number {
-	// 使用统一的工具函数计算歌词索引
 	const playingIndex = React.useMemo(() => {
 		return calculateLyricsIndex({
 			fullLyrics,
@@ -41,4 +39,3 @@ export function useLyricsIndex({
 
 	return playingIndex;
 }
-

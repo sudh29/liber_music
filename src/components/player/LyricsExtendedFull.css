@@ -1,17 +1,17 @@
 /**
- * 逐字时间歌词完整列表组件样式文件
+ * Word-by-word synchronized lyrics full view component styles
  * 
- * 包含逐字时间歌词完整列表的所有样式，包括：
- * - 歌词列表容器和滚动样式
- * - 歌词行样式
- * - 当前播放行高亮样式
- * - 播放过的歌词行样式
- * - 逐字字符样式
- * - 卡拉OK 逐字高亮效果
- * - 空状态样式
+ * Contains styles for the full word-by-word lyrics list, including:
+ * - Lyrics list container and scrolling styles
+ * - Lyric line styles
+ * - Active playing line highlight styles
+ * - Played lyric lines styles
+ * - Word/char unit styles
+ * - Karaoke fill highlight effects
+ * - Empty state styles
  */
 
-/* ========== 逐字歌词列表容器 ========== */
+/* ========== Extended Lyrics List Container ========== */
 .music-player .lyrics-extended {
 	width: 100%;
 	height: 100%;
@@ -27,7 +27,7 @@
 	scroll-behavior: smooth;
 	width: 100%;
 	height: 100%;
-	/* 与普通歌词视图（LyricsFull.css）一致：隐藏滚动条 */
+	/* Consistent with standard lyrics view (LyricsFull.css): hide scrollbar */
 	scrollbar-width: none;
 	-ms-overflow-style: none;
 }
@@ -91,7 +91,7 @@
 	min-width: 0.35em;
 }
 
-/* 背景层 */
+/* Background layer */
 .music-player .lyrics-extended-char-bg {
 	display: inline-block;
 	position: relative;
@@ -101,14 +101,14 @@
 	font-weight: 600;
 }
 
-/* 播放过的歌词和当前行的背景文字颜色 */
+/* Played lyrics and current line background text color */
 .music-player .lyrics-extended-line.is-played .lyrics-extended-char-bg,
 .music-player .lyrics-extended-line.is-playing .lyrics-extended-char-bg {
 	color: var(--interactive-accent);
 	opacity: 0.45;
 }
 
-/* 从左向右揭示（裁剪宽度，避免 scaleX 拉伸） */
+/* Reveal from left to right (clip width to avoid scaleX distortion) */
 .music-player .lyrics-extended-char-fill-clip {
 	position: absolute;
 	left: 0;

@@ -1,16 +1,16 @@
 /**
- * 曲目操作组件样式文件
+ * Track actions component styles
  * 
- * 包含曲目操作按钮的所有样式，包括：
- * - 操作按钮容器布局
- * - 添加到歌单按钮样式
- * - 收藏按钮样式
- * - 音量控制下拉菜单样式
- * - 播放速度控制下拉菜单样式
- * - 按钮悬停和激活状态
+ * Contains styles for track action buttons including:
+ * - Action button container layout
+ * - Add to playlist button
+ * - Favorite toggle button
+ * - Volume control popup menu
+ * - Playback rate popup menu
+ * - Hover and active states
  */
 
-/* ========== 操作按钮容器 ========== */
+/* ========== Action Button Container ========== */
 .music-player .track-actions-container {
 	display: flex;
 	justify-content: space-between;
@@ -77,7 +77,7 @@
 	fill: currentColor;
 }
 
-/* 心形按钮在收藏状态时使用主题色填充 */
+/* Fill heart button with accent color when active/favorited */
 .music-player button.track-action-btn.clickable-icon.active svg[data-icon="heart"] {
 	fill: var(--interactive-accent);
 }
@@ -120,12 +120,12 @@
 
 .music-player .volume-slider-track {
 	position: relative;
-	/* 视觉条 6px 宽，但用水平 padding 做透明「空气层」扩大可点/可拖区域（参考进度条） */
+	/* Visual bar is 6px wide, with horizontal padding expanding clickable touch area */
 	width: 6px;
 	height: 100px;
 	padding: 0 9px;
 	box-sizing: content-box;
-	/* 本体透明，仅作空气层与可点容器；底色圆角胶囊由 ::before 绘制 */
+	/* Base is transparent, background rounded capsule rendered via ::before */
 	background: transparent;
 	cursor: grab;
 	touch-action: none;
@@ -134,7 +134,7 @@
 	overflow: visible;
 }
 
-/* 中间 6px 的灰色圆角胶囊（未上色部分），对齐到 content 区域，确保上下都是圆角 */
+/* Center 6px rounded capsule background rendered via ::before */
 .music-player .volume-slider-track::before {
 	content: "";
 	position: absolute;
@@ -154,7 +154,7 @@
 .music-player .volume-slider-fill {
 	position: absolute;
 	bottom: 0;
-	/* 对齐到 content 区域（padding 9px），只覆盖视觉条宽度 */
+	/* Aligns to content area (padding 9px), covering visual bar width */
 	left: 9px;
 	right: 9px;
 	background: var(--interactive-accent);

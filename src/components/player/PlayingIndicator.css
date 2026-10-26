@@ -1,13 +1,13 @@
 /**
- * 播放指示器组件样式文件
+ * Playing indicator component styles
  * 
- * 包含播放指示器的所有样式，包括：
- * - 播放指示器容器样式
- * - 柱状图动画效果
- * - 不同位置的播放指示器样式（列表项、分类标题、标签页）
+ * Contains styles for playback indicator including:
+ * - Indicator container styles
+ * - Equalizer bar animation effects
+ * - Playing indicators for different contexts (track item, section header, tabs)
  */
 
-/* ========== 播放指示器（柱状图动画） ========== */
+/* ========== Playing Indicator (Equalizer Bar Animation) ========== */
 .music-player .playing-indicator {
 	display: inline-flex;
 	align-items: center;
@@ -51,14 +51,14 @@
 	}
 }
 
-/* 列表项中的播放指示器 */
+/* Playing indicator in track list item */
 .music-player .track-playing-indicator {
 	display: inline-flex;
 	align-items: center;
 	flex-shrink: 0;
 }
 
-/* 分类标题中的播放指示器 */
+/* Playing indicator in section header */
 .music-player .section-playing-indicator {
 	display: inline-flex;
 	align-items: center;
@@ -66,7 +66,7 @@
 	flex-shrink: 0;
 }
 
-/* 标签页中的播放指示器 */
+/* Playing indicator in tab header */
 .music-player .tab-playing-indicator {
 	display: inline-flex;
 	align-items: center;

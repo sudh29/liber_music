@@ -20,17 +20,17 @@ function createMockTFile(path: string, name: string): TFile {
 describe("data sort utilities", () => {
 	describe("sortByName", () => {
 		it("should sort items alphabetically and place unknownName at the very end", () => {
-			const artists = ["Queen", "未知艺术家", "Beatles", "ABBA", "Pink Floyd"];
-			const sorted = sortByName(artists, (a) => a, "未知艺术家");
+			const artists = ["Queen", "Unknown Artist", "Beatles", "ABBA", "Pink Floyd"];
+			const sorted = sortByName(artists, (a) => a, "Unknown Artist");
 
-			expect(sorted).toEqual(["ABBA", "Beatles", "Pink Floyd", "Queen", "未知艺术家"]);
+			expect(sorted).toEqual(["ABBA", "Beatles", "Pink Floyd", "Queen", "Unknown Artist"]);
 		});
 
-		it("should use default unknownName '未知' when not specified", () => {
-			const items = ["Echo", "未知", "Alpha", "Charlie"];
+		it("should use default unknownName 'Unknown' when not specified", () => {
+			const items = ["Echo", "Unknown", "Alpha", "Charlie"];
 			const sorted = sortByName(items, (x) => x);
 
-			expect(sorted[sorted.length - 1]).toBe("未知");
+			expect(sorted[sorted.length - 1]).toBe("Unknown");
 			expect(sorted.slice(0, 3)).toEqual(["Alpha", "Charlie", "Echo"]);
 		});
 

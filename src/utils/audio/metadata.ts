@@ -1,18 +1,18 @@
 /**
- * 音频元数据提取模块
+ * Audio metadata extraction module
  * 
- * 从音频文件的二进制数据中提取嵌入的元数据信息，包括：
- * - 封面图片
- * - 歌词文本（优先原生标签中带时间戳的可同步歌词，否则回退 common.lyrics）
- * - 歌曲基本信息（标题、艺术家、专辑等）
- * - 音轨号和时长等
+ * Extracts embedded metadata from binary audio files, including:
+ * - Album cover images
+ * - Lyric text (prioritizes native timestamped synced lyrics, otherwise falls back to common.lyrics)
+ * - Basic track information (title, artist, album, etc.)
+ * - Track number and duration
  * 
- * 注意：歌词从音频内嵌标签读取；优先使用库解析后的 common.lyrics，与最初实现一致。
- * 同一 ID 的多个帧（标签工具拆分超长文本所致）会被合并，避免只读到第一帧。
+ * Note: Lyrics are read from embedded tags; prioritizes library-parsed common.lyrics, consistent with the original implementation.
+ * Multiple frames sharing the same ID (caused by tag editors splitting overly long text) are joined together to avoid reading only the first frame.
  */
 
-// 为移动端提供 Buffer polyfill
-// music-metadata-browser 库内部使用了 Buffer，需要在全局作用域中提供
+// Buffer polyfill for mobile environments
+// music-metadata-browser uses Buffer internally, requiring it in the global scope
 import { initBufferPolyfill } from "../polyfills/buffer";
 initBufferPolyfill();
 
@@ -24,39 +24,39 @@ export { getCompanionLrcFile, getCompanionLrcPath, readCompanionLrc } from "./co
 export { applyReplayGainToVolume, calculateReplayGainMultiplier, parseReplayGain } from "./replayGain";
 
 /**
- * 同一 (格式, 标签ID) 下收集到的多个歌词值。
+ * Multiple lyric values collected under the same (format, tagID).
  */
 interface LyricsTagGroup {
-	/** 标签格式（如 ID3v2.3、vorbis） */
+	/** Tag format (e.g. ID3v2.3, vorbis) */
 	format: string;
-	/** 标签 ID（大写，如 TXXX:LYRICS） */
+	/** Tag ID (uppercase, e.g. TXXX:LYRICS) */
 	id: string;
-	/** 按文件顺序排列的值 */
+	/** Values ordered by occurrence in file */
 	chunks: string[];
 }
 
 /**
- * 片段是否以新文档/新行开头（LRC 元数据标签或行时间标签）。
- * 用于区分「被拆分的同一份歌词」与「独立写入的多个标签」。
+ * Checks whether a chunk starts with a new document/line (LRC metadata tag or line timestamp).
+ * Used to distinguish "split portions of the same lyric" from "multiple independently written tags".
  */
 const LRC_DOC_START =
 	/^[\s\ufeff]*\[(?:(?:ar|ti|al|by|offset|hash|id|total|sign|qq|qr|author|auth|au|length|language|re|ve|edition|date|genre|encoder|coder|source|media|uploads|program|lrccreator)\s*:|\d{1,3}:\d{1,2}(?:\.\d{1,3})?\])/i;
 
 /**
- * 合并同一标签 ID 的多个值。
+ * Merges multiple values under the same tag ID.
  *
- * ID3v2.3 的 TXXX 帧在 music-metadata 中会被按 "/" 拆分：其
- * FrameParser.splitValue 对 major < 4 的帧在值不含 NUL 时按 "/" 分割
- * （ID3v2.3 对 TCOM/TEXT 等人名帧的分隔符规定，被误用到单值的 TXXX），
- * "/" 作为分隔符被吃掉。用 "/" 重新拼接即可原样还原；片段若以新文档头
- * （元数据或行时间标签）开头，则视为独立写入的多个标签，按换行合并。
+ * ID3v2.3 TXXX frames can be split by "/" in music-metadata:
+ * FrameParser.splitValue splits frames with major < 4 by "/" when values do not contain NUL
+ * (an ID3v2.3 separator rule for name frames like TCOM/TEXT erroneously applied to single-value TXXX),
+ * consuming "/" as a delimiter. Rejoining with "/" restores the original content; if a chunk starts
+ * with a new document header (metadata or line timestamp tag), it is treated as an independently written tag and joined by newline.
  *
- * ID3v2.4 仅按 NUL 拆分，Vorbis / APE 等为真正的多值标签，按换行合并。
+ * ID3v2.4 is split by NUL only; Vorbis / APE are true multi-value tags, joined with newline.
  *
- * @param format 标签格式（如 ID3v2.3）
- * @param id 标签 ID（大写）
- * @param chunks 按文件顺序排列的值
- * @returns 合并后的完整文本
+ * @param format Tag format (e.g. ID3v2.3)
+ * @param id Tag ID (uppercase)
+ * @param chunks Values ordered by occurrence in file
+ * @returns Combined full text
  */
 function joinLyricFrameTexts(format: string, id: string, chunks: readonly string[]): string {
 	const slashSeparated = format === "ID3v2.3" && id.startsWith("TXXX");
@@ -72,24 +72,24 @@ function joinLyricFrameTexts(format: string, id: string, chunks: readonly string
 }
 
 /**
- * 合并单个标签值中的多个子值（Vorbis / APE 等多值标签），按换行合并。
+ * Merges multiple sub-values from a single tag value (Vorbis / APE multi-value tags) by newline.
  */
 function joinLyricValues(chunks: readonly string[]): string {
 	return chunks.filter((chunk) => chunk).join("\n");
 }
 
 /**
- * 从单个标签值中提取歌词文本。
+ * Extracts lyric text from a single tag value.
  * 
- * 支持多种值格式：字符串、字符串数组、对象的 text 属性（字符串或字符串数组）。
+ * Supports various value formats: string, string array, object text property (string or string array).
  * 
- * @param value 标签值
- * @returns 提取的文本，无法提取时返回 null
+ * @param value Tag value
+ * @returns Extracted text, or null if unextractable
  */
 function extractTagLyricsText(value: unknown): string | null {
-	// 格式1：直接是字符串
+	// Format 1: Direct string
 	if (typeof value === "string") return value;
-	// 格式1b：字符串数组（部分 Vorbis / APE 标签的多值歌词）
+	// Format 1b: String array (multi-value lyrics in some Vorbis / APE tags)
 	if (
 		Array.isArray(value) &&
 		value.length > 0 &&
@@ -97,7 +97,7 @@ function extractTagLyricsText(value: unknown): string | null {
 	) {
 		return joinLyricValues(value);
 	}
-	// 格式2/3：对象中的 text 属性（字符串或字符串数组，如 USLT）
+	// Format 2/3: text property on object (string or string array, such as USLT)
 	if (value !== null && typeof value === "object") {
 		const textProp = (value as { text?: unknown }).text;
 		if (typeof textProp === "string") return textProp;
@@ -113,19 +113,18 @@ function extractTagLyricsText(value: unknown): string | null {
 }
 
 /**
- * 从原生标签中提取歌词文本（收集所有匹配的帧并按标签合并）。
+ * Extracts lyric text from native tags (collecting all matching frames and merging by tag).
  *
- * 同一 (格式, 标签ID) 出现多个值有两种成因：标签工具把超长文本拆成多个
- * 同 ID 的帧，或 music-metadata 把 ID3v2.3 的 TXXX 值按 "/" 误拆成多个
- * 标签（"/" 被吃掉）。只取第一帧会丢失后续歌词，因此按 (格式, 标签ID)
- * 分组合并（见 joinLyricFrameTexts）。存在多个候选组时（如 TXXX:LYRICS
- * 与 USLT 同时存在），优先选择带时间戳的歌词（可支持逐字/逐句同步），
- * 其次选择内容更完整的一组。
+ * Multiple values under the same (format, tagID) arise for two reasons: tag editors splitting long text
+ * across multiple frames of the same ID, or music-metadata mistakenly splitting ID3v2.3 TXXX values on "/".
+ * Taking only the first frame loses subsequent lyrics, so values are grouped and joined by (format, tagID).
+ * When multiple candidate groups exist (e.g. TXXX:LYRICS and USLT both present), timestamped lyrics
+ * (supporting word-by-word/line-by-line sync) are prioritized, followed by the more complete group.
  *
- * @param native 原生标签对象
- * @param idMatcher 标签 ID 匹配函数，返回 true 表示匹配
- * @param descriptionMatcher 可选的描述匹配函数，用于额外匹配
- * @returns 提取的文本值，如果未找到则返回 undefined
+ * @param native Native tag object
+ * @param idMatcher Tag ID matcher function returning true if matched
+ * @param descriptionMatcher Optional description matcher function for extra matching
+ * @returns Extracted text value, or undefined if not found
  */
 function extractTextFromNativeTags(
 	native: IAudioMetadata["native"] | undefined,
@@ -140,12 +139,12 @@ function extractTextFromNativeTags(
 		return typeof d === "string" ? d : "";
 	};
 
-	// 按 (格式, 标签ID) 分组收集所有匹配的文本，保持文件中的出现顺序
+	// Group and collect matching text by (format, tagID) preserving appearance order
 	const groups = new Map<string, LyricsTagGroup>();
 
 	for (const format of Object.keys(native)) {
 		const nativeTags = native[format] || [];
-		// 遍历该格式的所有标签
+		// Traverse all tags for this format
 		for (const tag of nativeTags) {
 			const id = String(tag.id || "");
 			const upperId = id.toUpperCase();
@@ -172,7 +171,7 @@ function extractTextFromNativeTags(
 
 	if (groups.size === 0) return undefined;
 
-	// 选择最佳候选组：优先带时间戳（可同步），其次内容更完整
+	// Pick the best candidate group: prefer timestamped (synchronizable), then higher content length
 	let best: string | undefined;
 	let bestScore = -1;
 	for (const group of groups.values()) {
@@ -189,10 +188,10 @@ function extractTextFromNativeTags(
 }
 
 /**
- * 从 common.lyrics 元素中提取文本。
+ * Extracts text from common.lyrics element.
  *
- * music-metadata 12 起元素为 { language, descriptor, text } 对象（由 USLT 等
- * 汇总而来），更早版本为字符串，两种情况都要兼容。
+ * In music-metadata 12+, elements are { language, descriptor, text } objects (aggregated from USLT etc.),
+ * while earlier versions were strings; both formats are supported.
  */
 function lyricsEntryToText(entry: unknown): string {
 	if (typeof entry === "string") return entry;
@@ -204,13 +203,13 @@ function lyricsEntryToText(entry: unknown): string {
 }
 
 /**
- * 提取内嵌歌词：
- * 1. 原生标签：id 含 lyrics、或 USLT / SYLT；TXXX 等配合 description 含 lyrics
- *    （extractTextFromNativeTags 内部会优先返回带时间戳、可同步的歌词）
- * 2. 回退 common.lyrics（M4A 等只有汇总字段的格式）
+ * Extracts embedded lyrics:
+ * 1. Native tags: ID contains lyrics, or USLT / SYLT; TXXX with description containing lyrics
+ *    (extractTextFromNativeTags prioritizes timestamped synchronizable lyrics)
+ * 2. Fall back to common.lyrics (M4A and other formats with aggregated fields only)
  *
- * 原生优先不能反：v12 起 USLT 也会被汇总进 common.lyrics，若先取汇总字段，
- * 纯文本会盖掉 TXXX:LYRICS 里的逐字时间戳歌词。
+ * Native tags must take priority: in v12+, USLT is aggregated into common.lyrics;
+ * checking common first would overwrite word-by-word timestamped lyrics in TXXX:LYRICS with plain text.
  */
 function extractLyricsFromMetadata(metadata: IAudioMetadata): string | undefined {
 	const fromNative = extractTextFromNativeTags(
@@ -239,96 +238,96 @@ function extractLyricsFromMetadata(metadata: IAudioMetadata): string | undefined
 }
 
 /**
- * 嵌入的音频元数据接口
- * 表示从音频文件中提取出的所有元数据信息
+ * Embedded audio metadata interface.
+ * Represents all metadata information extracted from an audio file.
  */
 export interface EmbeddedAudioMetadata {
-	/** 封面图片的 base64 Data URL（如 data:image/jpeg;base64,...） */
+	/** Cover image base64 Data URL (e.g. data:image/jpeg;base64,...) */
 	coverDataUrl?: string;
-	/** 歌词文本内容 */
+	/** Lyric text content */
 	lyricsText?: string;
-	/** 歌曲标题 */
+	/** Song title */
 	title?: string;
-	/** 艺术家名称 */
+	/** Artist name */
 	artist?: string;
-	/** 专辑名称 */
+	/** Album name */
 	album?: string;
-	/** 专辑艺术家（可能不同于艺术家） */
+	/** Album artist (may differ from track artist) */
 	albumArtist?: string;
-	/** 发行年份 */
+	/** Release year */
 	year?: number;
-	/** 音乐流派（可以是字符串或字符串数组） */
+	/** Genre (string or array of strings) */
 	genre?: string | string[];
-	/** 音轨号（专辑中的第几首） */
+	/** Track number (position within album) */
 	track?: number;
-	/** 歌曲时长（秒） */
+	/** Duration in seconds */
 	duration?: number;
-	/** ReplayGain 音轨增益（dB） */
+	/** ReplayGain track gain (dB) */
 	replayGainDb?: number;
 }
 
 /**
- * 读取音频文件的二进制数据（兼容移动端）
+ * Reads binary data of an audio file (mobile compatible).
  * 
- * 使用 adapter.readBinary 作为首选方法（移动端兼容），
- * 如果失败则使用 vault.readBinary 作为后备。
+ * Uses adapter.readBinary as preferred method (mobile compatible),
+ * falling back to vault.readBinary if failed.
  * 
- * @param app Obsidian 应用实例
- * @param file 音频文件
- * @returns 音频文件的二进制数据（ArrayBuffer），如果读取失败则返回 null
+ * @param app Obsidian App instance
+ * @param file Audio file
+ * @returns Binary data (ArrayBuffer) of audio file, or null if read failed
  */
 export async function readAudioFileBinary(
 	app: App,
 	file: TFile
 ): Promise<ArrayBuffer | null> {
 	try {
-		// 使用 adapter.readBinary 以确保移动端兼容性
-		// 在移动端，vault.readBinary 可能不工作，需要使用 adapter.readBinary
+		// Use adapter.readBinary for mobile compatibility
+		// On mobile, vault.readBinary may not work properly, so adapter.readBinary is preferred
 		let binary: ArrayBuffer;
 		try {
 			binary = await app.vault.adapter.readBinary(file.path);
 		} catch (adapterError) {
-			// 如果 adapter.readBinary 失败，尝试使用 vault.readBinary 作为后备
-			console.warn(`使用 adapter.readBinary 读取失败，尝试使用 vault.readBinary (${file.path}):`, adapterError);
+			// If adapter.readBinary fails, attempt vault.readBinary as fallback
+			console.warn(`Failed to read with adapter.readBinary, falling back to vault.readBinary (${file.path}):`, adapterError);
 			try {
 				binary = await app.vault.readBinary(file);
 			} catch (vaultError) {
-				console.error(`无法读取文件 ${file.path}:`, vaultError);
+				console.error(`Unable to read file ${file.path}:`, vaultError);
 				return null;
 			}
 		}
 		
-		// 确保 binary 是 ArrayBuffer
+		// Ensure binary is an ArrayBuffer
 		if (!(binary instanceof ArrayBuffer)) {
-			console.error(`文件 ${file.path} 读取结果不是 ArrayBuffer:`, typeof binary);
+			console.error(`File ${file.path} read result is not an ArrayBuffer:`, typeof binary);
 			return null;
 		}
 		
 		return binary;
 	} catch (error) {
-		console.error(`读取音频文件时出错 (${file.path}):`, error);
+		console.error(`Error reading audio file (${file.path}):`, error);
 		return null;
 	}
 }
 
-/** 默认元数据探测读取头部大小：256KB */
+/** Default metadata probe header chunk size: 256KB */
 export const METADATA_HEADER_CHUNK_SIZE = 256 * 1024;
 
 /**
- * 针对大文件优化的音频头部二进制数据读取：
- * 优先仅读取前 256KB 头部，避免全量载入 50MB 无损音频导致移动端 OOM 崩溃。
+ * Optimized header binary read for large audio files:
+ * Reads only the initial 256KB header to prevent loading entire 50MB+ lossless audio files and causing mobile OOM crashes.
  *
- * @param app Obsidian 应用实例
- * @param file 音频文件
- * @param maxBytes 最大读取字节数（默认 256KB）
- * @returns 头部二进制切片
+ * @param app Obsidian App instance
+ * @param file Audio file
+ * @param maxBytes Maximum bytes to read (default 256KB)
+ * @returns Header binary slice
  */
 export async function readAudioFileHeaderBinary(
 	app: App,
 	file: TFile,
 	maxBytes: number = METADATA_HEADER_CHUNK_SIZE
 ): Promise<ArrayBuffer | null> {
-	// 1. 如果在具有 Node.js fs 环境的桌面端（Electron），使用 fs.openSync + fs.readSync 仅读取前 maxBytes
+	// 1. On desktop (Electron) with Node.js fs environment, use fs.openSync + fs.readSync to read only the first maxBytes
 	try {
 		const adapter = app.vault.adapter as unknown as { getBasePath?: () => string };
 		if (typeof adapter.getBasePath === "function") {
@@ -349,10 +348,10 @@ export async function readAudioFileHeaderBinary(
 			}
 		}
 	} catch {
-		// 忽略并回退到 adapter 读取
+		// Ignore and fall back to adapter read
 	}
 
-	// 2. 移动端/沙箱环境下使用 adapter 读取并进行切片截断
+	// 2. On mobile/sandbox environment, use adapter to read and slice
 	const fullBuffer = await readAudioFileBinary(app, file);
 	if (!fullBuffer) return null;
 	if (fullBuffer.byteLength <= maxBytes) {
@@ -362,15 +361,15 @@ export async function readAudioFileHeaderBinary(
 }
 
 /**
- * 从音频文件的二进制缓冲区中提取嵌入的元数据
+ * Extracts embedded metadata from an audio file binary buffer.
  * 
- * 使用 music-metadata-browser 库解析音频文件，提取：
- * 1. 封面图片：转换为 Blob URL
- * 2. 歌词：优先从原生标签取可同步的时间戳歌词，否则回退 common.lyrics
- * 3. 基本信息：标题、艺术家、专辑、年份、流派、音轨号、时长等
+ * Uses music-metadata-browser library to parse audio files, extracting:
+ * 1. Cover image: converted to Data URL
+ * 2. Lyrics: prioritizes synchronizable timestamped lyrics from native tags, falling back to common.lyrics
+ * 3. Basic information: title, artist, album, year, genre, track number, duration, etc.
  * 
- * @param buffer 音频文件的二进制数据（ArrayBuffer）
- * @returns 返回提取的元数据对象，如果解析失败则返回 null
+ * @param buffer Binary data (ArrayBuffer) of audio file
+ * @returns Extracted metadata object, or null if parsing failed
  * 
  * @example
  * ```typescript
@@ -385,59 +384,58 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 	buffer: ArrayBuffer,
 ): Promise<EmbeddedAudioMetadata | null> {
 	try {
-		// 验证 buffer 类型
+		// Verify buffer type
 		if (!(buffer instanceof ArrayBuffer)) {
-			console.error("getEmbeddedAudioMetadataFromBuffer: buffer 不是 ArrayBuffer", typeof buffer);
+			console.error("getEmbeddedAudioMetadataFromBuffer: buffer is not an ArrayBuffer", typeof buffer);
 			return null;
 		}
 		
-		// 检查 buffer 大小
+		// Check buffer size
 		if (buffer.byteLength === 0) {
-			console.error("getEmbeddedAudioMetadataFromBuffer: buffer 为空");
+			console.error("getEmbeddedAudioMetadataFromBuffer: buffer is empty");
 			return null;
 		}
 		
-		// 将 ArrayBuffer 转换为 Uint8Array
-		// 使用 Uint8Array 而不是 Node.js 的 Buffer，以支持浏览器和移动端环境
+		// Convert ArrayBuffer to Uint8Array
+		// Use Uint8Array instead of Node.js Buffer for browser and mobile environments
 		const uint8Array = new Uint8Array(buffer);
 		
-		// 解析音频元数据，启用时长计算
-		// 在移动端，可能需要限制解析的数据量以避免内存问题
+		// Parse audio metadata with duration calculation enabled
 		const metadata: IAudioMetadata = await parseBuffer(uint8Array, "audio", {
 			duration: true,
 		});
 
 		const result: EmbeddedAudioMetadata = {};
 
-		// 提取封面图片
-		// 封面图片通常存储在 metadata.common.picture 数组中
+		// Extract cover image
+		// Cover image is typically stored in metadata.common.picture array
 		const picture = metadata.common.picture && metadata.common.picture[0];
 		if (picture && picture.data) {
-			// 将图片数据转换为 Uint8Array（兼容浏览器环境）
+			// Convert image data to Uint8Array (browser compatible)
 			const pictureData = new Uint8Array(picture.data);
 
-			// 使用 Buffer（已在顶部做过 polyfill）将二进制数据转成 base64
-			// 注意：这里生成的是可持久化存储在 data.json 中的 base64 Data URL
+			// Use Buffer (polyfilled at top) to convert binary data to base64
+			// Generates a base64 Data URL persistable in data.json
 			const base64 = Buffer.from(pictureData).toString("base64");
 			const mimeType = picture.format || "image/jpeg";
 			result.coverDataUrl = `data:${mimeType};base64,${base64}`;
 		}
 
-		// 歌词：common.lyrics → 原生宽泛匹配 → USLT 兜底（与最初实现一致）
+		// Lyrics: common.lyrics -> native tag matching -> USLT fallback
 		const lyricsText = extractLyricsFromMetadata(metadata);
 		if (lyricsText?.trim()) {
 			result.lyricsText = lyricsText;
 		}
 
-		// 提取基本元数据信息
-		// 歌曲标题：优先从 common.title 获取，如果不存在则尝试从原生标签中查找
+		// Extract basic metadata information
+		// Track title: prioritize common.title, otherwise search native tags
 		if (metadata.common.title) {
 			result.title = metadata.common.title;
 		} else {
 			const extractedTitle = extractTextFromNativeTags(
 				metadata.native,
 				(id) => {
-					// 检查是否是标题相关的标签
+					// Check title-related tags
 					const upperId = id.toUpperCase();
 					return /^(TIT2|TITLE|TITLE_MAIN|TITLE_MAIN_MAIN|TITLE_ORIGINAL)$/i.test(upperId);
 				}
@@ -447,13 +445,13 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 			}
 		}
 
-		// 歌曲时长（秒）
+		// Track duration (seconds)
 		if (metadata.format?.duration) {
 			result.duration = metadata.format.duration;
 		}
 		
-		// 艺术家名称（可能是数组，需要合并）
-		// 优先从 common.artist 获取，如果不存在则尝试从原生标签中查找
+		// Artist name (may be array, joined if so)
+		// Prioritize common.artist, otherwise search native tags
 		if (metadata.common.artist) {
 			result.artist = Array.isArray(metadata.common.artist)
 				? metadata.common.artist.join(", ")
@@ -462,7 +460,7 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 			const extractedArtist = extractTextFromNativeTags(
 				metadata.native,
 				(id) => {
-					// 检查是否是艺术家相关的标签
+					// Check artist-related tags
 					const upperId = id.toUpperCase();
 					return /^(TPE1|ARTIST|ARTIST_MAIN|ARTIST_ORIGINAL)$/i.test(upperId);
 				}
@@ -472,38 +470,38 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 			}
 		}
 		
-		// 专辑名称
+		// Album name
 		if (metadata.common.album) {
 			result.album = metadata.common.album;
 		}
 		
-		// 专辑艺术家（可能是数组，需要合并）
+		// Album artist (may be array, joined if so)
 		if (metadata.common.albumartist) {
 			result.albumArtist = Array.isArray(metadata.common.albumartist)
 				? metadata.common.albumartist.join(", ")
 				: metadata.common.albumartist;
 		}
 		
-		// 发行年份
+		// Release year
 		if (metadata.common.year) {
 			result.year = metadata.common.year;
 		}
 		
-		// 音乐流派（可能是数组，需要合并）
+		// Music genre (may be array, joined if so)
 		if (metadata.common.genre) {
 			result.genre = Array.isArray(metadata.common.genre)
 				? metadata.common.genre.join(", ")
 				: metadata.common.genre;
 		}
 		
-		// 音轨号（可能是对象 {no: 1, of: 10} 或直接是数字）
+		// Track number (may be object {no: 1, of: 10} or direct number)
 		if (metadata.common.track) {
 			result.track = typeof metadata.common.track === "object"
 				? metadata.common.track.no || undefined
 				: metadata.common.track;
 		}
 
-		// ReplayGain 音轨增益（dB）
+		// ReplayGain track gain (dB)
 		const rawGain =
 			(metadata.common as { replaygain_track_gain?: unknown })?.replaygain_track_gain ??
 			extractTextFromNativeTags(
@@ -517,7 +515,7 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 
 		return result;
 	} catch (e) {
-		// 如果解析失败，记录详细错误信息以便调试（特别是在移动端）
+		// Log detailed error information on failure for debugging (especially on mobile)
 		const errorMessage = e instanceof Error ? e.message : String(e);
 		const errorDetails: Record<string, unknown> = {
 			error: errorMessage,
@@ -525,12 +523,12 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 			bufferType: buffer ? (buffer instanceof ArrayBuffer ? 'ArrayBuffer' : typeof buffer) : 'null/undefined'
 		};
 		
-		// 只在开发环境或非移动端记录堆栈信息（移动端可能不支持）
+		// Log stack trace only in dev or supported environments
 		if (e instanceof Error && e.stack) {
 			try {
 				errorDetails.stack = e.stack;
 			} catch {
-				// 忽略堆栈信息获取失败
+				// Ignore failure retrieving stack trace
 			}
 		}
 		
@@ -540,20 +538,20 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 }
 
 /**
- * 从音频文件中提取内嵌封面
+ * Extracts embedded album cover from an audio file.
  * 
- * 读取音频文件的二进制数据，提取内嵌封面并返回 base64 Data URL。
- * 这是一个便捷函数，封装了文件读取和封面提取的完整流程。
+ * Reads audio file binary data, extracts embedded cover, and returns base64 Data URL.
+ * Convenience helper wrapping file read and cover extraction workflow.
  * 
- * @param app Obsidian 应用实例
- * @param file 音频文件
- * @returns 封面图片的 base64 Data URL，如果未找到则返回 undefined
+ * @param app Obsidian App instance
+ * @param file Audio file
+ * @returns Cover image base64 Data URL, or undefined if not found
  * 
  * @example
  * ```typescript
  * const coverUrl = await getEmbeddedCoverFromFile(app, file);
  * if (coverUrl) {
- *   console.log('封面:', coverUrl);
+ *   console.log('Cover:', coverUrl);
  * }
  * ```
  */
@@ -562,26 +560,25 @@ export async function getEmbeddedCoverFromFile(
 	file: TFile
 ): Promise<string | undefined> {
 	try {
-		// 检查是否为支持的音频格式
+		// Check whether extension is supported
 		const ext = file.extension?.toLowerCase() || '';
 		if (!isSupportedAudioExtension(ext)) {
 			return undefined;
 		}
 
-		// 读取音频文件的二进制数据（兼容移动端）
+		// Read audio file binary data (mobile compatible)
 		const buffer = await readAudioFileBinary(app, file);
 		if (!buffer) {
 			return undefined;
 		}
 		
-		// 提取元数据（包括内嵌封面）
+		// Extract metadata (including embedded cover)
 		const metadata = await getEmbeddedAudioMetadataFromBuffer(buffer);
 		
-		// 如果存在内嵌封面，返回 base64 Data URL
+		// Return base64 Data URL if cover exists
 		return metadata?.coverDataUrl;
 	} catch (error) {
-		console.error(`获取内嵌封面时出错 (${file.path}):`, error);
+		console.error(`Error getting embedded cover (${file.path}):`, error);
 		return undefined;
 	}
 }
-

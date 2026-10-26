@@ -1,13 +1,13 @@
 /**
- * 音乐库页面组件
+ * Music library page component
  * 
- * 提供音乐库的完整管理界面，包括：
- * - 标签页切换（收藏、全部、歌单、艺术家、专辑）
- * - 歌曲列表显示（支持封面、标题、艺术家、专辑信息）
- * - 歌曲操作（播放、收藏、添加到歌单、从歌单移除）
- * - 歌单管理（创建、编辑、删除）
- * - 分类播放（按艺术家、专辑、歌单播放）
- * - 当前播放歌曲高亮显示
+ * Provides complete music library management interface, including:
+ * - Tab switching (favorites, all, playlists, artists, albums)
+ * - Track list display (supports cover, title, artist, album info)
+ * - Track actions (play, favorite, add to playlist, remove from playlist)
+ * - Playlist management (create, rename, delete)
+ * - Category playback (play by artist, album, playlist)
+ * - Highlight currently playing track
  */
 
 import React from "react";
@@ -21,45 +21,45 @@ import "./LibraryPage.css";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 音乐库页面组件的属性接口
+ * Props interface for LibraryPage component
  */
 export interface LibraryPageProps {
-	/** 音乐库快照数据，包含所有歌曲、收藏、歌单、艺术家、专辑信息 */
+	/** Music library snapshot data, including all tracks, favorites, playlists, artists, albums */
 	library: ReactLibrarySnapshot;
-	/** 当前正在播放的歌曲路径（用于高亮显示） */
+	/** Currently playing track path (for active highlighting) */
 	activePath: string | null;
-	/** 播放歌曲的回调函数 */
+	/** Callback function to play track */
 	onPlay: (path: string, sectionId?: string) => void;
-	/** 双击歌曲的回调函数（播放并切换到唱片页面） */
+	/** Callback function on double click (play and switch to disc view) */
 	onDoubleClick?: (path: string, sectionId?: string) => void;
-	/** 切换收藏状态的回调函数 */
+	/** Callback function to toggle favorite status */
 	onToggleFavorite: (path: string, sectionId?: string) => void;
-	/** 添加到歌单的回调函数 */
+	/** Callback function to add track to playlist */
 	onAddToPlaylist: (path: string, sectionId?: string) => void;
-	/** 从歌单移除的回调函数 */
+	/** Callback function to remove track from playlist */
 	onRemoveFromPlaylist: (path: string, playlistName: string) => void;
-	/** 创建歌单的回调函数 */
+	/** Callback function to create playlist */
 	onCreatePlaylist: () => void;
-	/** 播放分类（艺术家、专辑、歌单）的回调函数 */
+	/** Callback function to play category (artist, album, playlist) */
 	onPlayCategory: (categoryType: string, categoryName: string, tracks: ReactTrackInfo[]) => void;
-	/** 编辑歌单名称的回调函数（可选） */
+	/** Callback function to edit playlist name (optional) */
 	onEditPlaylist?: (playlistName: string) => Promise<void>;
-	/** 删除歌单的回调函数（可选） */
+	/** Callback function to delete playlist (optional) */
 	onDeletePlaylist?: (playlistName: string) => Promise<void>;
-	/** 当前播放列表标识（用于高亮显示当前列表中的歌曲） */
+	/** Current playing list identifier (to highlight tracks in currently playing list) */
 	currentList?: string;
-	/** 异步获取歌曲封面的函数（优先文件夹中的 cover 文件，其次内嵌封面） */
+	/** Async function to fetch track cover (folder cover preferred, embedded cover secondary) */
 	getTrackCover?: (file: TFile) => Promise<string | undefined>;
-	/** Obsidian App 实例（用于从路径获取文件） */
+	/** Obsidian App instance */
 	app?: App;
 }
 
 /**
- * 添加歌单按钮组件（内部使用）
+ * Add playlist button component (internal)
  * 
- * 显示一个加号图标按钮，用于创建新歌单
+ * Displays a plus icon button to create a new playlist
  * 
- * @param props 按钮属性
+ * @param props Button properties
  */
 function AddPlaylistButton({ onClick }: { onClick: () => void }) {
 	const iconRef = React.useRef<HTMLDivElement>(null);
@@ -83,11 +83,11 @@ function AddPlaylistButton({ onClick }: { onClick: () => void }) {
 }
 
 /**
- * 音乐库页面组件
+ * Music library page component
  * 
- * 提供完整的音乐库管理界面，包括标签页切换、歌曲列表显示、歌曲操作等功能。
+ * Provides complete library management interface: tabs, track list display, track actions, etc.
  * 
- * @param props 页面属性
+ * @param props Component properties
  */
 export function LibraryPage(props: LibraryPageProps) {
 	const { library, activePath, currentList } = props;
@@ -107,7 +107,7 @@ export function LibraryPage(props: LibraryPageProps) {
 	const renderPlaylists = (list: Array<{ name: string; tracks: ReactTrackInfo[] }>, type: "playlists" | "artists" | "albums") => {
 		const categoryType = type === "playlists" ? "playlist" : type.slice(0, -1);
 		
-		// 辅助函数：判断 sectionId 是否匹配 currentList
+		// Helper function: check if sectionId matches currentList
 		const isSectionMatched = (sectionId: string): boolean => {
 			if (!currentList || !activePath) return false;
 			
@@ -144,7 +144,7 @@ export function LibraryPage(props: LibraryPageProps) {
 				{list.map((item) => {
 					const key = `${categoryType}:${item.name}`;
 					const isCollapsed = collapsedSections[key] ?? true;
-					// 判断当前分类是否匹配 currentList
+					// Check if current category matches currentList
 					const sectionId = `${categoryType}-${item.name}`;
 					const matched = isSectionMatched(sectionId);
 
@@ -171,7 +171,7 @@ export function LibraryPage(props: LibraryPageProps) {
 									) : null}
 									<div className={`section-title ${matched ? "is-active" : ""}`}>
 										<span>{item.name}</span>
-										<span className="section-count">（{item.tracks.length}）</span>
+										<span className="section-count">({item.tracks.length})</span>
 									</div>
 								</div>
 								<div

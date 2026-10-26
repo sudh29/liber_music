@@ -1,8 +1,8 @@
 /**
- * UI 相关常量定义
+ * UI constant definitions
  */
 
-/** 页面类型 */
+/** Page view types */
 export const PAGE_TYPES = {
 	LIBRARY: 'library',
 	DISC: 'disc',
@@ -11,7 +11,7 @@ export const PAGE_TYPES = {
 
 export type PageType = typeof PAGE_TYPES[keyof typeof PAGE_TYPES];
 
-/** 标签页类型 */
+/** Library tab types */
 export const TAB_TYPES = {
 	FAVORITES: 'favorites',
 	ALL: 'all',
@@ -22,17 +22,16 @@ export const TAB_TYPES = {
 
 export type TabType = typeof TAB_TYPES[keyof typeof TAB_TYPES];
 
-/** 动画时间常量（单位：毫秒） */
+/** Animation timing constants in milliseconds */
 export const ANIMATION_TIMINGS = {
-	/** DOM 更新延迟时间，用于确保 DOM 渲染完成后再触发动画 */
+	/** DOM update delay ensuring elements are mounted before triggering animations */
 	DOM_UPDATE_DELAY: 20,
-	/** 唱片滑动动画时长 */
+	/** Vinyl disc sliding animation duration */
 	DISC_ANIMATION_DURATION: 500,
-	/** 唱片动画完成后的缓冲时间 */
+	/** Buffer time after disc animation completes */
 	DISC_ANIMATION_BUFFER: 50,
-	/** 唱针 transition 动画时长（与 CSS 中的 transition 时间一致） */
+	/** Needle transition duration matching CSS transition */
 	NEEDLE_TRANSITION_DURATION: 300,
-	/** 唱针延迟时间（比唱片慢的时间） */
+	/** Needle delay relative to disc movement */
 	NEEDLE_DELAY: 150,
 } as const;
-

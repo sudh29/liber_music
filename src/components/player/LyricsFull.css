@@ -1,16 +1,15 @@
 /**
- * 完整歌词列表组件样式文件
+ * Full lyrics list component styles
  * 
- * 包含完整歌词列表的所有样式，包括：
- * - 歌词列表容器和滚动样式
- * - 歌词行样式
- * - 当前播放行高亮样式
- * - 播放过的歌词行样式
- * - 卡拉OK 效果样式（逐字高亮）
- * - 空状态样式
+ * Contains styles for the full lyrics list, including:
+ * - Lyrics list container and scrolling styles
+ * - Lyric line styles
+ * - Active playing line highlight styles
+ * - Played lyric lines styles
+ * - Empty state styles
  */
 
-/* ========== 歌词列表容器（同时作为滚动容器） ========== */
+/* ========== Lyrics List Container (also acts as scroll container) ========== */
 .music-player .lyrics {
 	flex: 1;
 	min-height: 0;
@@ -20,7 +19,7 @@
 	margin-bottom: 16px;
 }
 
-/* 滚动容器样式 */
+/* Scroll container styles */
 .music-player .lyrics-scroll {
 	overflow-y: auto;
 	align-items: center;
@@ -37,7 +36,7 @@
 	height: 0;
 }
 
-/* 歌词行 */
+/* Lyric line */
 .music-player .lyrics-line {
 	display: flex;
 	align-items: center;
@@ -47,15 +46,15 @@
 	text-align: center;
 }
 
-/* 顶部/底部占位空白：高度等于容器可视高度一半，确保首行与尾行都能居中显示。
-   普通歌词视图（LyricsFull）与逐字歌词视图（LyricsExtendedFull）共用 */
+/* Top/bottom spacer padding: height equals half viewport height, ensuring first and last lines can be centered.
+   Shared between standard lyrics view (LyricsFull) and extended lyrics view (LyricsExtendedFull) */
 .music-player .lyrics-spacer {
 	flex: 0 0 auto;
 	width: 100%;
 	pointer-events: none;
 }
 
-/* 歌词文本 */
+/* Lyric text */
 .music-player .lyrics-text {
 	cursor: pointer;
 	color: var(--text-muted);
@@ -64,26 +63,26 @@
 	word-break: break-word;
 }
 
-/* 中心高亮行（当前播放行）：只改变颜色 */
+/* Center active line (currently playing line): change color only */
 .music-player .lyrics-line.is-active .lyrics-text {
 	color: var(--interactive-accent);
 }
 
-/* 播放过的歌词行：保持高亮颜色（与逐字歌词的上一行样式一致） */
+/* Played lyric lines: keep highlighted color (matches previous line style in extended lyrics) */
 .music-player .lyrics-line.is-played .lyrics-text {
 	font-weight: 600;
 	color: var(--interactive-accent);
 	opacity: 0.5;
 }
 
-/* 当前正在播放的行：在高亮基础上放大字号、加粗 */
+/* Currently playing line: enlarged font size and bold */
 .music-player .lyrics-line.is-playing .lyrics-text {
 	color: var(--interactive-accent);
 	font-weight: 600;
 	font-size: 1.15em;
 }
 
-/* 空状态 */
+/* Empty state */
 .music-player .lyrics-empty {
 	align-items: center;
 	justify-content: center;

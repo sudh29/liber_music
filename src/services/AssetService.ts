@@ -1,17 +1,17 @@
 /**
- * 资源管理服务
+ * Asset management service
  *
- * 负责管理插件资源文件的加载和缓存。
- * 资源文件（如图片）会被转换为 base64 数据 URI 格式，方便在 React 组件中使用。
+ * Manages loading and caching of plugin asset files.
+ * Asset files (e.g. images) are converted to base64 Data URIs for consumption in React components.
  *
- * 通过 {@link App.vault.adapter} 读取 `.obsidian/plugins/<id>/` 下的文件，避免使用 Node `fs`，
- * 以兼容 Obsidian 移动端与 eslint-plugin-obsidianmd 的 `import/no-nodejs-modules` 规则。
+ * Reads files under `.obsidian/plugins/<id>/` via {@link App.vault.adapter} without Node `fs`,
+ * ensuring compatibility with Obsidian Mobile and eslint-plugin-obsidianmd's `import/no-nodejs-modules` rule.
  */
 
 import { App, normalizePath } from "obsidian";
 import MusicPlayerPlugin from "@/main";
 
-/** 将 ArrayBuffer 转为 base64（不依赖 Node Buffer，适配浏览器 / 移动端） */
+/** Converts ArrayBuffer to base64 without Node Buffer, compatible with browser / mobile */
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
 	const bytes = new Uint8Array(buffer);
 	const chunkSize = 8192;
@@ -46,20 +46,20 @@ function mimeTypeForImageExtension(ext: string): string {
 }
 
 /**
- * 资源管理服务类
+ * Asset management service class.
  *
- * 提供资源文件的加载和缓存功能，将文件转换为 base64 数据 URI。
- * 使用内存缓存避免重复读取文件。
+ * Provides asset loading and caching by converting files into base64 Data URIs.
+ * In-memory cache prevents redundant file reads.
  */
 export class AssetService {
-	/** 资源文件缓存（文件名 -> base64 数据 URI） */
+	/** Asset file cache (filename -> base64 Data URI) */
 	private assetCache: Map<string, string> = new Map();
 
 	/**
-	 * 创建资源管理服务实例
+	 * Creates an asset service instance.
 	 *
-	 * @param app - Obsidian App 实例，用于访问 vault 适配器
-	 * @param plugin - 插件实例，用于获取插件 ID
+	 * @param app - Obsidian App instance for accessing vault adapter
+	 * @param plugin - Plugin instance for retrieving plugin ID
 	 */
 	constructor(
 		private app: App,
@@ -67,14 +67,14 @@ export class AssetService {
 	) {}
 
 	/**
-	 * 获取插件资源文件的 base64 数据 URI
+	 * Retrieves base64 Data URI for a plugin asset file.
 	 *
-	 * 从插件目录读取资源文件，转换为 base64 数据 URI 格式。
-	 * 如果文件已缓存，直接返回缓存结果。
-	 * 如果文件不存在或读取失败，返回一个透明的 1x1 像素占位图。
+	 * Reads asset file from plugin directory and converts to base64 Data URI.
+	 * Returns cached result if already loaded.
+	 * Returns a transparent 1x1 placeholder image if file is missing or read fails.
 	 *
-	 * @param filename - 资源文件名（相对于插件目录）
-	 * @returns base64 数据 URI 字符串
+	 * @param filename - Asset filename (relative to plugin directory)
+	 * @returns base64 Data URI string
 	 */
 	async getAssetPath(filename: string): Promise<string> {
 		if (this.assetCache.has(filename)) return this.assetCache.get(filename)!;
@@ -83,7 +83,7 @@ export class AssetService {
 			const relativePath = normalizePath(`.obsidian/plugins/${pluginId}/${filename}`);
 			const adapter = this.app.vault.adapter;
 			if (!(await adapter.exists(relativePath))) {
-				throw new Error(`资源文件不存在: ${relativePath}`);
+				throw new Error(`Asset file does not exist: ${relativePath}`);
 			}
 			const fileBuffer = await adapter.readBinary(relativePath);
 			const base64 = arrayBufferToBase64(fileBuffer);
@@ -93,7 +93,7 @@ export class AssetService {
 			this.assetCache.set(filename, dataUri);
 			return dataUri;
 		} catch (error) {
-			console.error(`无法加载资源文件 ${filename}:`, error);
+			console.error(`Failed to load asset file ${filename}:`, error);
 			return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 		}
 	}

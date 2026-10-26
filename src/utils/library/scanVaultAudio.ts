@@ -1,7 +1,8 @@
 /**
- * 从仓库扫描音频文件（不依赖插件主类），供 LibraryService 与设置页等复用。
+ * Scans vault audio files independently of the main plugin class.
+ * Reusable by LibraryService, settings tab, and background workers.
  *
- * 通过文件夹树遍历收集音频文件，避免使用 vault.getFiles() 全库枚举 API。
+ * Traverses folder trees iteratively to avoid vault.getFiles() full vault scans.
  */
 
 import type { App } from "obsidian";
@@ -41,7 +42,7 @@ function getScanRootFolder(app: App, musicFolder: string): TFolder | null {
 }
 
 /**
- * 按音乐文件夹设置过滤后返回支持的音频文件列表（未排序）。
+ * Returns an unsorted list of supported audio files filtered by the configured music folder.
  */
 export function scanVaultAudioFiles(app: App, musicFolder: string): TFile[] {
 	const root = getScanRootFolder(app, musicFolder);

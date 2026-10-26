@@ -1,37 +1,37 @@
 /**
- * 歌词索引计算工具函数
+ * Lyrics index calculation utility function.
  * 
- * 统一处理歌词索引计算逻辑，避免在多个地方重复实现。
- * 支持普通歌词和逐字时间歌词两种模式，使用二分查找优化性能。
+ * Centralizes lyric index calculation logic to avoid duplicate implementations.
+ * Supports both standard lyrics and word-by-word timed lyrics, optimized with binary search.
  */
 
 import type { LyricLine } from "@/utils/lyrics/parser";
 import type { ExtendedLyricLine } from "@/utils/lyrics/extendedParser";
 
 /**
- * 歌词索引计算选项接口
+ * Lyrics index calculator options interface.
  */
 export interface LyricsIndexCalculatorOptions {
-	/** 普通歌词列表（LRC 格式） */
+	/** Standard lyrics list (LRC format) */
 	fullLyrics: LyricLine[];
-	/** 逐字时间歌词列表（与 LYRICS 内嵌卡拉 OK 格式解析结果一致） */
+	/** Word-by-word timed lyrics list (karaoke format parsed result) */
 	fullExtendedLyrics: ExtendedLyricLine[];
-	/** 当前播放时间（秒） */
+	/** Current playback time (seconds) */
 	currentTime: number;
 }
 
 /**
- * 计算当前播放的歌词行索引
+ * Calculates current playing lyric line index.
  * 
- * 根据当前播放时间，使用二分查找算法找到应该显示的歌词行。
- * 优先使用逐字时间歌词（如果存在），否则使用普通歌词。
+ * Uses binary search algorithm to find the lyric line to display based on current playback time.
+ * Prioritizes word-by-word lyrics (if present), otherwise uses standard lyrics.
  * 
- * 时间提前机制：
- * - 逐字歌词：提前 0.2 秒显示（需要更精确的时间控制）
- * - 普通歌词：提前 0.5 秒显示（和三行歌词保持一致，让歌词先上移一行再开始唱）
+ * Advance display offset:
+ * - Word-by-word lyrics: 0.2s advance (requires finer timing control)
+ * - Standard lyrics: 0.5s advance (consistent with triplet view, shifts up before line starts)
  * 
- * @param options 歌词数据和时间选项
- * @returns 返回当前应该显示的歌词行索引，如果没有匹配的歌词则返回 -1
+ * @param options Lyric data and time options
+ * @returns Index of the current lyric line to display, or -1 if no matching line
  * 
  * @example
  * ```typescript
@@ -40,7 +40,7 @@ export interface LyricsIndexCalculatorOptions {
  *   fullExtendedLyrics: [...],
  *   currentTime: 12.5
  * });
- * // index: 2 (表示应该显示第 3 行歌词)
+ * // index: 2 (indicates 3rd line should be displayed)
  * ```
  */
 export function calculateLyricsIndex({
@@ -48,18 +48,18 @@ export function calculateLyricsIndex({
 	fullExtendedLyrics,
 	currentTime,
 }: LyricsIndexCalculatorOptions): number {
-	// 判断是否使用逐字歌词
+	// Determine whether to use extended lyrics
 	const useExtendedLyrics = fullExtendedLyrics && fullExtendedLyrics.length > 0;
 	const lyricsToUse = useExtendedLyrics ? fullExtendedLyrics : fullLyrics;
 
 	if (!lyricsToUse?.length) return -1;
 
-	// 对于逐字歌词，提前时间更短（0.2秒），因为需要更精确的时间控制
-	// 对于普通歌词，提前0.5秒显示，和三行歌词保持一致，让歌词先上移一行再开始唱
+	// For extended lyrics, shorter advance time (0.2s) for tighter synchronization
+	// For standard lyrics, 0.5s advance to scroll line before vocal starts
 	const advanceTime = useExtendedLyrics ? 0.2 : 0.5;
 	const adjustedTime = currentTime + advanceTime;
 
-	// 使用二分查找优化查找速度
+	// Binary search for performance
 	let left = 0;
 	let right = lyricsToUse.length - 1;
 	let result = -1;
@@ -82,4 +82,3 @@ export function calculateLyricsIndex({
 
 	return result;
 }
-

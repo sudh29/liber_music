@@ -1,26 +1,26 @@
 /**
- * 页面状态管理 Hook
+ * Page state management hook
  * 
- * 管理页面特定的状态，如 lastAction（用于 DiscPage 的动画效果）
+ * Manages page-specific state such as lastAction (for PlayPage disc animations).
  */
 
 import * as React from "react";
 
 export interface UsePageStateReturn {
-	/** 用于 DiscPage 的 lastAction 状态 */
+	/** lastAction state for PlayPage animations */
 	lastAction: "next" | "prev" | null;
-	/** 处理上一首（带 lastAction 标记） */
+	/** Handles previous track action with flag */
 	handlePrevWithFlag: (onPrev: () => void) => void;
-	/** 处理下一首（带 lastAction 标记） */
+	/** Handles next track action with flag */
 	handleNextWithFlag: (onNext: () => void) => void;
-	/** 清除 lastAction（用于直接选择歌曲时） */
+	/** Clears lastAction flag (used on direct song selection) */
 	clearLastAction: () => void;
 }
 
 /**
- * 页面状态管理 Hook
+ * Page state management hook
  * 
- * @returns 页面状态和操作方法
+ * @returns Page state and action handlers
  */
 export function usePageState(): UsePageStateReturn {
 	const [lastAction, setLastAction] = React.useState<"next" | "prev" | null>(null);
@@ -52,4 +52,3 @@ export function usePageState(): UsePageStateReturn {
 		clearLastAction,
 	};
 }
-

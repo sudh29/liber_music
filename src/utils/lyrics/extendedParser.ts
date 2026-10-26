@@ -1,66 +1,66 @@
 /**
- * 逐字时间歌词解析器模块
+ * Extended word-by-word timed lyrics parser module.
  * 
- * 提供逐字时间歌词解析功能，支持：
- * - 解析包含逐字时间标签的歌词（LYRICS 标签内嵌的卡拉 OK 文本）
- * - 解析格式：<mm:ss.xx>字 或 [mm:ss.xx]字
- * - 用于实现卡拉OK逐字高亮效果
+ * Provides word-by-word lyric parsing capabilities:
+ * - Parses lyrics with per-character/word time tags (karaoke text embedded in LYRICS tags)
+ * - Supported formats: <mm:ss.xx>char or [mm:ss.xx]char
+ * - Used for karaoke word-by-word progressive highlight effects
  * 
- * 逐字时间歌词格式示例：
- * [00:12.34]这<00:12.45>是<00:12.56>歌<00:12.67>词
- * 或
- * <00:12.34>这<00:12.45>是<00:12.56>歌<00:12.67>词
+ * Format examples:
+ * [00:12.34]This<00:12.45>is<00:12.56>a<00:12.67>song
+ * or
+ * <00:12.34>This<00:12.45>is<00:12.56>a<00:12.67>song
  */
 
 /**
- * 逐字歌词字符接口
- * 表示一个字符及其对应的时间点
+ * Extended lyric character interface.
+ * Represents a single character with its corresponding timestamp.
  */
 export interface ExtendedLyricChar {
-	/** 字符内容 */
+	/** Character content */
 	char: string;
-	/** 该字符的时间点（秒） */
+	/** Timestamp for character in seconds */
 	time: number;
 }
 
 /**
- * 逐字歌词行接口
- * 表示一行逐字歌词，包含行时间和字符数组
+ * Extended lyric line interface.
+ * Represents a line of extended lyrics containing line timing and character array.
  */
 export interface ExtendedLyricLine {
-	/** 歌词行的时间点（秒） */
+	/** Line timestamp in seconds */
 	time: number;
-	/** 该行的逐字字符数组 */
+	/** Array of characters in line */
 	chars: ExtendedLyricChar[];
-	/** 该行的纯文本（用于显示） */
+	/** Plain text of line for display */
 	text: string;
 	/**
-	 * 本行歌词中出现的所有时间戳（行首 + 每个逐字标签），升序去重。
-	 * 用于计算每个字/词的高亮结束时间：取严格大于该字开始时间的下一个时间戳。
+	 * All timestamps present in this line (leading line time + each character tag), sorted ascending without duplicates.
+	 * Used to compute end time for each character/word: takes the next timestamp strictly greater than character start time.
 	 */
 	lineTimeStamps: readonly number[];
 }
 
 /**
- * 逐字歌词解析器类
+ * Extended lyric parser class.
  * 
- * 提供静态方法用于解析逐字时间歌词文本
+ * Provides static methods to parse word-by-word timed lyric text.
  */
 export class LyricsExtendedParser {
 	/**
-	 * 解析逐字时间歌词文本
+	 * Parses extended word-by-word lyric text.
 	 * 
-	 * 将包含逐字时间标签的歌词文本解析为逐字歌词行数组。
-	 * 支持格式：
-	 * - [mm:ss.xx]字<mm:ss.xx>字（行时间标签 + 逐字时间标签）
-	 * - <mm:ss.xx>字<mm:ss.xx>字（只有逐字时间标签）
+	 * Converts lyric text containing per-character time tags into an array of ExtendedLyricLine objects.
+	 * Supports formats:
+	 * - [mm:ss.xx]char<mm:ss.xx>char (line timestamp + character timestamps)
+	 * - <mm:ss.xx>char<mm:ss.xx>char (character timestamps only)
 	 * 
-	 * @param extendedContent 逐字时间歌词文本内容
-	 * @returns 返回解析后的逐字歌词行数组，按时间排序
+	 * @param extendedContent Extended lyric text
+	 * @returns Array of extended lyric lines sorted by time
 	 * 
 	 * @example
 	 * ```typescript
-	 * const extended = "[00:12.34]这<00:12.45>是<00:12.56>歌<00:12.67>词";
+	 * const extended = "[00:12.34]This<00:12.45>is<00:12.56>a<00:12.67>song";
 	 * const lines = LyricsExtendedParser.parse(extended);
 	 * ```
 	 */
@@ -70,12 +70,12 @@ export class LyricsExtendedParser {
 		}
 
 		const lines: ExtendedLyricLine[] = [];
-		// 按行分割歌词文本
+		// Split lines
 		const textLines = extendedContent.split(/\r?\n/);
 
-		// 匹配行时间标签的正则表达式：[mm:ss.xx]
+		// Line timestamp regex: [mm:ss.xx]
 		const lineTimeRegex = /\[(\d{2}):(\d{2})\.(\d{2})\]/;
-		// 匹配逐字时间标签的正则表达式：<mm:ss.xx> 或 [mm:ss.xx]
+		// Character timestamp regex: <mm:ss.xx> or [mm:ss.xx]
 		const charTimeRegex = /[<[](\d{2}):(\d{2})\.(\d{2})[>\]]/g;
 
 		const parseTagToSeconds = (m: RegExpMatchArray): number | null => {
@@ -92,12 +92,12 @@ export class LyricsExtendedParser {
 		textLines.forEach((line) => {
 			if (!line.trim()) return;
 
-			// 查找行时间标签
+			// Find line timestamp
 			const lineTimeMatch = line.match(lineTimeRegex);
 			let lineTime = 0;
 			
 			if (lineTimeMatch) {
-				// 解析行时间：分钟、秒、百分秒
+				// Parse line time: minutes, seconds, centiseconds
 				const minutesStr = lineTimeMatch[1];
 				const secondsStr = lineTimeMatch[2];
 				const hundredthsStr = lineTimeMatch[3];
@@ -109,7 +109,7 @@ export class LyricsExtendedParser {
 				}
 			}
 
-			// 移除行时间标签，只保留逐字时间标签和文本
+			// Remove line timestamp, retaining character timestamps and text
 			let processedLine = line.replace(lineTimeRegex, "");
 
 			const stampSet = new Set<number>();
@@ -117,7 +117,7 @@ export class LyricsExtendedParser {
 				stampSet.add(lineTime);
 			}
 
-			// 解析逐字时间标签
+			// Parse character timestamps
 			const chars: ExtendedLyricChar[] = [];
 			const matches = [...processedLine.matchAll(charTimeRegex)];
 			for (const m of matches) {
@@ -126,14 +126,14 @@ export class LyricsExtendedParser {
 			}
 
 			if (matches.length === 0) {
-				// 如果没有逐字时间标签，将整行文本作为单个字符组（不 trim 行内容，保留空格）
+				// If no character timestamps, treat line as single group (preserving spaces)
 				if (processedLine.trim().length > 0) {
 					for (const char of processedLine) {
 						chars.push({ char, time: lineTime });
 					}
 				}
 			} else {
-				// 有逐字时间标签，解析每个字符的时间
+				// Has character timestamps, parse time for each character
 				let lastIndex = 0;
 				let lastTime = lineTime;
 
@@ -143,22 +143,22 @@ export class LyricsExtendedParser {
 						return;
 					}
 
-					// 获取当前时间标签之前的文本
+					// Get text preceding current timestamp
 					const matchIndex = match.index ?? 0;
 					const beforeText = processedLine.substring(lastIndex, matchIndex);
 
-					// 将文本分割为字符，每个字符都关联上一个时间标签的时间
+					// Associate each character with preceding timestamp
 					for (const char of beforeText) {
 						chars.push({ char, time: lastTime });
 					}
 
-					// 更新索引和时间
+					// Update index and timestamp
 					const matchLength = match[0]?.length ?? 0;
 					lastIndex = matchIndex + matchLength;
 					lastTime = time;
 				});
 
-				// 处理最后一个时间标签之后的文本
+				// Handle remaining text after last timestamp
 				const remainingText = processedLine.substring(lastIndex);
 				for (const char of remainingText) {
 					chars.push({ char, time: lastTime });
@@ -167,12 +167,12 @@ export class LyricsExtendedParser {
 
 			const lineTimeStamps = [...stampSet].sort((a, b) => a - b);
 
-			// 如果解析出字符，添加到结果中
+			// Add parsed characters to result
 			if (chars.length > 0) {
-				// 生成纯文本（移除所有时间标签）
+				// Generate plain text (all timestamps stripped)
 				const text = chars.map((c) => c.char).join("");
 
-				// 如果没有行时间，使用第一个字符的时间作为行时间
+				// If no line time, use first character's time
 				const finalLineTime = lineTime > 0 ? lineTime : (chars[0]?.time || 0);
 
 				lines.push({
@@ -184,8 +184,7 @@ export class LyricsExtendedParser {
 			}
 		});
 
-		// 按时间排序，确保歌词按播放顺序排列
+		// Sort by timestamp
 		return lines.sort((a, b) => a.time - b.time);
 	}
 }
-

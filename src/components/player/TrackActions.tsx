@@ -1,13 +1,13 @@
 /**
- * 曲目操作组件
+ * Track actions component
  * 
- * 提供当前播放曲目的操作功能，包括：
- * - 添加到歌单
- * - 切换收藏状态
- * - 音量控制（0%、25%、50%、75%、100%）
- * - 播放速度控制（0.5x - 2.0x）
+ * Provides action buttons for the currently playing track, including:
+ * - Add to playlist
+ * - Toggle favorite status
+ * - Volume control (0%–100%)
+ * - Playback rate control (0.5x–2.0x)
  * 
- * 支持下拉菜单选择音量和播放速度。
+ * Supports popups for volume and playback rate adjustments.
  */
 
 import React from "react";
@@ -17,35 +17,35 @@ import { setIcon } from "obsidian";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 曲目操作组件的属性接口
+ * Props interface for TrackActions component
  */
 export interface TrackActionsProps {
-	/** 当前播放的曲目路径 */
+	/** Path of currently playing track */
 	currentPath: string | null;
-	/** 可选的 section ID，用于更新列表上下文 */
+	/** Optional section ID to update list context */
 	sectionId?: string | null;
-	/** 是否已收藏 */
+	/** Whether the track is favorited */
 	isFavorite: boolean;
-	/** 当前音量（0-1） */
+	/** Current volume (0-1) */
 	volume: number;
-	/** 当前播放速度（0.5-2.0） */
+	/** Current playback rate (0.5-2.0) */
 	playbackRate: number;
-	/** 添加到歌单的回调函数 */
+	/** Callback function to add track to playlist */
 	onAddToPlaylist: (path: string, sectionId?: string) => void;
-	/** 切换收藏状态的回调函数 */
+	/** Callback function to toggle favorite status */
 	onToggleFavorite: (path: string, sectionId?: string) => void;
-	/** 音量改变的回调函数 */
+	/** Callback function on volume change */
 	onVolumeChange: (volume: number) => void;
-	/** 播放速度改变的回调函数 */
+	/** Callback function on playback rate change */
 	onPlaybackRateChange: (rate: number) => void;
 }
 
 /**
- * 曲目操作组件
+ * Track actions component
  * 
- * 显示曲目操作按钮和下拉菜单，支持添加到歌单、收藏、音量控制、播放速度控制。
+ * Displays action buttons and popups for current track: add to playlist, favorite, volume, and playback rate.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function TrackActions({
 	currentPath,
@@ -67,7 +67,7 @@ export function TrackActions({
 	const playbackRateButtonRef = React.useRef<HTMLButtonElement>(null);
 	const playbackRateMenuRef = React.useRef<HTMLDivElement>(null);
 
-	// 设置音量图标：音量为0时使用 volume-x，否则使用 volume-2
+	// Set volume icon: use volume-x when 0, otherwise volume-2
 	React.useEffect(() => {
 		if (volumeButtonRef.current && currentPath) {
 			if (volume === 0) {
@@ -78,7 +78,7 @@ export function TrackActions({
 		}
 	}, [volume, currentPath]);
 
-	// 设置播放速度图标
+	// Set playback rate icon
 	React.useEffect(() => {
 		if (playbackRateButtonRef.current && currentPath) {
 			setIcon(playbackRateButtonRef.current, "gauge-circle");
@@ -97,7 +97,7 @@ export function TrackActions({
 		}
 	}, [currentPath, sectionId, onToggleFavorite]);
 
-	// 根据指针 Y 坐标计算音量（0-1），垂直滑块：顶部为 100%
+	// Calculate volume (0-1) from pointer clientY; vertical slider with 100% at the top
 	const updateVolumeFromY = React.useCallback((clientY: number) => {
 		const track = volumeTrackRef.current;
 		if (!track) return;
@@ -107,7 +107,7 @@ export function TrackActions({
 		onVolumeChange(Math.round(clamped * 100) / 100);
 	}, [onVolumeChange]);
 
-	// 拖拽期间拦截 touchmove（非 passive + preventDefault），避免 WebView 把垂直滑动识别为页面滚动/边缘手势
+	// Intercept touchmove while dragging (non-passive + preventDefault) to prevent WebView scrolling
 	React.useEffect(() => {
 		if (!isVolumeDragging) return;
 		const blockTouchMove = (e: TouchEvent) => {
@@ -119,7 +119,7 @@ export function TrackActions({
 		};
 	}, [isVolumeDragging]);
 
-	// 指针按下轨道或滑块 — 开始拖拽（兼容鼠标与触摸，参考进度条实现）
+	// Pointer down on track or thumb - begin dragging (supports mouse and touch)
 	const handleVolumePointerDown = React.useCallback((e: React.PointerEvent) => {
 		if (e.pointerType === "mouse" && e.button !== 0) return;
 		e.preventDefault();
@@ -128,12 +128,12 @@ export function TrackActions({
 		try {
 			(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 		} catch {
-			// 捕获失败也继续，至少支持单击定位
+			// Continue even if capture fails
 		}
 		updateVolumeFromY(e.clientY);
 	}, [updateVolumeFromY]);
 
-	// 拖拽中：指针移动（通过指针捕获，移动端也能持续收到事件）
+	// Pointer move during drag: continuous updates via pointer capture
 	const handleVolumePointerMove = React.useCallback((e: React.PointerEvent) => {
 		if (!isVolumeDragging) return;
 		e.preventDefault();
@@ -141,7 +141,7 @@ export function TrackActions({
 		updateVolumeFromY(e.clientY);
 	}, [isVolumeDragging, updateVolumeFromY]);
 
-	// 拖拽结束：释放指针捕获
+	// Pointer up: release pointer capture and end drag
 	const handleVolumePointerUp = React.useCallback((e: React.PointerEvent) => {
 		if (!isVolumeDragging) return;
 		e.stopPropagation();
@@ -150,7 +150,7 @@ export function TrackActions({
 				(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
 			}
 		} catch {
-			// 已释放时忽略
+			// Ignore if already released
 		}
 		setIsVolumeDragging(false);
 	}, [isVolumeDragging]);
@@ -172,29 +172,29 @@ export function TrackActions({
 		setIsPlaybackRateMenuVisible(false);
 	}, [onPlaybackRateChange]);
 
-	// 点击外部区域关闭音量菜单和播放速度菜单
+	// Dismiss volume and playback rate menus when clicking outside
 	React.useEffect(() => {
 		if (!isVolumeMenuVisible && !isPlaybackRateMenuVisible) return;
 
 		const handleClickOutside = (event: MouseEvent) => {
 			const target = event.target as Node;
 			
-			// 检查是否点击在音量相关区域（按钮或菜单）
+			// Check if click was inside volume button or menu
 			const isClickInsideVolume = 
 				(volumeButtonRef.current?.contains(target)) ||
 				(volumeMenuRef.current?.contains(target));
 			
-			// 检查是否点击在播放速度相关区域（按钮或菜单）
+			// Check if click was inside playback rate button or menu
 			const isClickInsidePlaybackRate =
 				(playbackRateButtonRef.current?.contains(target)) ||
 				(playbackRateMenuRef.current?.contains(target));
 			
-			// 如果点击在音量区域外且音量菜单可见，关闭音量菜单
+			// Close volume menu if clicked outside
 			if (isVolumeMenuVisible && !isClickInsideVolume) {
 				setIsVolumeMenuVisible(false);
 			}
 			
-			// 如果点击在播放速度区域外且播放速度菜单可见，关闭播放速度菜单
+			// Close playback rate menu if clicked outside
 			if (isPlaybackRateMenuVisible && !isClickInsidePlaybackRate) {
 				setIsPlaybackRateMenuVisible(false);
 			}

@@ -1,22 +1,22 @@
 /**
- * ReplayGain 音量增益解析与补偿计算模块
+ * ReplayGain volume gain parsing and compensation calculation module.
  * 
- * 符合 EBU R128 / ReplayGain 标准：
- * - 解析 ID3 (TXXX:REPLAYGAIN_TRACK_GAIN) 与 Vorbis (REPLAYGAIN_TRACK_GAIN) 标签
- * - 计算线性音量缩放倍率：10 ^ (gainDb / 20)
- * - 结合基础音量计算补偿后的播放器实际音量（限制在 [0.0, 1.0] 范围内）
+ * Conforms to EBU R128 / ReplayGain standards:
+ * - Parses ID3 (TXXX:REPLAYGAIN_TRACK_GAIN) and Vorbis (REPLAYGAIN_TRACK_GAIN) tags
+ * - Calculates linear volume multiplier: 10 ^ (gainDb / 20)
+ * - Combines base volume to calculate compensated actual player volume (clamped to [0.0, 1.0])
  */
 
 /**
- * 解析各种格式的 ReplayGain 增益值（dB）
+ * Parses ReplayGain gain values (dB) in various formats.
  * 
- * 支持格式：
- * - 数值：-6.2
- * - 字符串："-6.2 dB", "+1.50 dB", "-4.5dB"
- * - 对象：包含 ratio 或 gain 属性
+ * Supported formats:
+ * - Numeric: -6.2
+ * - String: "-6.2 dB", "+1.50 dB", "-4.5dB"
+ * - Object: containing ratio or gain property
  * 
- * @param gain 原始增益标签值
- * @returns 解析后的 dB 数值，无法解析时返回 undefined
+ * @param gain Raw gain tag value
+ * @returns Parsed dB numeric value, or undefined if unparseable
  */
 export function parseReplayGain(gain: unknown): number | undefined {
 	if (typeof gain === "number" && Number.isFinite(gain)) {
@@ -37,7 +37,7 @@ export function parseReplayGain(gain: unknown): number | undefined {
 	if (gain && typeof gain === "object") {
 		const maybeRatio = (gain as { ratio?: unknown }).ratio;
 		if (typeof maybeRatio === "number" && Number.isFinite(maybeRatio) && maybeRatio > 0) {
-			// ratio 转为 dB: 20 * log10(ratio)
+			// Convert ratio to dB: 20 * log10(ratio)
 			return 20 * Math.log10(maybeRatio);
 		}
 	}
@@ -46,16 +46,16 @@ export function parseReplayGain(gain: unknown): number | undefined {
 }
 
 /**
- * 根据 dB 增益值计算线性音量倍率
+ * Calculates linear volume multiplier based on dB gain value.
  * 
- * 公式：multiplier = 10 ^ (gainDb / 20)
- * 例如：
+ * Formula: multiplier = 10 ^ (gainDb / 20)
+ * Examples:
  * - 0 dB -> 1.0
  * - -6.02 dB -> ~0.5
  * - +6.02 dB -> ~2.0
  * 
- * @param gainDb 音轨增益（dB）
- * @returns 线性倍率乘数
+ * @param gainDb Track gain (dB)
+ * @returns Linear multiplier
  */
 export function calculateReplayGainMultiplier(gainDb: number | undefined): number {
 	if (gainDb === undefined || !Number.isFinite(gainDb)) {
@@ -65,11 +65,11 @@ export function calculateReplayGainMultiplier(gainDb: number | undefined): numbe
 }
 
 /**
- * 结合用户设定音量与 ReplayGain 增益，计算最终应用到 HTMLAudioElement 的 volume 值
+ * Combines user-set volume with ReplayGain gain to calculate final volume applied to HTMLAudioElement.
  * 
- * @param baseVolume 用户音量（0.0 - 1.0）
- * @param gainDb 音轨增益（dB）
- * @returns 限制在 [0.0, 1.0] 范围内的最终音量
+ * @param baseVolume User base volume (0.0 - 1.0)
+ * @param gainDb Track gain (dB)
+ * @returns Final volume clamped to [0.0, 1.0]
  */
 export function applyReplayGainToVolume(
 	baseVolume: number,

@@ -1,11 +1,11 @@
 /**
- * 逐字时间歌词完整列表组件
+ * Word-by-word synchronized lyrics full view component
  * 
- * 显示完整的逐字时间歌词列表，支持：
- * - 自动滚动到当前播放的歌词行
- * - 高亮显示当前播放的歌词行
- * - 逐字高亮的卡拉OK效果
- * - 点击歌词行跳转到对应时间点
+ * Displays the complete word-by-word lyrics list, supporting:
+ * - Auto-scroll to currently playing lyric line
+ * - Highlight currently playing lyric line
+ * - Word-by-word highlighted karaoke effect
+ * - Click lyric line to seek to corresponding timestamp
  */
 
 import React from "react";
@@ -16,29 +16,29 @@ import { buildKaraokeUnits } from "@/utils/lyrics/karaokeUnits";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 逐字时间歌词完整列表组件的属性接口
+ * Props interface for LyricsExtendedFull component
  */
 export interface LyricsExtendedFullProps {
-	/** 完整的逐字时间歌词列表 */
+	/** Full list of extended lyric lines */
 	fullLyrics: ExtendedLyricLine[];
-	/** 当前播放时间（秒），用于计算逐字高亮进度 */
+	/** Current playback time in seconds, used to compute word fill progress */
 	currentTime: number;
-	/** 当前激活的歌词行索引（用于滚动定位） */
+	/** Currently active lyric line index (used for scroll positioning) */
 	activeIndex: number;
-	/** 当前播放的歌词索引，用于加大字号高亮 */
+	/** Currently playing lyric line index, used for enlarged highlight */
 	playingIndex: number;
-	/** 切换显示模式的回调函数 */
+	/** Callback function to toggle display mode */
 	onToggleMode: () => void;
-	/** 点击歌词行时的跳转（不强制开始播放） */
+	/** Seek callback when a lyric line is clicked (does not force playback to start) */
 	onSeek: (time: number) => void;
-	/** 滚动容器的 ref */
+	/** Ref to scroll container */
 	scrollRef: React.RefObject<HTMLDivElement>;
-	/** 歌词行的 ref 数组，用于滚动定位 */
+	/** Array of line refs for scroll targeting */
 	lineRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
 }
 
 /**
- * 歌词行组件的属性接口（内部使用，使用 memo 优化）
+ * Props interface for LineComponent (internal, memoized)
  */
 interface LineProps {
 	line: ExtendedLyricLine;
@@ -54,10 +54,10 @@ interface LineProps {
 const LineComponent = React.memo(({ line, index, currentTime, isActive, isPlaying, playingIndex, onSeek, lineRef }: LineProps) => {
 	const unitsData = React.useMemo(() => buildKaraokeUnits(line.chars, line), [line]);
 
-	// 计算每个字符的进度，只在当前行激活时计算
+	// Calculate progress for each character, only when current line is active
 	const shouldCalculateProgress = isActive || isPlaying;
 	
-	// 判断是否是播放过的歌词（index < playingIndex）
+	// Determine if lyric line has already played (index < playingIndex)
 	const isPlayed = playingIndex >= 0 && index < playingIndex;
 	
 	return (
@@ -128,9 +128,9 @@ export function LyricsExtendedFull({
 	scrollRef,
 	lineRefs,
 }: LyricsExtendedFullProps) {
-	// 在首/尾各放置一段等于容器可视高度一半的空白，使第一行与最后一行
-	// 都能滚动到容器正中央（与普通歌词视图 LyricsFull 一致；
-	// 若无占位，Math.max(0, ...) 会把首行钳在容器顶部无法居中）
+	// Place half-container-height padding at top and bottom so the first and last
+	// lines can be scrolled to the center (consistent with LyricsFull;
+	// without spacer, Math.max(0, ...) clamps the first line to the top)
 	const [halfHeight, setHalfHeight] = React.useState(0);
 	React.useLayoutEffect(() => {
 		const container = scrollRef.current;
@@ -142,7 +142,7 @@ export function LyricsExtendedFull({
 		return () => ro.disconnect();
 	}, [scrollRef, fullLyrics]);
 
-	// 如果没有歌词，显示提示信息
+	// If no lyrics, display placeholder message
 	if (!fullLyrics || fullLyrics.length === 0) {
 		return (
 			<div className="lyrics-extended lyrics-extended-empty">
@@ -160,7 +160,7 @@ export function LyricsExtendedFull({
 				paddingBottom: 0,
 			}}
 		>
-			{/* 首尾占位空白（.lyrics-spacer 样式定义在 LyricsFull.css，全局生效） */}
+			{/* Top and bottom spacer padding (.lyrics-spacer defined in LyricsFull.css, globally active) */}
 			<div className="lyrics-spacer" style={{ height: halfHeight }} aria-hidden="true" />
 			{fullLyrics.map((line, index) => (
 				<LineComponent

@@ -3,32 +3,32 @@ import { type IconName, setIcon } from "obsidian";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 导航图标按钮组件的属性接口
+ * Props interface for navigation icon button component
  */
 interface NavIconButtonProps {
-	/** Obsidian 图标名称 */
+	/** Obsidian icon name */
 	icon: IconName;
-	/** 按钮的标签文本（用于无障碍访问） */
+	/** Button label text (for accessibility) */
 	label: string;
-	/** 是否处于激活状态（用于高亮显示当前页面） */
+	/** Whether the button is active (used to highlight current page) */
 	active?: boolean;
-	/** 是否禁用按钮 */
+	/** Whether the button is disabled */
 	disabled?: boolean;
-	/** 点击按钮时的回调函数 */
+	/** Callback function on button click */
 	onClick: () => void;
-	/** 是否显示提示圆点 */
+	/** Whether to show notification badge dot */
 	showBadge?: boolean;
-	/** 重建提示圆点的无障碍标签 */
+	/** Accessibility label for rebuild notification badge */
 	rebuildBadgeAria?: string;
 }
 
 /**
- * 导航图标按钮组件
+ * Navigation icon button component
  * 
- * 用于导航栏中的图标按钮，支持激活状态显示。
- * 使用 Obsidian 内置图标系统，自动设置图标。
+ * Used for icon buttons in navigation bar, supporting active state highlighting.
+ * Uses Obsidian's built-in icon system to set icons automatically.
  * 
- * @param props 按钮属性
+ * @param props Button properties
  */
 function NavIconButton({ icon, label, active, disabled, onClick, showBadge, rebuildBadgeAria }: NavIconButtonProps) {
 	const buttonRef = React.useRef<HTMLButtonElement>(null);
@@ -57,44 +57,44 @@ function NavIconButton({ icon, label, active, disabled, onClick, showBadge, rebu
 }
 
 /**
- * 导航栏组件的属性接口
+ * Props interface for NavigationBar component
  */
 export interface NavigationBarProps {
-	/** 当前激活的标签页（"currentDisc" 表示当前唱片页，"library" 表示音乐库页） */
+	/** Currently active tab ("currentDisc" for current disc page, "library" for music library page) */
 	activeTab: "currentDisc" | "library";
-	/** 当前页面（仅在 activeTab 为 "currentDisc" 时有效，"disc" 表示唱片页，"lyrics" 表示歌词页） */
+	/** Current page (only valid when activeTab is "currentDisc", "disc" for disc page, "lyrics" for lyrics page) */
 	currentPage?: "disc" | "lyrics";
-	/** 打开音乐库页面的回调函数 */
+	/** Callback function to open music library page */
 	onOpenLibrary: () => void;
-	/** 打开唱片页面的回调函数 */
+	/** Callback function to open disc page */
 	onOpenDisc: () => void;
-	/** 打开歌词页面的回调函数（可选） */
+	/** Callback function to open lyrics page (optional) */
 	onOpenLyrics?: () => void;
-	/** 重建所有数据的回调函数（异步） */
+	/** Callback function to rebuild all data (async) */
 	onRebuild: () => Promise<void>;
-	/** 是否正在重建（用于禁用重建按钮） */
+	/** Whether rebuild is currently in progress (disables rebuild button) */
 	isRebuilding?: boolean;
-	/** 是否需要重建索引（用于显示提示圆点） */
+	/** Whether library index needs rebuilding (shows badge dot) */
 	needsRebuild?: boolean;
-	/** 打开搜索对话框的回调函数 */
+	/** Callback function to open search modal */
 	onSearch: () => void;
-	/** 打开设置页面的回调函数 */
+	/** Callback function to open settings tab */
 	onSettings: () => void;
 }
 
 /**
- * 导航栏组件
+ * Navigation bar component
  * 
- * 提供音乐播放器的主要导航功能，包括：
- * - 搜索歌曲
- * - 切换到音乐库页面
- * - 切换到唱片/歌词页面
- * - 重建所有数据
- * - 打开设置
+ * Provides primary navigation features for the music player, including:
+ * - Search tracks
+ * - Switch to music library page
+ * - Switch to disc / lyrics page
+ * - Rebuild all data
+ * - Open settings
  * 
- * 根据当前激活的标签页和页面，自动高亮对应的按钮。
+ * Automatically highlights the corresponding button based on active tab and page.
  * 
- * @param props 导航栏属性
+ * @param props Navigation bar properties
  */
 export function NavigationBar(props: NavigationBarProps) {
 	const {

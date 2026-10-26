@@ -1,88 +1,87 @@
 /**
- * LRC 歌词解析器模块
+ * LRC lyrics parser module.
  * 
- * 提供歌词解析和处理功能，支持：
- * - 解析 LRC 格式的歌词文件
- * - 清理歌词文本中的时间标签
- * - 解析时间标签用于卡拉OK效果
+ * Provides lyric parsing and processing capabilities:
+ * - Parses LRC formatted lyrics
+ * - Strips time tags from lyric text
+ * - Supports timestamps for karaoke display
  * 
- * LRC 格式示例：
- * [00:12.34]这是第一句歌词
- * [00:15.67]这是第二句歌词
+ * LRC format example:
+ * [00:12.34]This is the first lyric line
+ * [00:15.67]This is the second lyric line
  */
 
 /**
- * 歌词行接口
+ * Lyric line interface.
  * 
- * 表示一行歌词，包含时间和文本信息
+ * Represents a single lyric line with timing and text information.
  */
 export interface LyricLine {
-	/** 歌词行的时间点（秒） */
+	/** Lyric line timestamp (seconds) */
 	time: number;
-	/** 歌词文本（可能包含时间标签，用于卡拉OK效果） */
+	/** Lyric text (may contain timestamps for karaoke effects) */
 	text: string;
 }
 
 /**
- * 歌词解析器类
+ * Lyric parser class.
  * 
- * 提供静态方法用于解析和处理歌词文本
+ * Provides static methods to parse and process lyric text.
  */
 export class LyricsParser {
 	/**
-	 * 解析 LRC 格式的歌词文件
+	 * Parses LRC formatted lyric content.
 	 * 
-	 * 将 LRC 格式的歌词文本解析为歌词行数组。
-	 * 支持标准 LRC 格式： [mm:ss.xx]歌词文本
+	 * Converts LRC text into an array of LyricLine objects.
+	 * Supports standard LRC format: [mm:ss.xx]text
 	 * 
-	 * @param lrcContent LRC 格式的歌词文本内容
-	 * @returns 返回解析后的歌词行数组，按时间排序
+	 * @param lrcContent LRC formatted text
+	 * @returns Parsed lyric line array sorted by time
 	 * 
 	 * @example
 	 * ```typescript
-	 * const lrc = "[00:12.34]这是第一句歌词\n[00:15.67]这是第二句歌词";
+	 * const lrc = "[00:12.34]First line\n[00:15.67]Second line";
 	 * const lines = LyricsParser.parseLRC(lrc);
 	 * // lines: [
-	 * //   { time: 12.34, text: "这是第一句歌词" },
-	 * //   { time: 15.67, text: "这是第二句歌词" }
+	 * //   { time: 12.34, text: "First line" },
+	 * //   { time: 15.67, text: "Second line" }
 	 * // ]
 	 * ```
 	 */
 	static parseLRC(lrcContent: string): LyricLine[] {
-		// 按行分割歌词文本
+		// Split lines
 		const lines = lrcContent.split("\n");
-		// 匹配时间标签的正则表达式：[mm:ss.xx]
+		// Timestamp regex: [mm:ss.xx]
 		const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2})\]/g;
 		const lyrics: LyricLine[] = [];
 
-		// 遍历每一行
+		// Process each line
 		lines.forEach((line) => {
-			// 查找所有时间标签
+			// Find all timestamps
 			const matches = [...line.matchAll(timeRegex)];
 			if (matches.length === 0) {
 				return;
 			}
 
-			// 提取歌词文本（移除行内时间标签；不 trim，以保留英文词间空格与行内前导空格）
-			// 一行内所有时间标签共享同一段文本，只需替换一次
+			// Extract text (remove inline timestamps; do not trim to preserve word spacing and leading indent)
 			const text = line.replace(/\[(\d{2}):(\d{2})\.(\d{2})\]/g, "");
 			if (text.trim().length === 0) {
 				return;
 			}
 
-			// 如果一行包含多个时间标签，为每个时间标签创建一条歌词行
+			// If line contains multiple timestamps, create a line for each
 			matches.forEach((match) => {
-				// 解析时间：分钟、秒、百分秒
+				// Parse time: minutes, seconds, centiseconds
 				const minutesStr = match[1];
 				const secondsStr = match[2];
 				const hundredthsStr = match[3];
 				if (!minutesStr || !secondsStr || !hundredthsStr) {
-					return; // 跳过无效的匹配
+					return; // Skip invalid match
 				}
 				const minutes = parseInt(minutesStr);
 				const seconds = parseInt(secondsStr);
 				const hundredths = parseInt(hundredthsStr);
-				// 转换为秒数
+				// Convert to seconds
 				const time = minutes * 60 + seconds + hundredths / 100;
 
 				lyrics.push({
@@ -92,36 +91,33 @@ export class LyricsParser {
 			});
 		});
 
-		// 按时间排序，确保歌词按播放顺序排列
+		// Sort by timestamp
 		return lyrics.sort((a, b) => a.time - b.time);
 	}
 
 	/**
-	 * 清理歌词文本中的时间标签，返回纯文本
+	 * Strips timestamps from lyric text, returning plain text.
 	 * 
-	 * 移除所有格式的时间标签（方括号和尖括号格式），返回干净的歌词文本。
-	 * 用于显示歌词时去除时间标签。
+	 * Removes all formats of timestamps (square and angle brackets).
 	 * 
-	 * @param text 包含时间标签的歌词文本
-	 * @returns 返回清理后的纯文本歌词
+	 * @param text Lyric text containing timestamps
+	 * @returns Cleaned plain text
 	 * 
 	 * @example
 	 * ```typescript
-	 * const text = "[00:12.34]这是歌词<00:15.67>更多文本";
+	 * const text = "[00:12.34]Lyrics<00:15.67>more text";
 	 * const clean = LyricsParser.cleanText(text);
-	 * // clean: "这是歌词更多文本"
+	 * // clean: "Lyricsmore text"
 	 * ```
 	 */
 	static cleanText(text: string): string {
 		return text
-			.replace(/\[\d+:\d+\.\d+\]/g, "") // 移除 [mm:ss.xx] 格式的时间标签
-			.replace(/\[\d+:\d+\]/g, "") // 移除 [mm:ss] 格式的时间标签
-			.replace(/\[.*?\]/g, "") // 移除任何其他方括号内的内容
-			.replace(/<\d+:\d+\.\d+>/g, "") // 移除 <mm:ss.xx> 格式的时间标签
-			.replace(/<\d+:\d+>/g, "") // 移除 <mm:ss> 格式的时间标签
-			.replace(/<.*?>/g, "") // 移除任何其他尖括号内的内容
-			.trimEnd(); // 仅去掉行尾空白，保留行首空格
+			.replace(/\[\d+:\d+\.\d+\]/g, "") // Remove [mm:ss.xx]
+			.replace(/\[\d+:\d+\]/g, "") // Remove [mm:ss]
+			.replace(/\[.*?\]/g, "") // Remove any other bracketed text
+			.replace(/<\d+:\d+\.\d+>/g, "") // Remove <mm:ss.xx>
+			.replace(/<\d+:\d+>/g, "") // Remove <mm:ss>
+			.replace(/<.*?>/g, "") // Remove any other angle-bracketed text
+			.trimEnd(); // Trim trailing whitespace only, preserving leading indentation
 	}
 }
-
-

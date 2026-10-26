@@ -5,7 +5,6 @@
         <img src="https://img.shields.io/github/downloads/TracingOrigins/obsidian-music-player-plugin/total?logo=github" alt="GitHub Downloads">
         <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT">
     </p>
-    <p>[English | <a href="README.zh.md">中文</a>]</p>
     <p>An audiophile-grade skeuomorphic vinyl music player embedded directly in the Obsidian sidebar. Features local music library management, synchronized karaoke lyrics, playlist controls, and offline-first vault playback.</p>
 </div>
 

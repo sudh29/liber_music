@@ -4,7 +4,7 @@ import { builtinModules } from 'node:module';
 import fs from "node:fs";
 import path from "node:path";
 
-// ==================== 常量定义 ====================
+// ==================== Constants ====================
 
 const banner =
 `/*
@@ -16,15 +16,15 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = (process.argv[2] === "production");
 const outDir = "dist";
 
-/** npm 包 `buffer` 的入口；用别名避免源码写 `from "buffer"` 触发「Node 内置 buffer」类 lint */
+/** Entry point of npm package `buffer`. Uses alias to avoid importing directly from "buffer" which triggers node built-in warnings. */
 const bufferPolyfillEntry = path.join(process.cwd(), "node_modules", "buffer", "index.js");
 
-// 路径常量
+// Path constants
 const cssRoot = path.join(process.cwd(), 'src');
 const cssDest = path.join(process.cwd(), outDir, 'styles.css');
 
-// ==================== 工具函数 ====================
-// 递归收集 src 下的所有 CSS 文件
+// ==================== Utility Functions ====================
+// Recursively collects all CSS files under src/
 function collectCssFiles(dir) {
 	const results = [];
 	if (!fs.existsSync(dir)) return results;
@@ -41,8 +41,7 @@ function collectCssFiles(dir) {
 }
 
 /**
- * 将 src/assets 下唱片 UI 的 PNG 转为 data URL，写入一段 CSS（打进 styles.css，不进 main.js）。
- * 发布物仅需 main.js + styles.css + manifest.json 时仍可使用内联图，并减轻对 main.js 的误报扫描。
+ * Converts vinyl UI PNGs under src/assets into data URLs and injects CSS into styles.css (not main.js).
  */
 function buildVinylEmbeddedCssFragment() {
 	const discPath = path.join(process.cwd(), "src", "assets", "disc.png");
@@ -54,7 +53,7 @@ function buildVinylEmbeddedCssFragment() {
 			`.music-player .disc-background.disc-background-embedded{background-image:url("data:image/png;base64,${b64}")}`,
 		);
 	} else {
-		console.warn(`⚠ 未找到 ${discPath}，唱片底图将缺失`);
+		console.warn(`⚠ Missing ${discPath}, vinyl disc image will not render`);
 	}
 	if (fs.existsSync(needlePath)) {
 		const b64 = fs.readFileSync(needlePath).toString("base64");
@@ -62,12 +61,12 @@ function buildVinylEmbeddedCssFragment() {
 			`.music-player .needle-image.needle-image-embedded{background-image:url("data:image/png;base64,${b64}")}`,
 		);
 	} else {
-		console.warn(`⚠ 未找到 ${needlePath}，唱针图将缺失`);
+		console.warn(`⚠ Missing ${needlePath}, vinyl needle image will not render`);
 	}
 	return `/* vinyl assets: inlined from src/assets at build */\n${rules.join("\n")}\n`;
 }
 
-/** 内联进 styles.css 后不应再保留 dist 下的 PNG（避免误以为需随包发布） */
+/** Removes obsolete PNG assets from dist after inlining into styles.css. */
 function removeStaleVinylPngFromDist() {
 	const dir = path.join(process.cwd(), outDir);
 	for (const name of ["disc.png", "needle.png"]) {
@@ -75,27 +74,24 @@ function removeStaleVinylPngFromDist() {
 		try {
 			if (fs.existsSync(p)) fs.unlinkSync(p);
 		} catch (e) {
-			console.warn(`⚠ 无法删除旧产物 ${p}: ${e?.message ?? e}`);
+			console.warn(`⚠ Unable to remove stale artifact ${p}: ${e?.message ?? e}`);
 		}
 	}
 }
 
-// ==================== 主要功能函数 ====================
-// 构建 CSS：将 src 下的所有 CSS 文件合并输出到 dist/styles.css
-// - 开发模式：合并并保留注释，便于阅读和调试
-// - 生产模式：通过 esbuild 压缩并移除注释，生成精简版 CSS
+// ==================== Build Functions ====================
+// Builds CSS: combines all CSS files under src/ into dist/styles.css
 async function buildCSS() {
 	if (!fs.existsSync(cssRoot)) {
-		console.warn('⚠ CSS 根目录不存在: src');
+		console.warn('⚠ CSS root directory does not exist: src');
 		return;
 	}
 
 	const cssFiles = collectCssFiles(cssRoot).sort();
 	if (!cssFiles.length) {
-		// 如果没有任何 CSS 文件，删除 dist 中已存在的 styles.css（如果存在）
 		if (fs.existsSync(cssDest)) {
 			fs.unlinkSync(cssDest);
-			console.log('✓ 已删除 dist/styles.css（源目录中没有 CSS 文件）');
+			console.log('✓ Removed dist/styles.css (no CSS files in source directory)');
 		}
 		return;
 	}
@@ -108,12 +104,8 @@ async function buildCSS() {
 	const combinedCss = `${parts.join("\n\n")}\n\n${buildVinylEmbeddedCssFragment()}`;
 
 	try {
-		// 确保输出目录存在
 		fs.mkdirSync(path.join(process.cwd(), outDir), { recursive: true });
 
-		// 使用 esbuild 转换 CSS
-		// - 生产模式：压缩并移除注释
-		// - 开发模式：不压缩，仅做语法校验
 		const result = await esbuild.transform(combinedCss, {
 			loader: 'css',
 			minify: prod,
@@ -122,17 +114,13 @@ async function buildCSS() {
 
 		fs.writeFileSync(cssDest, result.code);
 	} catch (error) {
-		// 如果转换失败，回退到未压缩版本
-		console.error('构建 CSS 时出错，已回退到未压缩版本:', error);
+		console.error('Error building CSS, fell back to unminified version:', error);
 		fs.writeFileSync(cssDest, combinedCss);
 	}
-
-	// console.log(`✓ CSS 已打包: ${cssDest}（共 ${cssFiles.length} 个文件）`);
 }
 
 /**
- * music-metadata 依赖中残留的 eval("require") 仅用于 Node stream 解析路径（插件只用 parseBuffer）。
- * 发布包中替换为静态 require，避免动态代码执行误报。
+ * Replaces eval("require") in music-metadata with static require to avoid dynamic code execution warnings.
  */
 function stripEvalRequireFromBundle() {
 	const mainPath = path.join(process.cwd(), outDir, "main.js");
@@ -156,22 +144,21 @@ function stripEvalRequirePlugin() {
 	};
 }
 
-// 复制 manifest.json 到输出目录
+// Copies manifest.json to output directory
 function copyManifest() {
 	const src = path.join(process.cwd(), 'manifest.json');
 	const dest = path.join(process.cwd(), outDir, 'manifest.json');
 	
 	try {
-		// 确保输出目录存在
 		fs.mkdirSync(path.join(process.cwd(), outDir), { recursive: true });
 		fs.copyFileSync(src, dest);
 	} catch (e) {
-		console.error('⚠ 复制 manifest.json 失败:', e.message);
+		console.error('⚠ Failed to copy manifest.json:', e.message);
 	}
 }
 
-// ==================== 监听函数 ====================
-// 监听 manifest.json 变化（带防抖和内容比较）
+// ==================== Watchers ====================
+// Watches manifest.json changes with debounce
 function watchManifest() {
 	const manifestPath = path.join(process.cwd(), 'manifest.json');
 	
@@ -183,27 +170,25 @@ function watchManifest() {
 	let lastContent = fs.readFileSync(manifestPath, 'utf8');
 	
 	fs.watch(manifestPath, () => {
-		// 防抖：延迟 100ms 执行
 		if (copyTimer) {
 			clearTimeout(copyTimer);
 		}
 		copyTimer = setTimeout(() => {
 			try {
 				const newContent = fs.readFileSync(manifestPath, 'utf8');
-				// 只有内容真正改变时才复制
 				if (newContent !== lastContent) {
 					lastContent = newContent;
 					copyManifest();
 				}
 			} catch (e) {
-				console.error('⚠ 读取 manifest.json 失败:', e.message);
+				console.error('⚠ Failed to read manifest.json:', e.message);
 			}
 			copyTimer = null;
 		}, 100);
 	});
 }
 
-// 监听 CSS 文件变化
+// Watches CSS and image changes
 function watchCSS() {
 	if (!fs.existsSync(cssRoot)) {
 		return;
@@ -211,9 +196,7 @@ function watchCSS() {
 
 	let buildTimer = null;
 	fs.watch(cssRoot, { recursive: true }, (eventType, filename) => {
-		// CSS 或 src/assets 下 PNG 变化时重建 styles.css（含内联唱片资源）
 		if (filename && (filename.endsWith(".css") || filename.endsWith(".png"))) {
-			// 防抖：延迟 100ms 执行
 			if (buildTimer) {
 				clearTimeout(buildTimer);
 			}
@@ -225,7 +208,7 @@ function watchCSS() {
 	});
 }
 
-// 创建 esbuild context
+// Create esbuild context
 const context = await esbuild.context({
 	banner: {
 		js: banner,
@@ -240,7 +223,7 @@ const context = await esbuild.context({
 		'.ts': 'ts',
 		'.tsx': 'tsx',
 		'.json': 'json',
-		'.css': 'empty', // 忽略 CSS 导入，因为我们使用自定义的 buildCSS 函数生成 styles.css
+		'.css': 'empty', // CSS is handled via buildCSS
 	},
 	external: [
 		'obsidian',
@@ -256,9 +239,7 @@ const context = await esbuild.context({
 		'@lezer/common',
 		'@lezer/highlight',
 		'@lezer/lr',
-		// 不把 process / string_decoder / buffer / events 作为外部依赖，这样像 music-metadata-browser
-		// 这类库中的 require('process/')、require('string_decoder/')、require('buffer') 和 require('events') 可以被正确打包
-		// 这些模块需要被打包以支持移动端
+		// Do not externalize process / string_decoder / buffer / events so mobile builds bundle them properly
 		...builtinModules.filter((m) => m !== 'process' && m !== 'string_decoder' && m !== 'buffer' && m !== 'events')
 	],
 	format: 'cjs',
@@ -267,33 +248,26 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
 	outdir: "dist",
-	// 生产模式下启用代码压缩
 	minify: prod,
-	// 生产模式下移除 console 和 debugger 语句
 	...(prod ? { drop: ['console', 'debugger'] } : {}),
 });
 
-
-// ==================== 主执行逻辑 ====================
+// ==================== Main Execution ====================
 async function main() {
-	// 初始构建：CSS 和 manifest.json
 	await buildCSS();
 	copyManifest();
 
 	if (prod) {
-		// 生产模式：构建并退出
 		await context.rebuild();
 		process.exit(0);
 	} else {
-		// 开发模式：启动监听
 		watchManifest();
 		watchCSS();
 		await context.watch();
 	}
 }
 
-// 执行主函数
 main().catch((error) => {
-	console.error('构建失败:', error);
+	console.error('Build failed:', error);
 	process.exit(1);
 });

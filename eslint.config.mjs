@@ -44,7 +44,7 @@ export default tseslint.config(
 			},
 		},
 		rules: {
-			// TypeScript ESLint 规则
+			// TypeScript ESLint rules
 			"no-unused-vars": "off",
 			"@typescript-eslint/no-unused-vars": [
 				"warn",
@@ -67,13 +67,13 @@ export default tseslint.config(
 			"@typescript-eslint/no-this-alias": "error",
 			"@typescript-eslint/no-deprecated": "warn",
 
-			// 通用 ESLint 规则
+			// General ESLint rules
 			"no-console": ["error", { allow: ["warn", "error", "debug"] }],
 			"no-case-declarations": "error",
 			"no-constant-condition": "error",
 			"prefer-const": "error",
 			"no-var": "error",
-			"no-undef": "off", // Buffer 通过 polyfill 提供
+			"no-undef": "off", // Buffer is provided via polyfill
 			"sort-imports": [
 				"warn",
 				{
@@ -86,8 +86,8 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommended,
-	// 为需要放宽类型安全检查的文件合并规则
-	// 这些文件涉及 Node.js API 和第三方库的类型问题，类型安全警告是不可避免的
+	// Relax type safety checks for specific files
+	// These files interact with Node.js APIs and third-party libraries where type safety warnings are unavoidable
 	{
 		files: [
 			"src/utils/polyfills/buffer.ts",
@@ -100,7 +100,7 @@ export default tseslint.config(
 		],
 		rules: {
 			"import/no-nodejs-modules": "off",
-			// npm 包 `buffer` 与 Node 内置同名；此处仅为浏览器 polyfill，非桌面 Node API
+			// npm package `buffer` shares name with Node builtin; this is browser polyfill only, not desktop Node API
 			"obsidianmd/no-nodejs-modules": "off",
 			"@typescript-eslint/no-require-imports": "off",
 			"@typescript-eslint/no-explicit-any": "off",

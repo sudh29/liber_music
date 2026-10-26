@@ -1,5 +1,3 @@
-> English | [中文](./contributing.zh.md)
-
 ## 🤝 Contributing
 
 We welcome contributions from the community! Here's how you can help:

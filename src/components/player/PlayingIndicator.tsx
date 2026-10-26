@@ -3,8 +3,8 @@ import "./PlayingIndicator.css";
 import { t } from "@/utils/i18n/i18n";
 
 /**
- * 播放指示器组件（柱状图动画效果）
- * 用于显示当前正在播放的状态
+ * Playing indicator component (equalizer bar animation)
+ * Used to indicate active playback state
  */
 export function PlayingIndicator() {
 	return (
@@ -18,7 +18,7 @@ export function PlayingIndicator() {
 }
 
 /**
- * 创建播放指示器的 HTML 字符串（用于非 React 环境）
+ * Create HTML string for playing indicator (for non-React DOM rendering)
  */
 export function createPlayingIndicatorHTML(): string {
 	const label = t("playback.playing");

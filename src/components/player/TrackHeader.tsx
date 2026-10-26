@@ -1,19 +1,19 @@
 /**
- * 曲目标题头部组件的属性接口
+ * Props interface for TrackHeader component
  */
 export interface TrackHeaderProps {
-	/** 歌曲标题 */
+	/** Track title */
 	title: string;
-	/** 艺术家名称 */
+	/** Artist name */
 	artist: string;
 }
 
 /**
- * 曲目标题头部组件
+ * Track header component
  * 
- * 显示歌曲的标题和艺术家信息，始终居中显示。
+ * Displays song title and artist information, always centered.
  * 
- * @param props 组件属性
+ * @param props Component properties
  */
 export function TrackHeader({ title, artist }: TrackHeaderProps) {
 	return (
