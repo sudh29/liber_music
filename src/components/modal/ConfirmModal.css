@@ -1,0 +1,23 @@
+/**
+ * Confirm modal component stylesheet
+ * 
+ * Contains styles specific to confirm dialog:
+ * - Message text container styling
+ * 
+ * Note: Scoped under .music-player-modal
+ */
+
+/* ========== Confirm Dialog Message Styles ========== */
+.music-player-modal .prompt-message-container {
+	margin-bottom: 12px;
+}
+
+.music-player-modal .prompt-message {
+	margin: 0;
+	color: var(--text-normal);
+	font-size: 14px;
+	line-height: 1.5;
+	white-space: pre-wrap; /* Preserves newlines while wrapping */
+	word-break: break-word;
+	font-family: inherit;
+}

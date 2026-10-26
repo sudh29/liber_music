@@ -1,0 +1,29 @@
+/**
+ * Track header component styles
+ * 
+ * Contains styles for track title and artist name display.
+ */
+
+/* ========== Header Styles ========== */
+.music-player .track-header {
+	text-align: center;
+	margin-bottom: 24px;
+}
+
+.music-player .track-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: center;
+	color: var(--interactive-accent);
+}
+
+.music-player .artist-name {
+	font-size: 14px;
+	color: var(--interactive-accent);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: center;
+	opacity: 0.8;
+}

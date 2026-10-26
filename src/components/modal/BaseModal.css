@@ -1,0 +1,64 @@
+/**
+ * Base modal component shared stylesheet
+ * 
+ * Contains common styling shared across plugin modal dialogs:
+ * - Button container layout
+ * - Confirm and cancel button styles
+ * - Mobile layout adaptations
+ * 
+ * Note: Scoped under .music-player-modal to avoid polluting Obsidian native UI
+ */
+
+/* ========== Button Container Styles ========== */
+.music-player-modal .prompt-button-container {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+	order: 2; /* Ensures buttons render below content */
+	flex-shrink: 0; /* Prevents button compression */
+}
+
+.music-player-modal .prompt-button-container button {
+	padding: 6px 16px;
+	border: none;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background-color 0.2s;
+}
+
+.music-player-modal .prompt-button-container button.mod-cta {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.music-player-modal .prompt-button-container button.mod-cta:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.music-player-modal .prompt-button-container button:not(.mod-cta) {
+	background: var(--interactive-normal);
+	color: var(--text-normal);
+}
+
+.music-player-modal .prompt-button-container button:not(.mod-cta):hover {
+	background: var(--background-modifier-hover);
+}
+
+/* ========== Mobile Adaptations ========== */
+/* Flex column layout on mobile to maintain proper ordering */
+.is-phone .modal.music-player-modal .modal-content {
+	display: flex;
+	flex-direction: column;
+}
+
+/* Mobile button container */
+.is-phone .modal.music-player-modal .prompt-button-container {
+	margin-top: 16px;
+	margin-bottom: 0;
+	flex-direction: row;
+	justify-content: flex-end;
+	order: 2;
+	width: 100%;
+	flex-shrink: 0;
+}

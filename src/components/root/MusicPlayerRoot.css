@@ -1,0 +1,22 @@
+/**
+ * Music player root component styles
+ * 
+ * Contains styles for the root component including:
+ * - Main container layout
+ * - Obsidian view shell (.view-content.music-player, class added by ViewSetupService)
+ * - Mobile responsive styles
+ */
+
+/* ========== Obsidian view content area (matches addClass in ViewSetupService) ========== */
+.view-content.music-player {
+	padding: var(--size-4-1) var(--size-4-2) var(--size-4-8);
+}
+
+/* ========== Main Container ========== */
+.music-player-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 0;
+	position: relative;
+}

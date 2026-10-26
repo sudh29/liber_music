@@ -1,0 +1,116 @@
+/**
+ * Word-by-word synchronized lyrics triplet view component styles
+ * 
+ * Contains styles for the three-line word-by-word lyrics display, including:
+ * - Word-by-word lyrics text styles
+ * - Character container styles
+ * - Background text (unfilled portion) styles
+ * - Fill text (filled portion) styles
+ * - Current line highlight styles
+ * - Karaoke highlight effect
+ */
+
+/* ========== Extended Lyrics Text Styles ========== */
+.music-player .lyrics-extended-triplet-text {
+	cursor: pointer;
+	color: var(--text-muted);
+	transition: color 0.2s ease;
+	user-select: none;
+	display: inline-block;
+	text-align: center;
+}
+
+/* Preserve whitespace between words */
+.music-player .lyrics-extended-triplet-plain,
+.music-player .lyrics-extended-triplet-karaoke {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+/* Unified character grid: slight letter spacing */
+.music-player .lyrics-extended-triplet-karaoke {
+	letter-spacing: 0.04em;
+}
+
+.music-player .lyrics-extended-triplet-char {
+	display: inline-block;
+	position: relative;
+	vertical-align: baseline;
+	line-height: inherit;
+	padding: 0 0.06em;
+	box-sizing: content-box;
+}
+
+.music-player .lyrics-extended-triplet-char.is-ws {
+	min-width: 0.35em;
+}
+
+/* Background layer (unplayed portion) */
+.music-player .lyrics-extended-triplet-char-bg {
+	display: inline-block;
+	position: relative;
+	z-index: 0;
+	color: var(--text-muted);
+	opacity: 0.5;
+	font-weight: 600;
+}
+
+/* Reveal from left to right: clip width to avoid horizontal scaleX distortion */
+.music-player .lyrics-extended-triplet-char-fill-clip {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	overflow: hidden;
+	max-width: 100%;
+	z-index: 1;
+	pointer-events: none;
+	will-change: width;
+}
+
+.music-player .lyrics-extended-triplet-char-fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	display: inline-block;
+	white-space: nowrap;
+	line-height: inherit;
+	color: var(--interactive-accent);
+	font-weight: 600;
+}
+
+/* Current line: matching font weights for consistent alignment */
+.music-player .lyric-line-current .lyrics-extended-triplet-char-bg,
+.music-player .lyric-line-current .lyrics-extended-triplet-char-fill {
+	color: var(--interactive-accent);
+	font-weight: 600;
+}
+
+.music-player .lyric-line-current .lyrics-extended-triplet-char-bg {
+	opacity: 0.45;
+}
+
+.music-player .lyric-line-current .lyrics-extended-triplet-char-fill {
+	opacity: 1;
+}
+
+/* Previous line text color */
+.music-player .lyric-line-prev .lyrics-extended-triplet-text {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	opacity: 0.5;
+}
+
+/* Current line text color and style */
+.music-player .lyric-line-current .lyrics-extended-triplet-text {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	font-size: 1.15em;
+}
+
+/* Word unit: standard letter spacing, slight padding */
+.music-player .lyrics-extended-triplet-char.is-word-unit {
+	letter-spacing: normal;
+	padding: 0 0.1em;
+}
+

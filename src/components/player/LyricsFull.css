@@ -1,0 +1,102 @@
+/**
+ * Full lyrics list component styles
+ * 
+ * Contains styles for the full lyrics list, including:
+ * - Lyrics list container and scrolling styles
+ * - Lyric line styles
+ * - Active playing line highlight styles
+ * - Played lyric lines styles
+ * - Empty state styles
+ */
+
+/* ========== Lyrics List Container (also acts as scroll container) ========== */
+.music-player .lyrics {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+	cursor: pointer;
+	margin-bottom: 16px;
+}
+
+/* Scroll container styles with 2026 top/bottom gradient fade */
+.music-player .lyrics-scroll {
+	overflow-y: auto;
+	align-items: center;
+	padding: 0 16px;
+	position: relative;
+	scroll-behavior: smooth;
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
+	mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
+}
+
+.music-player .lyrics-scroll::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
+
+/* Lyric line */
+.music-player .lyrics-line {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 8px 0;
+	text-align: center;
+}
+
+/* Top/bottom spacer padding: height equals half viewport height, ensuring first and last lines can be centered.
+   Shared between standard lyrics view (LyricsFull) and extended lyrics view (LyricsExtendedFull) */
+.music-player .lyrics-spacer {
+	flex: 0 0 auto;
+	width: 100%;
+	pointer-events: none;
+}
+
+/* Lyric text */
+.music-player .lyrics-text {
+	cursor: pointer;
+	color: var(--text-muted);
+	transition: color 0.2s ease;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+/* Center active line (currently playing line): change color only */
+.music-player .lyrics-line.is-active .lyrics-text {
+	color: var(--interactive-accent);
+}
+
+/* Played lyric lines: keep highlighted color (matches previous line style in extended lyrics) */
+.music-player .lyrics-line.is-played .lyrics-text {
+	font-weight: 600;
+	color: var(--interactive-accent);
+	opacity: 0.5;
+}
+
+/* Currently playing line: enlarged font size, bold, and luminous text shadow */
+.music-player .lyrics-line.is-playing .lyrics-text {
+	color: var(--interactive-accent);
+	font-weight: 700;
+	font-size: 1.22em;
+	transform: scale(1.04);
+	text-shadow: 0 0 16px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45);
+	transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Empty state */
+.music-player .lyrics-empty {
+	align-items: center;
+	justify-content: center;
+	min-height: 200px;
+}
+
+.music-player .lyrics-empty-text {
+	color: var(--text-muted);
+	font-size: 16px;
+	text-align: center;
+}
+

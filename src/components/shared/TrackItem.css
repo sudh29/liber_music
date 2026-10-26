@@ -1,0 +1,113 @@
+/**
+ * Track list item styles
+ * 
+ * Used for track list item display in the music player, including:
+ * - Cover image
+ * - Track title
+ * - Artist and album info
+ * - Active state and hover effects
+ */
+
+/* Track list item container */
+.music-player .playlist-item {
+	padding: 8px 12px;
+	min-height: 64px;
+	display: flex;
+	align-items: center;
+}
+
+/* Active track item style */
+.music-player .playlist-item.is-active {
+	border-left: 3px solid var(--interactive-accent);
+}
+
+/* Track item content container */
+.music-player .playlist-item-container {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+}
+
+/* Cover image container */
+.music-player .playlist-item-cover {
+	width: 48px;
+	height: 48px;
+	flex-shrink: 0;
+	border-radius: 6px;
+	overflow: hidden;
+	background: var(--background-modifier-border);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Cover image style */
+.music-player .playlist-item-cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* Cover placeholder (shown when no cover image is available) */
+.music-player .playlist-item-placeholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+}
+
+/* Icon in cover placeholder */
+.music-player .playlist-item-placeholder svg {
+	width: 24px;
+	height: 24px;
+}
+
+/* Text info container (title and metadata) */
+.music-player .playlist-item-text {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+/* Track title style */
+.music-player .playlist-item-title {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-normal);
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	display: flex;
+	align-items: center;
+}
+
+/* Active title style */
+.music-player .playlist-item.is-active .playlist-item-title {
+	color: var(--interactive-accent);
+	font-weight: 600;
+}
+
+/* Metadata style (artist, album, etc.) */
+.music-player .playlist-item-meta {
+	font-size: 12px;
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.music-player .playlist-item.is-active .playlist-item-meta {
+	color: var(--interactive-accent);
+}
+
+/* Hover effect */
+.music-player .playlist-item:hover:not(.is-active) {
+	background: var(--background-modifier-hover);
+}
+

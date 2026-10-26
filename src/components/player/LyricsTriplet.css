@@ -1,0 +1,81 @@
+/**
+ * Triplet lyrics view component styles
+ * 
+ * Contains styles for three-line lyrics display, including:
+ * - Triplet lyrics container layout
+ * - Previous, current, next line styles
+ * - Current line highlight styles
+ * - Karaoke highlight styles
+ */
+
+/* ========== Triplet Lyrics Container ========== */
+.music-player .lyrics-triplet {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 0 16px;
+	margin-bottom: 24px;
+	height: 120px;
+	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%);
+	mask-image: linear-gradient(to bottom, transparent 0%, black 22%, black 78%, transparent 100%);
+}
+
+.music-player .lyric-line-prev,
+.music-player .lyric-line-next,
+.music-player .lyric-line-current {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 8px 0;
+	/* cursor: pointer; */
+	text-align: center;
+	transition: color 0.2s ease;
+}
+
+.music-player .lyric-text {
+	color: var(--text-muted);
+	text-align: center;
+	transition: color 0.2s ease;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.music-player .lyric-line-prev .lyric-text {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	opacity: 0.5;
+}
+
+/* Current line highlight and active playing: uses same styling as full lyrics component */
+.music-player .lyric-line-current .lyric-text {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	font-size: 1.15em;
+}
+
+.music-player .karaoke-line-content {
+	position: relative;
+	display: inline-block;
+	max-width: 100%;
+	overflow: hidden;
+}
+
+.music-player .karaoke-line-bg {
+	color: var(--text-muted);
+	opacity: 0.5;
+}
+
+.music-player .karaoke-line-fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	color: var(--interactive-accent);
+	overflow: hidden;
+	white-space: nowrap;
+	width: 0;
+	transition: width 0.1s linear;
+}
+
