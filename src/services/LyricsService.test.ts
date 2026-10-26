@@ -214,4 +214,92 @@ describe("LyricsService", () => {
 		expect(plugin.settings.tracks["id-1"]?.lyrics).toBe("[00:01.00]Background line");
 		expect(saveSettingsSpy).toHaveBeenCalled();
 	});
+
+	it("should initialize track entry and save companion lyrics when settings.tracks is completely unindexed", async () => {
+		const app = new App();
+		const saveSettingsSpy = vi.fn().mockResolvedValue(undefined);
+		const plugin = {
+			app,
+			settings: {
+				...DEFAULT_SETTINGS,
+				trackIndex: {},
+				tracks: {}, // Completely empty tracks object
+			},
+			saveSettings: saveSettingsSpy,
+		} as unknown as MusicPlayerPlugin;
+
+		const trackPath = "music/western/1985 - Bryan Adams - Summer Of 69.mp3";
+		const companionLrc = createMockTFile("music/western/1985 - Bryan Adams - Summer Of 69.lrc");
+
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockImplementation((p) => {
+			if (p === "music/western/1985 - Bryan Adams - Summer Of 69.lrc") return companionLrc;
+			return null;
+		});
+		vi.spyOn(app.vault, "read").mockResolvedValue("[00:10.00]I got my first real six-string");
+
+		const service = new LyricsService(plugin);
+		const result = await service.loadLyricsAsync(trackPath);
+
+		expect(result.lyrics).toHaveLength(1);
+		expect(result.lyrics[0]?.text).toBe("I got my first real six-string");
+
+		const trackId = getOrCreateTrackId(trackPath, plugin.settings);
+		const savedTrack = plugin.settings.tracks[trackId];
+		expect(savedTrack).toBeDefined();
+		expect(savedTrack?.lyrics).toBe("[00:10.00]I got my first real six-string");
+		expect(savedTrack?.artist).toBe("Bryan Adams");
+		expect(savedTrack?.title).toBe("Summer Of 69");
+		expect(savedTrack?.year).toBe(1985);
+		expect(saveSettingsSpy).toHaveBeenCalled();
+	});
+
+	it("should fallback to embedded binary audio tags when companion .lrc is missing", async () => {
+		const app = new App();
+		const saveSettingsSpy = vi.fn().mockResolvedValue(undefined);
+		const plugin = {
+			app,
+			settings: {
+				...DEFAULT_SETTINGS,
+				trackIndex: {},
+				tracks: {},
+			},
+			saveSettings: saveSettingsSpy,
+		} as unknown as MusicPlayerPlugin;
+
+		const trackPath = "music/song-with-tags.mp3";
+		const audioFile = createMockTFile(trackPath, "song-with-tags.mp3");
+
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockImplementation((p) => {
+			if (p === trackPath) return audioFile;
+			return null;
+		});
+
+		// Mock dynamic import of metadata extractor
+		vi.doMock("@/utils/audio/metadata", () => ({
+			readAudioFileHeaderBinary: vi.fn().mockResolvedValue(new ArrayBuffer(10)),
+			readAudioFileBinary: vi.fn().mockResolvedValue(null),
+			getEmbeddedAudioMetadataFromBuffer: vi.fn().mockResolvedValue({
+				title: "Embedded Title",
+				artist: "Embedded Artist",
+				album: "Embedded Album",
+				lyricsText: "[00:12.00]Embedded lyrics line",
+			}),
+		}));
+
+		const service = new LyricsService(plugin);
+		const result = await service.loadLyricsAsync(trackPath);
+
+		expect(result.lyrics).toHaveLength(1);
+		expect(result.lyrics[0]?.text).toBe("Embedded lyrics line");
+
+		const trackId = getOrCreateTrackId(trackPath, plugin.settings);
+		expect(plugin.settings.tracks[trackId]?.lyrics).toBe("[00:12.00]Embedded lyrics line");
+		expect(plugin.settings.tracks[trackId]?.artist).toBe("Embedded Artist");
+		expect(plugin.settings.tracks[trackId]?.title).toBe("Embedded Title");
+		expect(saveSettingsSpy).toHaveBeenCalled();
+
+		vi.doUnmock("@/utils/audio/metadata");
+	});
 });
+
+

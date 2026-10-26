@@ -538,33 +538,38 @@ export class LibraryService {
 			}
 
 			// 3. Read binary and extract metadata
-			const { readAudioFileBinary } = await import("@/utils/audio/metadata");
-			const { getEmbeddedAudioMetadataFromBuffer } = await import("@/utils/audio/metadata");
+			const { readAudioFileBinary, getEmbeddedAudioMetadataFromBuffer, readCompanionLrc } = await import("@/utils/audio/metadata");
+			const { parseTrackFilename } = await import("@/utils/audio/filenameParser");
 			
 			const binary = await readAudioFileBinary(this.app, file);
-			if (!binary) {
-				console.warn(`Failed to read file, skipping metadata update: ${trackPath}`);
-				return;
-			}
+			const audioMetadata = binary ? await getEmbeddedAudioMetadataFromBuffer(binary) : null;
 
-			const audioMetadata = await getEmbeddedAudioMetadataFromBuffer(binary);
-			if (!audioMetadata) {
-				console.warn(`Failed to extract metadata, skipping update: ${trackPath}`);
-				return;
+			const parsed = parseTrackFilename(file.path);
+			const title = audioMetadata?.title?.trim() || parsed.title || file.basename;
+			const artist = audioMetadata?.artist?.trim() || parsed.artist || '';
+			const album = audioMetadata?.album?.trim() || parsed.album || '';
+			const year = audioMetadata?.year || parsed.year;
+
+			let lyrics = audioMetadata?.lyricsText || '';
+			if (!lyrics.trim()) {
+				const companion = await readCompanionLrc(this.app, file);
+				if (companion) {
+					lyrics = companion;
+				}
 			}
 
 			// 4. Update track metadata in settings
 			const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
 			this.plugin.settings.tracks[trackId] = {
-				title: audioMetadata.title || file.basename,
-				artist: audioMetadata.artist?.trim() || '',
-				album: audioMetadata.album?.trim() || '',
-				lyrics: audioMetadata.lyricsText || '',
-				year: audioMetadata.year,
-				genre: Array.isArray(audioMetadata.genre) ? 
-					audioMetadata.genre[0] : audioMetadata.genre,
-				track: audioMetadata.track,
-				duration: audioMetadata.duration
+				title,
+				artist,
+				album,
+				lyrics,
+				year,
+				genre: Array.isArray(audioMetadata?.genre) ? 
+					audioMetadata?.genre[0] : audioMetadata?.genre,
+				track: audioMetadata?.track,
+				duration: audioMetadata?.duration
 			};
 
 			// 5. Regenerate artists and albums

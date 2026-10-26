@@ -5,7 +5,7 @@
  * e.g., `Music/Artist/Song.flac` -> `Music/Artist/Song.lrc`
  */
 
-import { App, TFile } from "obsidian";
+import { App, normalizePath, TFile } from "obsidian";
 
 /**
  * Computes the companion .lrc file path from the audio file path.
@@ -36,7 +36,8 @@ export function getCompanionLrcFile(
 	const lrcPath = getCompanionLrcPath(audioPath);
 	if (!lrcPath || lrcPath === audioPath) return null;
 
-	const target = app.vault.getAbstractFileByPath(lrcPath);
+	const normalized = normalizePath(lrcPath);
+	const target = app.vault.getAbstractFileByPath(normalized) || app.vault.getAbstractFileByPath(lrcPath);
 	if (target instanceof TFile && target.extension?.toLowerCase() === "lrc") {
 		return target;
 	}
@@ -45,6 +46,9 @@ export function getCompanionLrcFile(
 
 /**
  * Attempts to read lyric text from a companion .lrc file in the same directory.
+ * 
+ * Uses Obsidian's memory TFile index if available, falling back to direct vault
+ * adapter read for environments where Obsidian has not indexed non-standard file extensions.
  * 
  * @param app Obsidian App instance
  * @param audioFile Audio file object or path
@@ -55,11 +59,32 @@ export async function readCompanionLrc(
 	audioFile: TFile | string
 ): Promise<string | null> {
 	try {
-		const lrcFile = getCompanionLrcFile(app, audioFile);
-		if (!lrcFile) return null;
+		const audioPath = typeof audioFile === "string" ? audioFile : audioFile.path;
+		const rawLrcPath = getCompanionLrcPath(audioPath);
+		if (!rawLrcPath || rawLrcPath === audioPath) return null;
 
-		const content = await app.vault.read(lrcFile);
-		return content && content.trim().length > 0 ? content : null;
+		const lrcPath = normalizePath(rawLrcPath);
+
+		// 1. Try Obsidian memory vault index first
+		const lrcFile = getCompanionLrcFile(app, audioFile);
+		if (lrcFile) {
+			const content = await app.vault.read(lrcFile);
+			if (content && content.trim().length > 0) return content;
+		}
+
+		// 2. Fallback: direct vault adapter read (resolves .lrc files when Obsidian hasn't indexed them into fileMap)
+		if (app.vault?.adapter && typeof app.vault.adapter.exists === "function") {
+			try {
+				if (await app.vault.adapter.exists(lrcPath)) {
+					const content = await app.vault.adapter.read(lrcPath);
+					if (content && content.trim().length > 0) return content;
+				}
+			} catch (adapterErr) {
+				console.warn(`Adapter read failed for companion .lrc (${lrcPath}):`, adapterErr);
+			}
+		}
+
+		return null;
 	} catch (error) {
 		console.warn("Failed to read companion .lrc lyric file:", error);
 		return null;

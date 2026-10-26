@@ -49,11 +49,32 @@ describe("companionLrc utility", () => {
 		expect(content).toBe("[00:01.00]Companion lyrics line\n");
 	});
 
-	it("should return null if companion .lrc file is missing or empty", async () => {
+	it("should read companion .lrc via vault adapter when getAbstractFileByPath returns null", async () => {
 		const app = new App();
 		vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(null);
+
+		const existsSpy = vi.fn().mockResolvedValue(true);
+		const readSpy = vi.fn().mockResolvedValue("[00:02.00]Adapter fallback lyrics\n");
+		(app.vault as unknown as { adapter: { exists: typeof existsSpy; read: typeof readSpy } }).adapter = {
+			exists: existsSpy,
+			read: readSpy,
+		};
+
+		const content = await readCompanionLrc(app, "Music/song.mp3");
+		expect(existsSpy).toHaveBeenCalledWith("Music/song.lrc");
+		expect(readSpy).toHaveBeenCalledWith("Music/song.lrc");
+		expect(content).toBe("[00:02.00]Adapter fallback lyrics\n");
+	});
+
+	it("should return null if companion .lrc file is missing in both vault and adapter", async () => {
+		const app = new App();
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(null);
+		(app.vault as unknown as { adapter: { exists: (p: string) => Promise<boolean> } }).adapter = {
+			exists: vi.fn().mockResolvedValue(false),
+		};
 
 		const result = await readCompanionLrc(app, "Music/no-lyrics.mp3");
 		expect(result).toBeNull();
 	});
 });
+

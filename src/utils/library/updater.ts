@@ -18,6 +18,7 @@ import {
 } from "../audio/metadata";
 import { generateArtistsAndAlbums } from "../data/transform";
 import { scanVaultAudioFiles } from "./scanVaultAudio";
+import { parseTrackFilename } from "../audio/filenameParser";
 import { t, tWithParams } from "@/utils/i18n/i18n";
 
 /**
@@ -93,20 +94,17 @@ export async function rebuildAllData(
 					}
 				}
 
-				if (!audioMetadata) {
-					console.warn(`Unable to extract metadata for ${file.path}`);
-					continue;
-				}
-
-				if (!audioMetadata.title) {
-					console.warn(`No title tag found for ${file.path}, using filename: ${file.basename}`);
-				}
+				const parsed = parseTrackFilename(file.path);
+				const title = audioMetadata?.title?.trim() || parsed.title || file.basename;
+				const artist = audioMetadata?.artist?.trim() || parsed.artist || '';
+				const album = audioMetadata?.album?.trim() || parsed.album || '';
+				const year = audioMetadata?.year || parsed.year;
 
 				const { getOrCreateTrackId } = await import("@/utils/track/id");
 				const trackId = getOrCreateTrackId(file.path, plugin.settings);
 
 				// Embedded lyrics take priority; fallback to companion .lrc file in same directory
-				let lyrics = audioMetadata.lyricsText || '';
+				let lyrics = audioMetadata?.lyricsText || '';
 				if (!lyrics.trim()) {
 					const companion = await readCompanionLrc(app, file);
 					if (companion) {
@@ -115,16 +113,16 @@ export async function rebuildAllData(
 				}
 				
 				plugin.settings.tracks[trackId] = {
-					title: audioMetadata.title || file.basename,
-					artist: audioMetadata.artist?.trim() || '',
-					album: audioMetadata.album?.trim() || '',
+					title,
+					artist,
+					album,
 					lyrics,
-					year: audioMetadata.year,
-					genre: Array.isArray(audioMetadata.genre) ? 
-						audioMetadata.genre[0] : audioMetadata.genre,
-					track: audioMetadata.track,
-					duration: audioMetadata.duration,
-					replayGainDb: audioMetadata.replayGainDb,
+					year,
+					genre: Array.isArray(audioMetadata?.genre) ? 
+						audioMetadata?.genre[0] : audioMetadata?.genre,
+					track: audioMetadata?.track,
+					duration: audioMetadata?.duration,
+					replayGainDb: audioMetadata?.replayGainDb,
 				};
 
 				processed++;

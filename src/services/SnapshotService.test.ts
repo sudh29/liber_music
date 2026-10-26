@@ -108,6 +108,32 @@ describe("SnapshotService", () => {
 			expect(snapshot.currentTime).toBe(0);
 			expect(snapshot.isFavorite).toBe(false);
 		});
+
+		it("should parse filename to resolve artist and title when track is not in settings.tracks", () => {
+			const { service } = createService();
+			const track = new TFile("music/western/1985 - Bryan Adams - Summer Of 69.mp3");
+
+			const state: SnapshotState = {
+				currentTrack: track,
+				currentIndex: 0,
+				isPlaying: true,
+				playMode: "normal",
+				currentLyrics: [],
+				currentExtendedLyrics: [],
+				volume: 1.0,
+				playbackRate: 1.0,
+				audioElement: null,
+				trackList: [track],
+				currentList: null,
+				favorites: [],
+				currentListId: "all",
+				currentSectionIdForPlaylist: null,
+			};
+
+			const snapshot = service.getPlaybackSnapshot(state);
+			expect(snapshot.title).toBe("Summer Of 69");
+			expect(snapshot.artist).toBe("Bryan Adams");
+		});
 	});
 
 	describe("getLibrarySnapshot", () => {
@@ -123,5 +149,23 @@ describe("SnapshotService", () => {
 			expect(snapshot.playlists).toHaveLength(1);
 			expect(snapshot.playlists[0]?.name).toBe("Rock");
 		});
+
+		it("should parse filename fallback for unindexed tracks in library snapshot and resolve ratings by path", () => {
+			const { service, plugin } = createService();
+			plugin.settings.ratings = {
+				"music/bollywood/1997 - Celine Dion - Titanic - My Heart Will Go On.mp3": 5,
+			};
+
+			const track = new TFile("music/bollywood/1997 - Celine Dion - Titanic - My Heart Will Go On.mp3");
+			const snapshot = service.getLibrarySnapshot([track], null, "all");
+
+			expect(snapshot.allTracks).toHaveLength(1);
+			const trackInfo = snapshot.allTracks[0];
+			expect(trackInfo?.title).toBe("My Heart Will Go On");
+			expect(trackInfo?.artist).toBe("Celine Dion");
+			expect(trackInfo?.album).toBe("Titanic");
+			expect(trackInfo?.rating).toBe(5);
+		});
 	});
 });
+

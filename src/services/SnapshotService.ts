@@ -18,6 +18,7 @@ import type { CurrentList, ListService } from "./ListService";
 import type { LibraryService } from "./LibraryService";
 import { sortTracksByTrack } from "@/utils/data/sort";
 import { getOrCreateTrackId, getTrackPath } from "@/utils/track/id";
+import { parseTrackFilename } from "@/utils/audio/filenameParser";
 import { t } from "@/utils/i18n/i18n";
 
 /**
@@ -133,8 +134,9 @@ export class SnapshotService {
 		const trackId = currentPath ? getOrCreateTrackId(currentPath, this.plugin.settings) : null;
 		const track = trackId ? this.plugin.settings.tracks[trackId] : undefined;
 
-		const title = track?.title || (currentPath ? currentPath.split("/").pop() || "" : t("playback.noTrack"));
-		const artistStr = (track?.artist ?? "").trim();
+		const parsed = currentPath ? parseTrackFilename(currentPath) : null;
+		const title = track?.title?.trim() || parsed?.title || (currentPath ? currentPath.split("/").pop() || "" : t("playback.noTrack"));
+		const artistStr = (track?.artist ?? "").trim() || (parsed?.artist ?? "").trim();
 		const artist = artistStr === "" ? t("meta.unknownArtist") : artistStr;
 		const coverUrl = this.resolveTrackCoverUrl(currentTrack);
 
@@ -242,21 +244,29 @@ export class SnapshotService {
 		const mapToTrack = (file: TFile): ReactTrackInfo => {
 			const trackId = getOrCreateTrackId(file.path, this.plugin.settings);
 			const meta = this.plugin.settings.tracks[trackId];
-			const artistStr = (meta?.artist ?? "").trim();
+			const parsed = parseTrackFilename(file.path);
+
+			const artistStr = (meta?.artist ?? "").trim() || (parsed.artist ?? "").trim();
 			const artist = artistStr === "" ? t("meta.unknownArtist") : artistStr;
+
 			let album: string | undefined;
 			if (meta?.album !== undefined && meta?.album !== null) {
 				const bv = String(meta.album).trim();
-				album = bv === "" ? t("meta.unknownAlbum") : bv;
+				album = bv === "" ? (parsed.album || t("meta.unknownAlbum")) : bv;
+			} else if (parsed.album) {
+				album = parsed.album;
 			}
+
+			const title = meta?.title?.trim() || parsed.title || file.name;
+
 			return {
 				path: file.path,
-				title: meta?.title || file.name,
+				title,
 				artist,
 				album,
 				coverUrl: this.resolveTrackCoverUrl(file),
 				duration: meta?.duration,
-				rating: meta?.rating ?? this.plugin.settings.ratings?.[trackId] ?? 0,
+				rating: meta?.rating ?? this.plugin.settings.ratings?.[trackId] ?? this.plugin.settings.ratings?.[file.path] ?? 0,
 			};
 		};
 

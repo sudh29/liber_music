@@ -18,6 +18,7 @@ import { applyLyricsOffset, parseLyricsOffset, stripLyricsOffsetTags } from "@/u
 import MusicPlayerPlugin from "@/main";
 import { getOrCreateTrackId } from "@/utils/track/id";
 import { getCompanionLrcFile, readCompanionLrc } from "@/utils/audio/companionLrc";
+import { parseTrackFilename } from "@/utils/audio/filenameParser";
 import { TFile } from "obsidian";
 
 /**
@@ -32,6 +33,24 @@ export class LyricsService {
 	 * @param plugin - Plugin instance for accessing settings and vault file APIs
 	 */
 	constructor(private plugin: MusicPlayerPlugin) {}
+
+	/**
+	 * Ensures a track metadata entry exists in plugin settings,
+	 * populating it from parsed filename if not yet indexed.
+	 */
+	private ensureTrackEntry(trackPath: string, trackId: string) {
+		if (!this.plugin.settings.tracks[trackId]) {
+			const parsed = parseTrackFilename(trackPath);
+			this.plugin.settings.tracks[trackId] = {
+				title: parsed.title,
+				artist: parsed.artist || "",
+				album: parsed.album || "",
+				year: parsed.year,
+				lyrics: "",
+			};
+		}
+		return this.plugin.settings.tracks[trackId]!;
+	}
 
 	/**
 	 * Parses raw lyric text, automatically distinguishing word-by-word (karaoke) or line-by-line LRC format,
@@ -94,7 +113,7 @@ export class LyricsService {
 
 	/**
 	 * Synchronously loads lyrics (for existing cache or fast rendering).
-	 * If settings lack lyrics, checks vault for companion `.lrc` and triggers background load.
+	 * If settings lack lyrics, triggers background companion load.
 	 * 
 	 * @param trackPath - Audio file path
 	 * @returns Object containing standard and extended lyrics
@@ -109,9 +128,7 @@ export class LyricsService {
 
 		if (!rawLyrics.trim()) {
 			const companionFile = getCompanionLrcFile(this.plugin.app, trackPath);
-			if (companionFile) {
-				void this.loadCompanionLrcAsync(trackPath, companionFile);
-			}
+			void this.loadCompanionLrcAsync(trackPath, companionFile ?? undefined);
 			return { lyrics: [], extendedLyrics: [] };
 		}
 
@@ -119,7 +136,8 @@ export class LyricsService {
 	}
 
 	/**
-	 * Asynchronously loads lyrics: checks settings first, then companion `.lrc` file in same directory.
+	 * Asynchronously loads lyrics: checks settings first, companion `.lrc` file second,
+	 * and embedded audio tags directly from the audio binary third.
 	 * 
 	 * @param trackPath - Audio file path
 	 * @returns Promise resolving to standard and extended lyrics
@@ -136,17 +154,76 @@ export class LyricsService {
 			return this.parseLyrics(rawLyrics);
 		}
 
+		// 1. Try companion .lrc file (supports memory TFile and vault adapter fallback)
 		const companionText = await readCompanionLrc(this.plugin.app, trackPath);
 		if (companionText && companionText.trim()) {
-			if (track) {
-				track.lyrics = companionText;
-				try {
-					await this.plugin.saveSettings();
-				} catch (err) {
-					console.warn("Failed to save companion lyrics to settings:", err);
-				}
+			const entry = this.ensureTrackEntry(trackPath, trackId);
+			entry.lyrics = companionText;
+			try {
+				await this.plugin.saveSettings();
+			} catch (err) {
+				console.warn("Failed to save companion lyrics to settings:", err);
 			}
 			return this.parseLyrics(companionText);
+		}
+
+		// 2. Try extracting embedded lyrics directly from audio file binary
+		try {
+			const file = this.plugin.app.vault.getAbstractFileByPath(trackPath);
+			if (file instanceof TFile) {
+				const { readAudioFileBinary, readAudioFileHeaderBinary, getEmbeddedAudioMetadataFromBuffer } = await import("@/utils/audio/metadata");
+				let binary = await readAudioFileHeaderBinary(this.plugin.app, file);
+				let audioMetadata = binary ? await getEmbeddedAudioMetadataFromBuffer(binary) : null;
+
+				if (!audioMetadata?.lyricsText?.trim()) {
+					const fullBinary = await readAudioFileBinary(this.plugin.app, file);
+					if (fullBinary) {
+						audioMetadata = await getEmbeddedAudioMetadataFromBuffer(fullBinary);
+					}
+				}
+
+				if (audioMetadata) {
+					const entry = this.ensureTrackEntry(trackPath, trackId);
+					let changed = false;
+
+					if (audioMetadata.lyricsText?.trim() && entry.lyrics !== audioMetadata.lyricsText) {
+						entry.lyrics = audioMetadata.lyricsText;
+						changed = true;
+					}
+					if (audioMetadata.artist?.trim() && entry.artist !== audioMetadata.artist.trim()) {
+						entry.artist = audioMetadata.artist.trim();
+						changed = true;
+					}
+					if (audioMetadata.title?.trim() && entry.title !== audioMetadata.title.trim()) {
+						entry.title = audioMetadata.title.trim();
+						changed = true;
+					}
+					if (audioMetadata.album?.trim() && entry.album !== audioMetadata.album.trim()) {
+						entry.album = audioMetadata.album.trim();
+						changed = true;
+					}
+					if (audioMetadata.duration && entry.duration !== audioMetadata.duration) {
+						entry.duration = audioMetadata.duration;
+						changed = true;
+					}
+
+					if (changed) {
+						try {
+							await this.plugin.saveSettings();
+						} catch (err) {
+							console.warn("Failed to save embedded metadata to settings:", err);
+						}
+					}
+
+					if (audioMetadata.lyricsText?.trim()) {
+						return this.parseLyrics(audioMetadata.lyricsText);
+					}
+				}
+
+
+			}
+		} catch (error) {
+			console.warn(`Failed to extract embedded lyrics fallback for (${trackPath}):`, error);
 		}
 
 		return { lyrics: [], extendedLyrics: [] };
@@ -155,15 +232,23 @@ export class LyricsService {
 	/**
 	 * Background loader for companion .lrc file, persisting to settings.
 	 */
-	private async loadCompanionLrcAsync(trackPath: string, lrcFile: TFile): Promise<void> {
+	private async loadCompanionLrcAsync(trackPath: string, lrcFile?: TFile): Promise<void> {
 		try {
-			const content = await this.plugin.app.vault.read(lrcFile);
+			let content: string | null = null;
+			if (lrcFile) {
+				content = await this.plugin.app.vault.read(lrcFile);
+			} else {
+				content = await readCompanionLrc(this.plugin.app, trackPath);
+			}
+
 			if (content && content.trim()) {
 				const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
-				const track = this.plugin.settings.tracks[trackId];
-				if (track) {
-					track.lyrics = content;
+				const track = this.ensureTrackEntry(trackPath, trackId);
+				track.lyrics = content;
+				try {
 					await this.plugin.saveSettings();
+				} catch (err) {
+					console.warn("Failed to save background companion lyrics:", err);
 				}
 			}
 		} catch (error) {
@@ -171,3 +256,4 @@ export class LyricsService {
 		}
 	}
 }
+
