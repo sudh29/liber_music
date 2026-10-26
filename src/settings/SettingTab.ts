@@ -12,7 +12,7 @@ import { t } from '../utils/i18n/i18n';
 const AUDIO_EXTENSIONS = ['mp3', 'flac', 'wav', 'm4a', 'ogg', 'aac', 'wma', 'opus'];
 
 /**
- * Music Player plugin settings tab
+ * Liber Music Player plugin settings tab
  */
 export class MusicPlayerSettingTab extends PluginSettingTab {
 	plugin: MusicPlayerPlugin;

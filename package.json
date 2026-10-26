@@ -1,13 +1,13 @@
 {
-	"name": "obsidian-music-player-plugin",
+	"name": "liber-music-player-plugin",
 	"version": "1.3.8",
-	"description": "Play local music files from the vault in the sidebar.",
+	"description": "Liber Music Player Plugin for Obsidian. Play local music files from the vault in the sidebar.",
 	"main": "main.js",
 	"type": "module",
-	"author": "Kevin",
+	"author": "Liber Primus",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/TracingOrigins/obsidian-music-player-plugin.git"
+		"url": "https://github.com/liberprimus/liber-music-player-plugin.git"
 	},
 	"scripts": {
 		"dev": "node scripts/deploy.mjs dev && node esbuild.config.mjs",
@@ -23,6 +23,8 @@
 	"keywords": [
 		"Music",
 		"Music Player",
+		"Liber Music Player",
+		"Liber Music Player Plugin",
 		"Obsidian Plugin"
 	],
 	"license": "MIT",

@@ -4,7 +4,7 @@ review_date: 2026-10-26
 current_score: 9.7
 target_score: 9.7
 status: Passed (9.7)
-plugin_id: music-player
+plugin_id: liber-music-player-plugin
 plugin_version: 1.3.8
 ---
 
@@ -20,7 +20,7 @@ plugin_version: 1.3.8
 
 ## 1. Executive Summary & Baseline Scorecard
 
-`liber_music` is a TypeScript & React-based Obsidian community plugin (`music-player` v1.3.8) that embeds a skeuomorphic vinyl record audio player into the Obsidian sidebar. It features ID3/Vorbis tag parsing, syllable-level synchronized lyrics (karaoke format), queue control, playlist management, and local file listening.
+`liber_music` is a TypeScript & React-based Obsidian community plugin (`liber-music-player-plugin` v1.3.8) that embeds a skeuomorphic vinyl record audio player into the Obsidian sidebar. It features ID3/Vorbis tag parsing, syllable-level synchronized lyrics (karaoke format), queue control, playlist management, and local file listening.
 
 While its core playback engine and UI animation are sophisticated, it falls short of the **9.5+ hiring bar** due to five primary deficits:
 1. **Zero Automated Tests (Testing Score: 2.0):** No Vitest/Jest suite exists. Core metadata parsers, lyric time synchronizers, and queue shuffling logic are completely untested.

@@ -1,5 +1,5 @@
 /**
- * Music player view module
+ * Liber Music Player view module
  * 
  * Architectural notes:
  * - Manages Obsidian View lifecycle and service initialization
@@ -22,14 +22,14 @@ import { t, tWithParams } from "@/utils/i18n/i18n";
 import { formatListLabel } from "@/utils/list/formatter";
 
 /**
- * Music player view type identifier.
+ * Liber Music Player view type identifier.
  * 
  * Used to register and identify the music player view in Obsidian.
  */
 export const VIEW_TYPE_MUSIC_PLAYER = "view";
 
 /**
- * Music player view class.
+ * Liber Music Player view class.
  * 
  * Extends Obsidian's ItemView, responsible for:
  * - Obsidian View lifecycle management (onOpen, onClose)

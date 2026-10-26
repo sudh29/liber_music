@@ -1,5 +1,5 @@
 /**
- * Music Player plugin main entry point
+ * Liber Music Player Plugin main entry point
  * 
  * Defines plugin core lifecycle, settings management, and registration:
  * - Plugin lifecycle (onload, onunload)
@@ -31,7 +31,7 @@ import { t } from './utils/i18n/i18n';
 export type PlayMode = 'normal' | 'repeat-all' | 'repeat-one' | 'shuffle';
 
 /**
- * Music player main plugin class
+ * Liber music player main plugin class
  */
 export default class MusicPlayerPlugin extends Plugin {
 	/** Plugin settings object storing configuration and library metadata */

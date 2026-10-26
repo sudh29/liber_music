@@ -17,14 +17,14 @@ We welcome contributions from the community! Here's how you can help:
 
 #### 🐛 Bug Reports
 
-- Use the [bug report template](https://github.com/TracingOrigins/obsidian-music-player-plugin/issues/new?template=bug_report.md)
+- Use the [bug report template](https://github.com/liberprimus/liber-music-player-plugin/issues/new?template=bug_report.md)
 - Include steps to reproduce
 - Describe expected vs actual behavior
 - Provide system information (OS, Obsidian version, plugin version)
 
 #### 💡 Feature Requests
 
-- Use the [feature request template](https://github.com/TracingOrigins/obsidian-music-player-plugin/issues/new?template=feature_request.md)
+- Use the [feature request template](https://github.com/liberprimus/liber-music-player-plugin/issues/new?template=feature_request.md)
 - Explain the problem you're trying to solve
 - Describe your proposed solution
 - Consider implementation complexity
@@ -41,14 +41,13 @@ We welcome contributions from the community! Here's how you can help:
 - Improve README files
 - Add code comments
 - Create tutorials or guides
-- Translate to other languages
 
 ### 🛠️ Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/TracingOrigins/obsidian-music-player-plugin.git
-cd obsidian-music-player-plugin
+git clone https://github.com/liberprimus/liber-music-player-plugin.git
+cd liber-music-player-plugin
 
 # Install dependencies
 npm install
@@ -59,7 +58,7 @@ npm run dev
 # Build for production
 npm run build
 
-# Run tests (if available)
+# Run tests
 npm test
 ```
 
@@ -77,7 +76,6 @@ Use conventional commit format:
 
 ### 🎯 Areas That Need Help
 
-- 🌍 **Translations**: Help translate to more languages
 - 🧪 **Testing**: Add unit tests and integration tests
 - 📖 **Documentation**: Improve guides and examples
 - 🎨 **UI/UX**: Enhance the user interface
@@ -85,6 +83,5 @@ Use conventional commit format:
 
 ### 📞 Contact
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/TracingOrigins/obsidian-music-player-plugin/issues)
-- **GitHub Discussions**: [Ask questions or share ideas](https://github.com/TracingOrigins/obsidian-music-player-plugin/discussions)
-- **Email**: [Contact the maintainer](mailto:liuqjit@163.com@163.com) (if available)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/liberprimus/liber-music-player-plugin/issues)
+- **GitHub Discussions**: [Ask questions or share ideas](https://github.com/liberprimus/liber-music-player-plugin/discussions)
