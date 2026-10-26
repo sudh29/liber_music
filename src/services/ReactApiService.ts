@@ -155,6 +155,15 @@ export class ReactApiService {
 				const audioElement = this.audioService.getAudioElement();
 				return audioElement?.playbackRate ?? state.playbackRate ?? 1.0;
 			},
+			toggleShuffle: async () => {
+				return this.playbackService.toggleShuffle();
+			},
+			toggleArtworkDisplayMode: async () => {
+				return this.playbackService.toggleArtworkDisplayMode();
+			},
+			setRating: async (path: string, rating: number) => {
+				await this.playbackService.setTrackRating(path, rating);
+			},
 		};
 	}
 

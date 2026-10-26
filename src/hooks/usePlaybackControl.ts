@@ -26,8 +26,14 @@ export interface UsePlaybackControlReturn {
 	playPrevious: () => Promise<void>;
 	/** Plays next track */
 	playNext: () => Promise<void>;
-	/** Toggles play mode (normal, repeat-all, repeat-one, shuffle) */
+	/** Toggles play mode (normal, repeat-all, repeat-one) */
 	togglePlayMode: () => Promise<void>;
+	/** Toggles smart non-repeating shuffle */
+	toggleShuffle: () => Promise<boolean>;
+	/** Toggles artwork display mode ('vinyl' <-> 'card') */
+	toggleArtworkDisplayMode: () => Promise<"vinyl" | "card">;
+	/** Sets track rating */
+	setRating: (path: string, rating: number) => Promise<void>;
 	/** Seeks to position ratio (0 to 1) */
 	seekToRatio: (ratio: number) => void;
 	/** Fast-forwards audio by specified seconds */
@@ -63,6 +69,21 @@ export function usePlaybackControl(view: MusicPlayerView): UsePlaybackControlRet
 		await view.togglePlayMode();
 	}, [view]);
 
+	const toggleShuffle = React.useCallback(async () => {
+		return view.toggleShuffle();
+	}, [view]);
+
+	const toggleArtworkDisplayMode = React.useCallback(async () => {
+		return view.toggleArtworkDisplayMode();
+	}, [view]);
+
+	const setRating = React.useCallback(
+		async (path: string, rating: number) => {
+			await view.setRating(path, rating);
+		},
+		[view]
+	);
+
 	const seekToRatio = React.useCallback(
 		(ratio: number) => {
 			view.seekToRatio(ratio);
@@ -97,6 +118,9 @@ export function usePlaybackControl(view: MusicPlayerView): UsePlaybackControlRet
 		playPrevious,
 		playNext,
 		togglePlayMode,
+		toggleShuffle,
+		toggleArtworkDisplayMode,
+		setRating,
 		seekToRatio,
 		seekForward,
 		seekBackward,

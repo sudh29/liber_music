@@ -59,6 +59,39 @@ export function useLazyTrackCovers({
 	const activeCoverLoadsRef = React.useRef<number>(0);
 	const coverLoadQueueRef = React.useRef<Array<() => void>>([]);
 	const trackRefsRef = React.useRef<Map<string, React.RefObject<HTMLDivElement>>>(new Map());
+	const pendingBatchRef = React.useRef<Map<string, string>>(new Map());
+	const batchTimeoutRef = React.useRef<number | null>(null);
+
+	const flushBatch = React.useCallback(() => {
+		if (batchTimeoutRef.current !== null) {
+			window.clearTimeout(batchTimeoutRef.current);
+			batchTimeoutRef.current = null;
+		}
+		if (pendingBatchRef.current.size === 0) return;
+		const batch = new Map(pendingBatchRef.current);
+		pendingBatchRef.current.clear();
+		setEmbeddedCovers((prev) => {
+			let changed = false;
+			const next = new Map(prev);
+			for (const [path, url] of batch) {
+				if (next.get(path) !== url) {
+					next.set(path, url);
+					changed = true;
+				}
+			}
+			return changed ? next : prev;
+		});
+	}, []);
+
+	const scheduleBatchUpdate = React.useCallback(
+		(path: string, url: string) => {
+			pendingBatchRef.current.set(path, url);
+			if (batchTimeoutRef.current === null) {
+				batchTimeoutRef.current = window.setTimeout(flushBatch, 50);
+			}
+		},
+		[flushBatch]
+	);
 
 	// Initialize track refs
 	React.useEffect(() => {
@@ -129,12 +162,7 @@ export function useLazyTrackCovers({
 						if (track.coverUrl) {
 							if (!embeddedCoversRef.current.has(trackPath)) {
 								embeddedCoversRef.current.set(trackPath, track.coverUrl);
-								setEmbeddedCovers(prev => {
-									if (prev.has(trackPath)) return prev;
-									const next = new Map(prev);
-									next.set(trackPath, track.coverUrl!);
-									return next;
-								});
+								scheduleBatchUpdate(trackPath, track.coverUrl);
 							}
 							observer.unobserve(trackElement);
 							return;
@@ -144,12 +172,7 @@ export function useLazyTrackCovers({
 							const cachedUrl = coverCacheRef.current.get(trackPath);
 							if (cachedUrl && !embeddedCoversRef.current.has(trackPath)) {
 								embeddedCoversRef.current.set(trackPath, cachedUrl);
-								setEmbeddedCovers(prev => {
-									if (prev.has(trackPath)) return prev;
-									const next = new Map(prev);
-									next.set(trackPath, cachedUrl);
-									return next;
-								});
+								scheduleBatchUpdate(trackPath, cachedUrl);
 							}
 							observer.unobserve(trackElement);
 							return;
@@ -166,12 +189,7 @@ export function useLazyTrackCovers({
 							if (albumCover) {
 								coverCacheRef.current.set(trackPath, albumCover);
 								embeddedCoversRef.current.set(trackPath, albumCover);
-								setEmbeddedCovers(prev => {
-									if (prev.has(trackPath)) return prev;
-									const next = new Map(prev);
-									next.set(trackPath, albumCover);
-									return next;
-								});
+								scheduleBatchUpdate(trackPath, albumCover);
 								observer.unobserve(trackElement);
 								return;
 							}
@@ -212,12 +230,7 @@ export function useLazyTrackCovers({
 										albumCoverCacheRef.current.set(track.album, coverUrl);
 									}
 
-									setEmbeddedCovers(prev => {
-										if (prev.has(trackPath)) return prev;
-										const next = new Map(prev);
-										next.set(trackPath, coverUrl);
-										return next;
-									});
+									scheduleBatchUpdate(trackPath, coverUrl);
 								} else {
 									coverCacheRef.current.delete(trackPath);
 									embeddedCoversRef.current.delete(trackPath);
@@ -254,11 +267,20 @@ export function useLazyTrackCovers({
 		return () => {
 			cancelAnimationFrame(rafId);
 			observer.disconnect();
+			if (batchTimeoutRef.current !== null) {
+				window.clearTimeout(batchTimeoutRef.current);
+				batchTimeoutRef.current = null;
+			}
 		};
-	}, [tracks, getTrackCover, app, enqueueCoverLoad]);
+	}, [tracks, getTrackCover, app, enqueueCoverLoad, scheduleBatchUpdate]);
 
 	const stopLoading = React.useCallback(() => {
 		shouldStopLoadingRef.current = true;
+		if (batchTimeoutRef.current !== null) {
+			window.clearTimeout(batchTimeoutRef.current);
+			batchTimeoutRef.current = null;
+		}
+		pendingBatchRef.current.clear();
 		loadingPromisesRef.current.clear();
 	}, []);
 

@@ -127,11 +127,11 @@ describe("playback/control utilities", () => {
 	});
 
 	describe("togglePlayMode", () => {
-		it("should cycle through play modes sequentially", () => {
+		it("should cycle through repeat modes sequentially", () => {
 			expect(togglePlayMode("normal")).toBe("repeat-all");
 			expect(togglePlayMode("repeat-all")).toBe("repeat-one");
-			expect(togglePlayMode("repeat-one")).toBe("shuffle");
-			expect(togglePlayMode("shuffle")).toBe("normal");
+			expect(togglePlayMode("repeat-one")).toBe("normal");
+			expect(togglePlayMode("shuffle" as any)).toBe("normal");
 		});
 
 		it("should reset to normal mode when given an unrecognized mode", () => {

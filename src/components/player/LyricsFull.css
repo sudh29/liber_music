@@ -19,7 +19,7 @@
 	margin-bottom: 16px;
 }
 
-/* Scroll container styles */
+/* Scroll container styles with 2026 top/bottom gradient fade */
 .music-player .lyrics-scroll {
 	overflow-y: auto;
 	align-items: center;
@@ -28,6 +28,8 @@
 	scroll-behavior: smooth;
 	scrollbar-width: none;
 	-ms-overflow-style: none;
+	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
+	mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
 }
 
 .music-player .lyrics-scroll::-webkit-scrollbar {
@@ -75,11 +77,14 @@
 	opacity: 0.5;
 }
 
-/* Currently playing line: enlarged font size and bold */
+/* Currently playing line: enlarged font size, bold, and luminous text shadow */
 .music-player .lyrics-line.is-playing .lyrics-text {
 	color: var(--interactive-accent);
-	font-weight: 600;
-	font-size: 1.15em;
+	font-weight: 700;
+	font-size: 1.22em;
+	transform: scale(1.04);
+	text-shadow: 0 0 16px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45);
+	transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Empty state */

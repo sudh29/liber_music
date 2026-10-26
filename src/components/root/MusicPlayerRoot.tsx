@@ -211,6 +211,9 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 						currentTime={playback.currentTime}
 						duration={playback.duration}
 						playMode={playback.playMode}
+						isShuffle={playback.isShuffle}
+						artworkDisplayMode={playback.artworkDisplayMode}
+						rating={playback.rating}
 						prevLyric={playback.prevLyric}
 						currentLyric={playback.currentLyric}
 						nextLyric={playback.nextLyric}
@@ -227,6 +230,13 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 						onNext={handleNextWithFlag}
 						onTogglePlay={() => { void playbackControl.togglePlay(); }}
 						onToggleMode={() => { void playbackControl.togglePlayMode(); }}
+						onToggleShuffle={() => { void playbackControl.toggleShuffle(); }}
+						onToggleArtworkDisplayMode={() => { void playbackControl.toggleArtworkDisplayMode(); }}
+						onRate={(rating) => {
+							if (playback.currentPath) {
+								void playbackControl.setRating(playback.currentPath, rating);
+							}
+						}}
 						onOpenPlaylist={() => { void playbackControl.openPlaylistSheet(); }}
 						onSeek={playbackControl.seekToRatio}
 						onSeekBackward={playbackControl.seekBackward}

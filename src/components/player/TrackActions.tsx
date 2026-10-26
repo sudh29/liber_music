@@ -16,6 +16,8 @@ import { IconButton } from "@/components/shared/IconButton";
 import { setIcon } from "obsidian";
 import { t } from "@/utils/i18n/i18n";
 
+import { StarRating } from "./StarRating";
+
 /**
  * Props interface for TrackActions component
  */
@@ -30,6 +32,10 @@ export interface TrackActionsProps {
 	volume: number;
 	/** Current playback rate (0.5-2.0) */
 	playbackRate: number;
+	/** Artwork display mode ('vinyl' | 'card') */
+	artworkDisplayMode?: "vinyl" | "card";
+	/** Current track rating (0 - 5) */
+	rating?: number;
 	/** Callback function to add track to playlist */
 	onAddToPlaylist: (path: string, sectionId?: string) => void;
 	/** Callback function to toggle favorite status */
@@ -38,6 +44,10 @@ export interface TrackActionsProps {
 	onVolumeChange: (volume: number) => void;
 	/** Callback function on playback rate change */
 	onPlaybackRateChange: (rate: number) => void;
+	/** Callback function to toggle artwork display mode */
+	onToggleArtworkDisplayMode?: () => void;
+	/** Callback function to set track rating */
+	onRate?: (rating: number) => void;
 }
 
 /**
@@ -53,10 +63,14 @@ export function TrackActions({
 	isFavorite,
 	volume,
 	playbackRate,
+	artworkDisplayMode = "vinyl",
+	rating = 0,
 	onAddToPlaylist,
 	onToggleFavorite,
 	onVolumeChange,
 	onPlaybackRateChange,
+	onToggleArtworkDisplayMode,
+	onRate,
 }: TrackActionsProps) {
 	const [isVolumeMenuVisible, setIsVolumeMenuVisible] = React.useState(false);
 	const [isPlaybackRateMenuVisible, setIsPlaybackRateMenuVisible] = React.useState(false);
@@ -242,6 +256,19 @@ export function TrackActions({
 						</div>
 					)}
 				</div>
+
+				{onToggleArtworkDisplayMode && (
+					<IconButton
+						icon={artworkDisplayMode === "vinyl" ? "image" : "disc"}
+						label={artworkDisplayMode === "vinyl" ? "Switch to Album Card mode" : "Switch to Vinyl Disc mode"}
+						className="track-action-btn clickable-icon artwork-mode-btn"
+						onClick={onToggleArtworkDisplayMode}
+					/>
+				)}
+			</div>
+
+			<div className="track-actions-center">
+				<StarRating rating={rating} onRate={onRate} />
 			</div>
 
 			<div className="track-actions-right">

@@ -90,4 +90,24 @@ export interface ReactApi {
 	 * @returns Playback rate (0.25 - 4.0)
 	 */
 	getPlaybackRate: () => number;
+
+	/**
+	 * Toggles non-repeating shuffle state
+	 * @returns New shuffle boolean
+	 */
+	toggleShuffle: () => Promise<boolean>;
+
+	/**
+	 * Toggles artwork display mode between 'vinyl' and 'card'
+	 * @returns New artwork display mode
+	 */
+	toggleArtworkDisplayMode: () => Promise<"vinyl" | "card">;
+
+	/**
+	 * Sets track rating (0 to 5)
+	 * @param path - Track path
+	 * @param rating - Rating (0-5)
+	 */
+	setRating: (path: string, rating: number) => Promise<void>;
 }
+

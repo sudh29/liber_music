@@ -9,6 +9,7 @@
 import React from "react";
 import "./PlayPage.css";
 import { AlbumDisc } from "@/components/player/AlbumDisc";
+import { AlbumCard } from "@/components/player/AlbumCard";
 import { LyricsTriplet } from "@/components/player/LyricsTriplet";
 import { LyricsExtendedTriplet } from "@/components/player/LyricsExtendedTriplet";
 import { LyricsFull } from "@/components/player/LyricsFull";
@@ -39,6 +40,9 @@ export interface PlayPageProps {
 	currentTime: number;
 	duration: number;
 	playMode: PlayMode;
+	isShuffle?: boolean;
+	artworkDisplayMode?: "vinyl" | "card";
+	rating?: number;
 	
 	// Disc mode props
 	coverUrl?: string;
@@ -66,6 +70,9 @@ export interface PlayPageProps {
 	onNext: () => void;
 	onTogglePlay: () => void;
 	onToggleMode: () => void;
+	onToggleShuffle?: () => void;
+	onToggleArtworkDisplayMode?: () => void;
+	onRate?: (rating: number) => void;
 	onOpenPlaylist: () => void;
 	onSeek: (ratio: number) => void;
 	onSeekBackward: (seconds: number) => void;
@@ -92,6 +99,9 @@ export function PlayPage({
 	currentTime,
 	duration,
 	playMode,
+	isShuffle = false,
+	artworkDisplayMode = "vinyl",
+	rating = 0,
 	coverUrl,
 	prevCoverUrl,
 	nextCoverUrl,
@@ -111,6 +121,9 @@ export function PlayPage({
 	onNext,
 	onTogglePlay,
 	onToggleMode,
+	onToggleShuffle,
+	onToggleArtworkDisplayMode,
+	onRate,
 	onOpenPlaylist,
 	onSeek,
 	onSeekBackward,
@@ -183,17 +196,29 @@ export function PlayPage({
 				onClick={onSwitchViewMode}
 			>
 				<div className="disc-wrapper" onClick={onSwitchViewMode}>
-					<AlbumDisc
-						coverUrl={coverUrl}
-						trackKey={currentPath || undefined}
-						isPlaying={isPlaying}
-						onPrev={onPrev}
-						onNext={onNext}
-						onTogglePlay={onTogglePlay}
-						prevCoverUrl={prevCoverUrl}
-						nextCoverUrl={nextCoverUrl}
-						lastAction={lastAction}
-					/>
+					{artworkDisplayMode === "card" ? (
+						<AlbumCard
+							coverUrl={coverUrl}
+							title={title}
+							artist={artist}
+							isPlaying={isPlaying}
+							onTogglePlay={onTogglePlay}
+							onPrev={onPrev}
+							onNext={onNext}
+						/>
+					) : (
+						<AlbumDisc
+							coverUrl={coverUrl}
+							trackKey={currentPath || undefined}
+							isPlaying={isPlaying}
+							onPrev={onPrev}
+							onNext={onNext}
+							onTogglePlay={onTogglePlay}
+							prevCoverUrl={prevCoverUrl}
+							nextCoverUrl={nextCoverUrl}
+							lastAction={lastAction}
+						/>
+					)}
 				</div>
 				<div className="lyrics-triplet-wrapper" onClick={onSwitchViewMode}>
 					{useExtendedLyrics ? (
@@ -246,10 +271,14 @@ export function PlayPage({
 				isFavorite={isFavorite}
 				volume={volume}
 				playbackRate={playbackRate}
+				artworkDisplayMode={artworkDisplayMode}
+				rating={rating}
 				onAddToPlaylist={onAddToPlaylist}
 				onToggleFavorite={onToggleFavorite}
 				onVolumeChange={onVolumeChange}
 				onPlaybackRateChange={onPlaybackRateChange}
+				onToggleArtworkDisplayMode={onToggleArtworkDisplayMode}
+				onRate={onRate}
 			/>
 			<ProgressBar
 				current={currentTime}
@@ -261,10 +290,12 @@ export function PlayPage({
 			<PlaybackControls
 				isPlaying={isPlaying}
 				playMode={playMode}
+				isShuffle={isShuffle}
 				onTogglePlay={onTogglePlay}
 				onPrev={onPrev}
 				onNext={onNext}
 				onToggleMode={onToggleMode}
+				onToggleShuffle={onToggleShuffle}
 				onOpenPlaylist={onOpenPlaylist}
 			/>
 		</div>

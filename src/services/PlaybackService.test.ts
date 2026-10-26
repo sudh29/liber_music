@@ -213,4 +213,34 @@ describe("PlaybackService", () => {
 		await new Promise((r) => setTimeout(r, 500));
 		expect(() => playbackService.handleTrackEnd()).not.toThrow();
 	});
+
+	it("should toggle shuffle and artwork display mode correctly", async () => {
+		const res1 = await playbackService.toggleShuffle();
+		expect(res1).toBe(true);
+		expect(plugin.settings.isShuffle).toBe(true);
+		expect(plugin.saveSettings).toHaveBeenCalled();
+
+		const res2 = await playbackService.toggleShuffle();
+		expect(res2).toBe(false);
+		expect(plugin.settings.isShuffle).toBe(false);
+
+		const artMode1 = await playbackService.toggleArtworkDisplayMode();
+		expect(artMode1).toBe("card");
+		expect(plugin.settings.artworkDisplayMode).toBe("card");
+
+		const artMode2 = await playbackService.toggleArtworkDisplayMode();
+		expect(artMode2).toBe("vinyl");
+		expect(plugin.settings.artworkDisplayMode).toBe("vinyl");
+	});
+
+	it("should set and persist track ratings", async () => {
+		await playbackService.setTrackRating("song1.mp3", 4);
+		expect(plugin.settings.ratings?.["song1.mp3"]).toBe(4);
+		expect(plugin.saveSettings).toHaveBeenCalled();
+
+		// Clear rating when 0
+		await playbackService.setTrackRating("song1.mp3", 0);
+		expect(plugin.settings.ratings?.["song1.mp3"]).toBeUndefined();
+	});
 });
+

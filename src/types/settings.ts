@@ -27,6 +27,8 @@ export interface TrackInfo {
 	duration?: number;
 	/** ReplayGain track gain in dB */
 	replayGainDb?: number;
+	/** User star rating (0 to 5) */
+	rating?: number;
 }
 
 /**
@@ -65,6 +67,12 @@ export interface MusicPlayerSettings {
 	volume: number;
 	/** Persisted playback rate (0.25 - 4.0) */
 	playbackRate: number;
+	/** Persisted shuffle state (independent of repeat mode) */
+	isShuffle: boolean;
+	/** Artwork presentation mode: rotating vinyl disc or modern card */
+	artworkDisplayMode: 'vinyl' | 'card';
+	/** Track ID to star rating mapping (0 to 5) */
+	ratings?: Record<string, number>;
 }
 
 /**
@@ -82,4 +90,7 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	autoPlayOpenTrackPath: '', // Default: first track in All list
 	volume: 1.0,               // Default: 100% volume
 	playbackRate: 1.0,         // Default: normal speed
+	isShuffle: false,          // Default: sequential playback
+	artworkDisplayMode: 'vinyl', // Default: classic vinyl mode
+	ratings: {},               // Default: no ratings
 };

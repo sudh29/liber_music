@@ -26,12 +26,21 @@
 	display: flex;
 	align-items: center;
 	justify-content: flex-start;
+	gap: 6px;
+}
+
+.music-player .track-actions-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
 }
 
 .music-player .track-actions-right {
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
+	gap: 6px;
 }
 
 .music-player button.track-action-btn.clickable-icon {

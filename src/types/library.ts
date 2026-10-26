@@ -20,6 +20,8 @@ export interface ReactTrackInfo {
 	coverUrl?: string;
 	/** Track duration in seconds (optional) */
 	duration?: number;
+	/** User star rating (0 to 5) */
+	rating?: number;
 }
 
 /**

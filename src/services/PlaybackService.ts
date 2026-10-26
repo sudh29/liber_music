@@ -18,6 +18,7 @@ import { LyricsService } from "./LyricsService";
 import { type CurrentList, ListService } from "./ListService";
 import { SnapshotService } from "./SnapshotService";
 import { findTrackIndexInGlobalList, getNextIndex, getPreviousIndex, handleTrackEnd } from "@/utils/playback/control";
+import { ShuffleManager } from "@/utils/playback/shuffle";
 import { ANIMATION_TIMINGS } from "@/constants/ui";
 import type MusicPlayerPlugin from "@/main";
 import type { PlayMode } from "@/main";
@@ -63,6 +64,11 @@ export class PlaybackService {
 	 * Deduplicates redundant handleTrackEnd triggers from both ended and seeked events
 	 */
 	private lastHandleTrackEndAt = 0;
+
+	/**
+	 * Smart non-repeating shuffle manager
+	 */
+	private shuffleManager = new ShuffleManager();
 
 	/**
 	 * Creates a playback service instance.
@@ -115,9 +121,10 @@ export class PlaybackService {
 		const currentIdxInList = list.findIndex((f) => f.path === currentTrack.path);
 		if (currentIdxInList === -1) return null;
 
+		const isShuffle = this.plugin.settings?.isShuffle ?? false;
 		const nextIdxInList = direction === "previous"
-			? getPreviousIndex(currentIdxInList, list, playMode as PlayMode)
-			: getNextIndex(currentIdxInList, list, playMode as PlayMode);
+			? getPreviousIndex(currentIdxInList, list, playMode as PlayMode, isShuffle, this.shuffleManager)
+			: getNextIndex(currentIdxInList, list, playMode as PlayMode, isShuffle, this.shuffleManager);
 		
 		const target = list[nextIdxInList];
 		if (!target) {
@@ -243,16 +250,25 @@ export class PlaybackService {
 			return;
 		}
 
+		const { list: activeList } = this.listService.getCurrentPlaylistForTrack(
+			track,
+			state.currentList,
+			state.trackList,
+			state.favorites
+		);
+		const trackIdxInList = activeList.findIndex((f) => f.path === track.path);
+		if (trackIdxInList !== -1) {
+			this.shuffleManager.onTrackSelected(trackIdxInList);
+		}
+
 		if (delayPlay) {
-			await new Promise(resolve =>
-				window.setTimeout(resolve, ANIMATION_TIMINGS.DISC_ANIMATION_DURATION + ANIMATION_TIMINGS.DISC_ANIMATION_BUFFER)
-			);
-			
-			if (direction === "prev") {
-				this.stateService.setPendingPrevCoverUrl(undefined);
-			} else if (direction === "next") {
-				this.stateService.setPendingNextCoverUrl(undefined);
-			}
+			window.setTimeout(() => {
+				if (direction === "prev") {
+					this.stateService.setPendingPrevCoverUrl(undefined);
+				} else if (direction === "next") {
+					this.stateService.setPendingNextCoverUrl(undefined);
+				}
+			}, ANIMATION_TIMINGS.DISC_ANIMATION_DURATION + ANIMATION_TIMINGS.DISC_ANIMATION_BUFFER);
 		}
 
 		const userVolume = state.volume ?? 1.0;
@@ -408,10 +424,13 @@ export class PlaybackService {
 			? list.findIndex((f) => f.path === state.currentTrack!.path)
 			: -1;
 
+		const isShuffle = this.plugin.settings?.isShuffle ?? false;
 		const { shouldPlayNext, shouldRepeat, shouldStop } = handleTrackEnd(
 			state.playMode,
 			currentIdxInList,
-			list
+			list,
+			isShuffle,
+			this.shuffleManager
 		);
 
 		const audioElement = this.audioService.getAudioElement();
@@ -452,5 +471,77 @@ export class PlaybackService {
 		}
 
 		await this.playTrack(index, false, undefined, undefined, autoPlay);
+	}
+
+	/**
+	 * Toggles non-repeating shuffle state.
+	 *
+	 * @returns New shuffle state boolean
+	 */
+	async toggleShuffle(): Promise<boolean> {
+		const current = this.plugin.settings?.isShuffle ?? false;
+		const next = !current;
+		this.plugin.settings.isShuffle = next;
+		await this.plugin.saveSettings();
+		if (next) {
+			const state = this.stateService.getState();
+			const { list } = this.listService.getCurrentPlaylistForTrack(
+				state.currentTrack,
+				state.currentList,
+				state.trackList,
+				state.favorites
+			);
+			const currentIdx = state.currentTrack ? list.findIndex((f) => f.path === state.currentTrack?.path) : -1;
+			this.shuffleManager.reset(list.length, currentIdx >= 0 ? currentIdx : undefined);
+		}
+		if (this.callbacks.onLibraryUpdated) {
+			void this.callbacks.onLibraryUpdated();
+		}
+		return next;
+	}
+
+	/**
+	 * Toggles artwork display mode between 'vinyl' and 'card'.
+	 *
+	 * @returns New artwork display mode
+	 */
+	async toggleArtworkDisplayMode(): Promise<"vinyl" | "card"> {
+		const current = this.plugin.settings?.artworkDisplayMode ?? "vinyl";
+		const next = current === "vinyl" ? "card" : "vinyl";
+		this.plugin.settings.artworkDisplayMode = next;
+		await this.plugin.saveSettings();
+		if (this.callbacks.onLibraryUpdated) {
+			void this.callbacks.onLibraryUpdated();
+		}
+		return next;
+	}
+
+	/**
+	 * Sets track rating (0 to 5) and persists to settings.
+	 *
+	 * @param trackPath - Path of the track
+	 * @param rating - Rating between 0 and 5
+	 */
+	async setTrackRating(trackPath: string, rating: number): Promise<void> {
+		const clampedRating = Math.max(0, Math.min(5, Math.round(rating)));
+		if (!this.plugin.settings.ratings) {
+			this.plugin.settings.ratings = {};
+		}
+		if (clampedRating === 0) {
+			delete this.plugin.settings.ratings[trackPath];
+		} else {
+			this.plugin.settings.ratings[trackPath] = clampedRating;
+		}
+
+		// Also update track info if exists
+		const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
+		if (this.plugin.settings.tracks[trackId]) {
+			this.plugin.settings.tracks[trackId].rating = clampedRating;
+		}
+
+		await this.plugin.saveSettings();
+		if (this.callbacks.onLibraryUpdated) {
+			void this.callbacks.onLibraryUpdated();
+		}
 	}
 }

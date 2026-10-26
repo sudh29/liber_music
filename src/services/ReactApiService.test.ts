@@ -34,6 +34,9 @@ describe("ReactApiService", () => {
 		const playbackService = {
 			playByPath: vi.fn().mockResolvedValue(undefined),
 			playCategory: vi.fn().mockResolvedValue(undefined),
+			toggleShuffle: vi.fn().mockResolvedValue(true),
+			toggleArtworkDisplayMode: vi.fn().mockResolvedValue("card"),
+			setTrackRating: vi.fn().mockResolvedValue(undefined),
 		} as unknown as PlaybackService;
 
 		const audioService = new AudioService(app);
@@ -177,4 +180,21 @@ describe("ReactApiService", () => {
 		await api.addToPlaylist("nonexistent.mp3");
 		expect(playlistService.addToPlaylist).not.toHaveBeenCalled();
 	});
+
+	it("should delegate toggleShuffle, toggleArtworkDisplayMode, and setRating to playbackService", async () => {
+		const { service, playbackService } = createService();
+		const api = service.getApi();
+
+		const shuffleRes = await api.toggleShuffle();
+		expect(shuffleRes).toBe(true);
+		expect(playbackService.toggleShuffle).toHaveBeenCalled();
+
+		const artRes = await api.toggleArtworkDisplayMode();
+		expect(artRes).toBe("card");
+		expect(playbackService.toggleArtworkDisplayMode).toHaveBeenCalled();
+
+		await api.setRating("song1.mp3", 4);
+		expect(playbackService.setTrackRating).toHaveBeenCalledWith("song1.mp3", 4);
+	});
 });
+

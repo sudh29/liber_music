@@ -140,6 +140,15 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 
 	return (
 		<div className="album-container-wrapper">
+			{/* Ambient Backlight Glow (2026 Modern Aesthetic) */}
+			{displayCoverUrl ? (
+				<div
+					className={`disc-ambient-glow ${isPlaying ? "is-playing" : ""}`}
+					style={{ backgroundImage: `url("${displayCoverUrl}")` }}
+					aria-hidden="true"
+				/>
+			) : null}
+
 			{/* Fixed semi-transparent background */}
 			<div className="disc-shadow"></div>
 

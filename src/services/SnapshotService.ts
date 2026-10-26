@@ -223,6 +223,9 @@ export class SnapshotService {
 			volume: audioElement?.volume ?? volume ?? 1.0,
 			playbackRate: audioElement?.playbackRate ?? playbackRate ?? 1.0,
 			isFavorite,
+			isShuffle: this.plugin.settings.isShuffle ?? false,
+			rating: track?.rating ?? (trackId ? this.plugin.settings.ratings?.[trackId] : 0) ?? 0,
+			artworkDisplayMode: this.plugin.settings.artworkDisplayMode ?? 'vinyl',
 		};
 	}
 
@@ -253,6 +256,7 @@ export class SnapshotService {
 				album,
 				coverUrl: this.resolveTrackCoverUrl(file),
 				duration: meta?.duration,
+				rating: meta?.rating ?? this.plugin.settings.ratings?.[trackId] ?? 0,
 			};
 		};
 

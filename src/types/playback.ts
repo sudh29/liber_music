@@ -58,4 +58,10 @@ export interface ReactPlaybackSnapshot {
 	playbackRate: number;
 	/** Whether active track is marked as favorite */
 	isFavorite: boolean;
+	/** Whether non-repeating shuffle mode is enabled */
+	isShuffle: boolean;
+	/** Current track star rating (0 to 5) */
+	rating: number;
+	/** Active artwork presentation mode */
+	artworkDisplayMode: 'vinyl' | 'card';
 }

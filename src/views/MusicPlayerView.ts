@@ -575,6 +575,27 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
+	 * Toggles smart non-repeating shuffle.
+	 */
+	async toggleShuffle() {
+		return this.playbackService.toggleShuffle();
+	}
+
+	/**
+	 * Toggles artwork display mode ('vinyl' <-> 'card').
+	 */
+	async toggleArtworkDisplayMode() {
+		return this.playbackService.toggleArtworkDisplayMode();
+	}
+
+	/**
+	 * Sets track rating (0 to 5) and persists.
+	 */
+	async setRating(path: string, rating: number) {
+		await this.playbackService.setTrackRating(path, rating);
+	}
+
+	/**
 	 * Seeks to specific playback ratio (0 to 1).
 	 * @internal React components should access this method via usePlaybackControl hook
 	 */

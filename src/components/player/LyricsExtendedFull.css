@@ -27,9 +27,11 @@
 	scroll-behavior: smooth;
 	width: 100%;
 	height: 100%;
-	/* Consistent with standard lyrics view (LyricsFull.css): hide scrollbar */
+	/* Consistent with standard lyrics view (LyricsFull.css): hide scrollbar and add 2026 gradient fade */
 	scrollbar-width: none;
 	-ms-overflow-style: none;
+	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
+	mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%);
 }
 
 .music-player .lyrics-extended-scroll::-webkit-scrollbar {

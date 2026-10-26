@@ -78,27 +78,11 @@ export function TrackList({
 		getTrackCover,
 	});
 
-	// Handle single-click vs double-click conflict:
-	// React double click fires two click events followed by dblclick.
-	// Delay single click to allow double click to cancel pending single play.
-	const clickTimerRef = React.useRef<number | null>(null);
-	const lastClickPathRef = React.useRef<string | null>(null);
-
-	// Handle double click: cancel pending single play, stop cover loading, and delegate to onDoubleClick
+	// Handle double click: stop cover loading and delegate to onDoubleClick
 	const handleDoubleClick = React.useCallback(
 		(e: React.MouseEvent<HTMLDivElement>, path: string) => {
 			e.stopPropagation();
-
-			// Cancel pending single-click play
-			if (clickTimerRef.current) {
-				window.clearTimeout(clickTimerRef.current);
-				clickTimerRef.current = null;
-				lastClickPathRef.current = null;
-			}
-
-			// Stop cover loading on double click as view will navigate away
 			stopLoading();
-
 			if (onDoubleClick) {
 				void onDoubleClick(path, sectionId);
 			}
@@ -106,40 +90,14 @@ export function TrackList({
 		[onDoubleClick, sectionId, stopLoading]
 	);
 
-	// Handle single click: play current track without switching page
+	// Handle single click: play current track immediately without latency
 	const handleClick = React.useCallback(
 		(e: React.MouseEvent<HTMLDivElement>, path: string) => {
 			e.stopPropagation();
-
-			// Clear existing timer if clicked rapidly
-			if (clickTimerRef.current) {
-				window.clearTimeout(clickTimerRef.current);
-			}
-
-			lastClickPathRef.current = path;
-
-			// 220ms delay allows double-click cancellation without noticeable lag
-			clickTimerRef.current = window.setTimeout(() => {
-				// Ensure target is still identical
-				if (lastClickPathRef.current === path) {
-					onPlay(path, sectionId);
-				}
-				clickTimerRef.current = null;
-				lastClickPathRef.current = null;
-			}, 220);
+			onPlay(path, sectionId);
 		},
 		[onPlay, sectionId]
 	);
-
-	// Clean up timer on unmount
-	React.useEffect(() => {
-		return () => {
-			if (clickTimerRef.current) {
-				window.clearTimeout(clickTimerRef.current);
-				clickTimerRef.current = null;
-			}
-		};
-	}, []);
 
 	if (!tracks.length) {
 		return <div className="empty">{t("library.empty.noTracks")}</div>;
@@ -229,6 +187,11 @@ export function TrackList({
 									<div className="track-sub">
 										<span className="track-artist">{track.artist}</span>
 										{track.album ? <span className="track-album"> · {track.album}</span> : null}
+										{track.rating && track.rating > 0 ? (
+											<span className="track-rating-badge" title={`${track.rating} / 5`}>
+												★ {track.rating}
+											</span>
+										) : null}
 									</div>
 								</div>
 							</div>
