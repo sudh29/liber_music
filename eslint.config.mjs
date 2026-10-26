@@ -9,6 +9,7 @@ export default tseslint.config(
 		ignores: [
 			"node_modules/**",
 			"dist/**",
+			"coverage/**",
 			"references/**",
 			"scripts/**",
 			"esbuild.config.mjs",
@@ -17,6 +18,8 @@ export default tseslint.config(
 			"versions.json",
 			"package.json",
 			"main.js",
+			"vitest.config.ts",
+			"tests/**",
 		],
 	},
 	{
@@ -106,6 +109,15 @@ export default tseslint.config(
 			"@typescript-eslint/no-unsafe-argument": "off",
 			"@typescript-eslint/no-unsafe-call": "off",
 			"@typescript-eslint/no-unsafe-return": "off",
+		},
+	},
+	{
+		files: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+		rules: {
+			"obsidianmd/no-tfile-tfolder-cast": "off",
+			"@typescript-eslint/no-explicit-any": "off",
+			"@typescript-eslint/no-unsafe-assignment": "off",
+			"@typescript-eslint/no-unnecessary-type-assertion": "off",
 		},
 	},
 );

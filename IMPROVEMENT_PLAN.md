@@ -1,9 +1,9 @@
 ---
 repo: liber_music
 review_date: 2026-10-26
-current_score: 8.2
+current_score: 9.2
 target_score: 9.7
-status: In Progress (8.2)
+status: In Progress (9.2)
 plugin_id: music-player
 plugin_version: 1.3.8
 ---
@@ -108,14 +108,14 @@ graph TD
   - Document installation (Manual & BRAT), supported codecs, embedded lyrics specifications, playback queue, and hotkeys in English.
 
 ### Phase 2: Automated Testing Suite & CI Gates (Target Score: 9.2)
-- [ ] **Task 2.1: Configure Vitest Runner**
+- [x] **Task 2.1: Configure Vitest Runner**
   - Install `vitest` and `@vitest/coverage-v8`.
   - Configure `vitest.config.ts` supporting TypeScript path aliases (`@/*`).
-- [ ] **Task 2.2: Implement Unit Tests for Critical Logic**
+- [x] **Task 2.2: Implement Unit Tests for Critical Logic**
   - `src/utils/lyrics/offset.test.ts`: Verify `parseLyricsOffset`, tag stripping, and negative millisecond offsets.
   - `src/utils/data/sort.test.ts`: Test track sorting, natural alphanumeric comparisons, and missing tag fallbacks.
   - `src/constants/audio.test.ts`: Verify `isSupportedAudioExtension` boundary cases.
-- [ ] **Task 2.3: Integrate Test Suite into GitHub Actions**
+- [x] **Task 2.3: Integrate Test Suite into GitHub Actions**
   - Update `.github/workflows/lint.yml` to run `npm run test` and `tsc --noEmit`.
 
 ### Phase 3: Core Audio & External Companion `.lrc` Support (Target Score: 9.5)
