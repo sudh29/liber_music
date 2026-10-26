@@ -19,6 +19,9 @@ initBufferPolyfill();
 import { App, TFile } from "obsidian";
 import { IAudioMetadata, parseBuffer } from "music-metadata";
 import { isSupportedAudioExtension } from "@/constants/audio";
+import { parseReplayGain } from "./replayGain";
+export { getCompanionLrcFile, getCompanionLrcPath, readCompanionLrc } from "./companionLrc";
+export { applyReplayGainToVolume, calculateReplayGainMultiplier, parseReplayGain } from "./replayGain";
 
 /**
  * 同一 (格式, 标签ID) 下收集到的多个歌词值。
@@ -260,6 +263,8 @@ export interface EmbeddedAudioMetadata {
 	track?: number;
 	/** 歌曲时长（秒） */
 	duration?: number;
+	/** ReplayGain 音轨增益（dB） */
+	replayGainDb?: number;
 }
 
 /**
@@ -446,6 +451,18 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 			result.track = typeof metadata.common.track === "object"
 				? metadata.common.track.no || undefined
 				: metadata.common.track;
+		}
+
+		// ReplayGain 音轨增益（dB）
+		const rawGain =
+			(metadata.common as { replaygain_track_gain?: unknown })?.replaygain_track_gain ??
+			extractTextFromNativeTags(
+				metadata.native,
+				(id) => /replaygain_track_gain/i.test(id) || /TXXX:REPLAYGAIN_TRACK_GAIN/i.test(id)
+			);
+		const parsedGain = parseReplayGain(rawGain);
+		if (parsedGain !== undefined) {
+			result.replayGainDb = parsedGain;
 		}
 
 		return result;

@@ -1,9 +1,9 @@
 ---
 repo: liber_music
 review_date: 2026-10-26
-current_score: 9.2
+current_score: 9.5
 target_score: 9.7
-status: In Progress (9.2)
+status: In Progress (9.5)
 plugin_id: music-player
 plugin_version: 1.3.8
 ---
@@ -119,10 +119,10 @@ graph TD
   - Update `.github/workflows/lint.yml` to run `npm run test` and `tsc --noEmit`.
 
 ### Phase 3: Core Audio & External Companion `.lrc` Support (Target Score: 9.5)
-- [ ] **Task 3.1: Companion `.lrc` File Resolver**
+- [x] **Task 3.1: Companion `.lrc` File Resolver**
   - In `src/services/LyricsService.ts` and `src/utils/audio/metadata.ts`, check for adjacent `.lrc` files in the vault (`file.path.replace(/\.[^/.]+$/, ".lrc")`).
   - Fall back to reading `.lrc` text directly via `app.vault.read()` if embedded tags are missing.
-- [ ] **Task 3.2: ReplayGain / Loudness Metadata Parsing**
+- [x] **Task 3.2: ReplayGain / Loudness Metadata Parsing**
   - Parse `REPLAYGAIN_TRACK_GAIN` tags from ID3 and Vorbis tags to compute automatic volume compensation.
 
 ### Phase 4: Mobile & Performance Hardening (Target Score: 9.7)

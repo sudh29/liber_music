@@ -25,6 +25,8 @@ export interface TrackInfo {
 	track?: number;
 	/** 时长（秒） */
 	duration?: number;
+	/** ReplayGain 音轨增益（dB） */
+	replayGainDb?: number;
 }
 
 /**

@@ -14,7 +14,7 @@
 
 import { App, Notice } from "obsidian";
 import MusicPlayerPlugin from "@/main";
-import { getEmbeddedAudioMetadataFromBuffer, readAudioFileBinary } from "../audio/metadata";
+import { getEmbeddedAudioMetadataFromBuffer, readAudioFileBinary, readCompanionLrc } from "../audio/metadata";
 import { generateArtistsAndAlbums } from "../data/transform";
 import { scanVaultAudioFiles } from "./scanVaultAudio";
 import { t, tWithParams } from "@/utils/i18n/i18n";
@@ -113,19 +113,27 @@ export async function rebuildAllData(
 				// - 使用 ID 系统：获取或创建曲目 ID，然后使用 ID 作为键
 				const { getOrCreateTrackId } = await import("@/utils/track/id");
 				const trackId = getOrCreateTrackId(file.path, plugin.settings);
+
+				// 优先使用内嵌歌词，若缺失则回退到同目录伴生 .lrc 文件
+				let lyrics = audioMetadata.lyricsText || '';
+				if (!lyrics.trim()) {
+					const companion = await readCompanionLrc(app, file);
+					if (companion) {
+						lyrics = companion;
+					}
+				}
 				
 				plugin.settings.tracks[trackId] = {
 					title: audioMetadata.title || file.basename,
-				artist: audioMetadata.artist?.trim() || '',
-				album: audioMetadata.album?.trim() || '',
-					// 封面只从音频文件的元数据中提取内嵌封面，实时获取，不保存
-					// 歌词从音频文件的元数据标签中提取
-					lyrics: audioMetadata.lyricsText || '',
+					artist: audioMetadata.artist?.trim() || '',
+					album: audioMetadata.album?.trim() || '',
+					lyrics,
 					year: audioMetadata.year,
 					genre: Array.isArray(audioMetadata.genre) ? 
 						audioMetadata.genre[0] : audioMetadata.genre,
 					track: audioMetadata.track,
-					duration: audioMetadata.duration
+					duration: audioMetadata.duration,
+					replayGainDb: audioMetadata.replayGainDb,
 				};
 
 				processed++;

@@ -2,12 +2,12 @@
  * 歌词管理服务
  * 
  * 负责管理歌词相关的业务逻辑，包括：
- * - 加载歌词（从插件设置中读取）
+ * - 加载歌词（从插件设置中读取，或从同目录伴生 .lrc 文件回退读取）
  * - 解析歌词（LRC 格式和逐字歌词）
- * - 处理歌词格式转换
+ * - 处理歌词格式转换与时间轴偏移
  * 
- * 歌词数据存储在插件设置中；音频内仅使用 **LYRICS** 标签存一份原文。
- * 解析时根据内容自动识别逐句（LRC）或逐字（卡拉 OK 时间戳）并分别展示。
+ * 歌词优先从音频内嵌元数据标签（LYRICS/USLT/TXXX）读取，若缺失则自动在同目录下
+ * 查找同名伴生 `.lrc` 文本文件并同步到设置中。
  */
 
 import { LyricLine, LyricsParser } from "@/utils/lyrics/parser";
@@ -17,6 +17,8 @@ import { stripLeadingLyricsMetadata } from "@/utils/lyrics/normalizeLyrics";
 import { applyLyricsOffset, parseLyricsOffset, stripLyricsOffsetTags } from "@/utils/lyrics/offset";
 import MusicPlayerPlugin from "@/main";
 import { getOrCreateTrackId } from "@/utils/track/id";
+import { getCompanionLrcFile, readCompanionLrc } from "@/utils/audio/companionLrc";
+import { TFile } from "obsidian";
 
 /**
  * 歌词管理服务类
@@ -27,31 +29,24 @@ export class LyricsService {
 	/**
 	 * 创建歌词管理服务实例
 	 * 
-	 * @param plugin - 插件实例，用于访问设置中的歌词数据
+	 * @param plugin - 插件实例，用于访问设置中的歌词数据与 Vault 文件接口
 	 */
 	constructor(private plugin: MusicPlayerPlugin) {}
 
 	/**
-	 * 加载歌词
+	 * 解析任意原始歌词文本，自动识别逐字（卡拉OK）或普通 LRC 格式，并应用 offset 时间平移
 	 * 
-	 * 从插件设置读取曲目 `lyrics` 原文，自动识别逐字或逐句格式后解析。
-	 * 
-	 * @param trackPath - 音乐文件路径
-	 * @returns 包含普通歌词和逐字歌词的对象
+	 * @param rawLyrics 原始歌词字符串
+	 * @returns 普通歌词与逐字歌词解析结果
 	 */
-	loadLyrics(trackPath: string): {
+	parseLyrics(rawLyrics: string): {
 		lyrics: LyricLine[];
 		extendedLyrics: ExtendedLyricLine[];
 	} {
-		// 通过路径获取 ID，然后通过 ID 获取 track 信息
-		const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
-		const track = this.plugin.settings.tracks[trackId];
 		const lyrics: LyricLine[] = [];
 		const extendedLyrics: ExtendedLyricLine[] = [];
 
-		const rawLyrics = track?.lyrics && track.lyrics.trim() !== "" ? track.lyrics : "";
-
-		if (!rawLyrics.trim()) {
+		if (!rawLyrics || !rawLyrics.trim()) {
 			return { lyrics, extendedLyrics };
 		}
 
@@ -95,5 +90,86 @@ export class LyricsService {
 
 		return { lyrics, extendedLyrics };
 	}
-}
 
+	/**
+	 * 同步加载歌词（供已有缓存或快速渲染使用）
+	 * 
+	 * 若设置中未缓存歌词，则检查 Vault 中是否存在伴生 `.lrc` 文件并触发后台加载
+	 * 
+	 * @param trackPath - 音乐文件路径
+	 * @returns 包含普通歌词和逐字歌词的对象
+	 */
+	loadLyrics(trackPath: string): {
+		lyrics: LyricLine[];
+		extendedLyrics: ExtendedLyricLine[];
+	} {
+		const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
+		const track = this.plugin.settings.tracks[trackId];
+		const rawLyrics = track?.lyrics && track.lyrics.trim() !== "" ? track.lyrics : "";
+
+		if (!rawLyrics.trim()) {
+			// 检查同目录下是否有伴生 .lrc 文件，异步加载并缓存
+			const companionFile = getCompanionLrcFile(this.plugin.app, trackPath);
+			if (companionFile) {
+				void this.loadCompanionLrcAsync(trackPath, companionFile);
+			}
+			return { lyrics: [], extendedLyrics: [] };
+		}
+
+		return this.parseLyrics(rawLyrics);
+	}
+
+	/**
+	 * 异步加载歌词：优先使用设置缓存，若无则自动读取 Vault 同目录下的伴生 `.lrc` 文件
+	 * 
+	 * @param trackPath - 音乐文件路径
+	 * @returns 包含普通歌词和逐字歌词的 Promise
+	 */
+	async loadLyricsAsync(trackPath: string): Promise<{
+		lyrics: LyricLine[];
+		extendedLyrics: ExtendedLyricLine[];
+	}> {
+		const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
+		const track = this.plugin.settings.tracks[trackId];
+		const rawLyrics = track?.lyrics && track.lyrics.trim() !== "" ? track.lyrics : "";
+
+		if (rawLyrics.trim()) {
+			return this.parseLyrics(rawLyrics);
+		}
+
+		// 尝试从伴生 .lrc 文件读取
+		const companionText = await readCompanionLrc(this.plugin.app, trackPath);
+		if (companionText && companionText.trim()) {
+			if (track) {
+				track.lyrics = companionText;
+				try {
+					await this.plugin.saveSettings();
+				} catch (err) {
+					console.warn("保存伴生歌词到设置失败:", err);
+				}
+			}
+			return this.parseLyrics(companionText);
+		}
+
+		return { lyrics: [], extendedLyrics: [] };
+	}
+
+	/**
+	 * 后台加载伴生 .lrc 文件并同步到设置与当前播放状态
+	 */
+	private async loadCompanionLrcAsync(trackPath: string, lrcFile: TFile): Promise<void> {
+		try {
+			const content = await this.plugin.app.vault.read(lrcFile);
+			if (content && content.trim()) {
+				const trackId = getOrCreateTrackId(trackPath, this.plugin.settings);
+				const track = this.plugin.settings.tracks[trackId];
+				if (track) {
+					track.lyrics = content;
+					await this.plugin.saveSettings();
+				}
+			}
+		} catch (error) {
+			console.warn(`加载伴生歌词失败 (${trackPath}):`, error);
+		}
+	}
+}

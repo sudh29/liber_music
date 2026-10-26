@@ -22,6 +22,8 @@ import { ANIMATION_TIMINGS } from "@/constants/ui";
 import type MusicPlayerPlugin from "@/main";
 import type { PlayMode } from "@/main";
 import { t } from "@/utils/i18n/i18n";
+import { applyReplayGainToVolume } from "@/utils/audio/metadata";
+import { getOrCreateTrackId } from "@/utils/track/id";
 
 /**
  * 播放服务回调接口
@@ -273,16 +275,19 @@ export class PlaybackService {
 			}
 		}
 
-		const savedVolume = this.audioService.getAudioElement()?.volume ?? state.volume ?? 1.0;
+		const userVolume = state.volume ?? 1.0;
+		const trackId = getOrCreateTrackId(track.path, this.plugin.settings);
+		const trackInfo = this.plugin.settings.tracks[trackId];
+		const effectiveVolume = applyReplayGainToVolume(userVolume, trackInfo?.replayGainDb);
 		const savedPlaybackRate = this.audioService.getAudioElement()?.playbackRate ?? state.playbackRate ?? 1.0;
 		
-		await this.audioService.createAudioElement(track, savedVolume, savedPlaybackRate, {
+		await this.audioService.createAudioElement(track, effectiveVolume, savedPlaybackRate, {
 			onTimeUpdate: this.callbacks.onProgressUpdate || (() => {}),
 			onLoadedMetadata: this.callbacks.onDurationUpdate || (() => {}),
 			onEnded: this.callbacks.onTrackEnd || (() => {}),
 		});
 
-		const { lyrics, extendedLyrics } = this.lyricsService.loadLyrics(track.path);
+		const { lyrics, extendedLyrics } = await this.lyricsService.loadLyricsAsync(track.path);
 		this.stateService.setLyrics(lyrics, extendedLyrics);
 		if (autoPlay) {
 			// 最后再校验一次请求 ID，避免在长链路中被更新
