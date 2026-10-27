@@ -23,5 +23,8 @@ export type { ViewSetupResult } from "./ViewSetupService";
 export { ReactApiService } from "./ReactApiService";
 export type { ReactApiServiceCallbacks } from "./ReactApiService";
 export { ListenerService } from "./ListenerService";
+export { MediaSessionService } from "./MediaSessionService";
+export type { MediaSessionCallbacks } from "./MediaSessionService";
+export { WakeLockService } from "./WakeLockService";
 export type { ReactApi } from "@/types";
 

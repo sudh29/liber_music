@@ -15,7 +15,7 @@ import MusicPlayerPlugin from "@/main";
 import { KeyboardShortcutHandler, setupKeyboardShortcuts } from "@/utils/keyboard/shortcuts";
 import { QueueModal, TrackSearchModal } from "@/components";
 import type { ReactLibrarySnapshot, ReactPlaybackSnapshot } from "@/types";
-import { AssetService, AudioService, FavoriteService, LibraryService, ListenerService, ListService, LyricsService, PlaybackService, PlaylistService, ReactApiService, SnapshotService, StateService, ViewSetupService } from "@/services";
+import { AssetService, AudioService, FavoriteService, LibraryService, ListenerService, ListService, LyricsService, MediaSessionService, PlaybackService, PlaylistService, ReactApiService, SnapshotService, StateService, ViewSetupService, WakeLockService } from "@/services";
 import { togglePlayMode } from "@/utils/playback/control";
 import type { ReactApi } from "@/types";
 import { t, tWithParams } from "@/utils/i18n/i18n";
@@ -66,6 +66,8 @@ export class MusicPlayerView extends ItemView {
 	private viewSetupService: ViewSetupService;
 	private reactApiService: ReactApiService;
 	private listenerService: ListenerService;
+	private mediaSessionService?: MediaSessionService;
+	private wakeLockService?: WakeLockService;
 	private keyboardShortcuts?: KeyboardShortcutHandler;
 	private libraryUpdateListeners: Set<() => void> = new Set();
 	private reactRoot: Root | null = null;
@@ -159,7 +161,18 @@ export class MusicPlayerView extends ItemView {
 			}
 		);
 		this.listService = new ListService(this.libraryService, this.playlistService, this.plugin);
-		this.snapshotService = new SnapshotService(this.app, this.plugin, this.listService, this.libraryService);
+		this.mediaSessionService = new MediaSessionService({
+			onPlay: () => this.playbackService.togglePlay(),
+			onPause: () => this.playbackService.togglePlay(),
+			onPrevious: () => this.playbackService.playPrevious(),
+			onNext: () => this.playbackService.playNext(),
+			onSeekTo: (time) => this.playbackService.seekToTime(time),
+			onSeekBackward: (sec) => this.audioService.seekBackward(sec),
+			onSeekForward: (sec) => this.audioService.seekForward(sec),
+		});
+		this.wakeLockService = new WakeLockService();
+		this.wakeLockService.setEnabled(this.plugin.settings.keepScreenAwake ?? false);
+
 		this.playbackService = new PlaybackService(
 			this.plugin,
 			this.stateService,
@@ -173,7 +186,9 @@ export class MusicPlayerView extends ItemView {
 				onRefreshMusicList: () => {
 					void this.refreshMusicList();
 				},
-			}
+			},
+			this.mediaSessionService,
+			this.wakeLockService
 		);
 		this.assetService = new AssetService(this.app, this.plugin);
 		this.viewSetupService = new ViewSetupService(this.app);
@@ -287,6 +302,7 @@ export class MusicPlayerView extends ItemView {
 		try {
 			// Reload settings on each view open to ensure remote sync changes apply
 			await this.plugin.loadSettings();
+			this.wakeLockService?.setEnabled(this.plugin.settings.keepScreenAwake ?? false);
 
 			// Clean up previous React root if present
 			if (this.reactRoot) {
@@ -350,6 +366,8 @@ export class MusicPlayerView extends ItemView {
 	async onClose() {
 		await this.audioService.cleanup();
 		if (this.keyboardShortcuts) this.keyboardShortcuts.cleanup();
+		if (this.mediaSessionService) this.mediaSessionService.destroy();
+		if (this.wakeLockService) this.wakeLockService.destroy();
 		// Clean up file system listeners
 		this.listenerService.cleanup();
 		if (this.reactRoot) {

@@ -160,4 +160,47 @@ describe("AudioService", () => {
 		audioEl._simulateSeeked();
 		expect(onEnded).toHaveBeenCalledTimes(1);
 	});
+
+	it("should trigger onError handler when audio error event occurs", async () => {
+		const track = app.vault.createFile("corrupt.mp3", new ArrayBuffer(50));
+		const onError = vi.fn();
+		const audioEl = await audioService.createAudioElement(track, 1, 1, {
+			onTimeUpdate: vi.fn(),
+			onLoadedMetadata: vi.fn(),
+			onEnded: vi.fn(),
+			onError,
+		});
+
+		audioEl.dispatchEvent(new Event("error"));
+		expect(onError).toHaveBeenCalledTimes(1);
+	});
+
+	it("should handle null audioElement safely across all methods", async () => {
+		// When audioElement is null
+		expect(audioService.getAudioElement()).toBeNull();
+		await expect(audioService.play()).resolves.toBeUndefined();
+		expect(() => audioService.pause()).not.toThrow();
+		expect(() => audioService.setVolume(0.5)).not.toThrow();
+		expect(() => audioService.setPlaybackRate(1.5)).not.toThrow();
+		expect(() => audioService.seekToRatio(0.5)).not.toThrow();
+		expect(() => audioService.seekForward(5)).not.toThrow();
+		expect(() => audioService.seekBackward(5)).not.toThrow();
+	});
+
+	it("should swallow AbortError and rethrow other errors in play()", async () => {
+		const track = app.vault.createFile("abort.mp3", new ArrayBuffer(50));
+		const audioEl = (await audioService.createAudioElement(track, 1, 1, {
+			onTimeUpdate: vi.fn(),
+			onLoadedMetadata: vi.fn(),
+			onEnded: vi.fn(),
+		})) as unknown as MockAudioElement;
+
+		// 1. AbortError is caught silently
+		vi.spyOn(audioEl, "play").mockRejectedValueOnce(new DOMException("Interrupted", "AbortError"));
+		await expect(audioService.play()).resolves.toBeUndefined();
+
+		// 2. Other errors are rethrown
+		vi.spyOn(audioEl, "play").mockRejectedValueOnce(new Error("Network error"));
+		await expect(audioService.play()).rejects.toThrow("Network error");
+	});
 });

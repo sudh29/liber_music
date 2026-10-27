@@ -54,6 +54,14 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 						AUDIO_EXTENSIONS.includes(file.extension.toLowerCase()),
 				},
 			},
+			{
+				name: t('settings.keepScreenAwake.name'),
+				desc: t('settings.keepScreenAwake.desc'),
+				control: {
+					key: 'keepScreenAwake',
+					type: 'toggle',
+				},
+			},
 		];
 	}
 }

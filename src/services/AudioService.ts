@@ -23,6 +23,8 @@ export interface AudioEventHandlers {
 	onLoadedMetadata: () => void;
 	/** Callback when playback ends */
 	onEnded: () => void;
+	/** Callback when audio error occurs */
+	onError?: (error: MediaError | null, event: Event) => void;
 }
 
 /**
@@ -58,6 +60,16 @@ export class AudioService {
 		if (t > 0.02 && t >= d - 1e-4) {
 			h.onEnded();
 		}
+	};
+
+	/**
+	 * Callback when audio element encounters a decoding or network error.
+	 */
+	private readonly onAudioError = (event: Event): void => {
+		const el = this.audioElement;
+		const h = this.currentHandlers;
+		if (!el || !h) return;
+		h.onError?.(el.error ?? null, event);
 	};
 
 	/**
@@ -109,6 +121,7 @@ export class AudioService {
 			this.audioElement.addEventListener("loadedmetadata", handlers.onLoadedMetadata);
 			this.audioElement.addEventListener("ended", handlers.onEnded);
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
+			this.audioElement.addEventListener("error", this.onAudioError);
 
 			return this.audioElement;
 		} catch (error) {
@@ -125,6 +138,7 @@ export class AudioService {
 			this.audioElement.addEventListener("loadedmetadata", handlers.onLoadedMetadata);
 			this.audioElement.addEventListener("ended", handlers.onEnded);
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
+			this.audioElement.addEventListener("error", this.onAudioError);
 
 			return this.audioElement;
 		}
@@ -193,6 +207,7 @@ export class AudioService {
 				this.audioElement.removeEventListener("loadedmetadata", this.currentHandlers.onLoadedMetadata);
 				this.audioElement.removeEventListener("ended", this.currentHandlers.onEnded);
 				this.audioElement.removeEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
+				this.audioElement.removeEventListener("error", this.onAudioError);
 			}
 
 			this.audioElement = null;

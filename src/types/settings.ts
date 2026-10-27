@@ -73,6 +73,8 @@ export interface MusicPlayerSettings {
 	artworkDisplayMode: 'vinyl' | 'card';
 	/** Track ID to star rating mapping (0 to 5) */
 	ratings?: Record<string, number>;
+	/** Whether to prevent display sleep via Screen Wake Lock while audio is playing */
+	keepScreenAwake?: boolean;
 }
 
 /**
@@ -93,4 +95,5 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	isShuffle: false,          // Default: sequential playback
 	artworkDisplayMode: 'vinyl', // Default: classic vinyl mode
 	ratings: {},               // Default: no ratings
+	keepScreenAwake: false,     // Default: do not keep screen awake
 };

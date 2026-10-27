@@ -242,5 +242,142 @@ describe("PlaybackService", () => {
 		await playbackService.setTrackRating("song1.mp3", 0);
 		expect(plugin.settings.ratings?.["song1.mp3"]).toBeUndefined();
 	});
+
+	it("should seek audio to specific time in seconds and update mediaSession position", async () => {
+		const mockMediaSession = {
+			updatePositionState: vi.fn(),
+			updateMetadata: vi.fn(),
+			updatePlaybackState: vi.fn(),
+		} as any;
+		const serviceWithMedia = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{},
+			mockMediaSession
+		);
+
+		// 1. Safe when no audio element
+		serviceWithMedia.seekToTime(50);
+		expect(mockMediaSession.updatePositionState).not.toHaveBeenCalled();
+
+		// 2. Plays track and seeks
+		await serviceWithMedia.playTrack(0);
+		const audioEl = audioService.getAudioElement() as any;
+		audioEl.duration = 200;
+
+		serviceWithMedia.seekToTime(75);
+		expect(audioEl.currentTime).toBe(75);
+		expect(mockMediaSession.updatePositionState).toHaveBeenCalledWith(200, 75, audioEl.playbackRate);
+
+		// 3. Clamping beyond duration
+		serviceWithMedia.seekToTime(300);
+		expect(audioEl.currentTime).toBe(200);
+	});
+
+	it("should play a category collection of tracks", async () => {
+		const categoryTracks = [mockFiles[1]!, mockFiles[2]!];
+		await playbackService.playCategory("artist", "Artist 1", categoryTracks);
+
+		const state = stateService.getState();
+		expect(state.currentList.type).toBe("artist");
+		expect(state.currentList.name).toBe("Artist 1");
+		expect(state.currentTrack).toBe(mockFiles[1]);
+		expect(state.isPlaying).toBe(true);
+	});
+
+	it("should handle audio errors and alert on iPadOS/iOS OGG playback", async () => {
+		const oggFile = app.vault.createFile("track.ogg", new ArrayBuffer(50));
+		stateService.setTrackList([oggFile, ...mockFiles]);
+
+		// Simulate iOS platform
+		const { Platform } = await import("obsidian");
+		const originalIos = Platform.isIosApp;
+		(Platform as any).isIosApp = true;
+
+		try {
+			await playbackService.playTrack(0);
+
+			// Trigger error on audio element
+			const audioEl = audioService.getAudioElement()!;
+			audioEl.dispatchEvent(new Event("error"));
+
+			expect(stateService.getState().isPlaying).toBe(false);
+		} finally {
+			(Platform as any).isIosApp = originalIos;
+		}
+	});
+
+	it("should integrate with MediaSession and WakeLock during play and pause", async () => {
+		const mockMediaSession = {
+			updateMetadata: vi.fn(),
+			updatePlaybackState: vi.fn(),
+			updatePositionState: vi.fn(),
+		} as any;
+		const mockWakeLock = {
+			onPlaybackStateChange: vi.fn(),
+		} as any;
+
+		const service = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{},
+			mockMediaSession,
+			mockWakeLock
+		);
+
+		await service.playTrack(0);
+		expect(mockMediaSession.updatePlaybackState).toHaveBeenCalledWith(true);
+		expect(mockWakeLock.onPlaybackStateChange).toHaveBeenCalledWith(true);
+
+		await service.togglePlay();
+		expect(mockMediaSession.updatePlaybackState).toHaveBeenCalledWith(false);
+		expect(mockWakeLock.onPlaybackStateChange).toHaveBeenCalledWith(false);
+	});
+
+	it("should update track rating on existing track and invoke onLibraryUpdated callback", async () => {
+		const onLibraryUpdated = vi.fn().mockResolvedValue(undefined);
+		const service = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{ onLibraryUpdated }
+		);
+
+		await service.setTrackRating("track1.mp3", 5);
+		expect(plugin.settings.tracks["track1.mp3"].rating).toBe(5);
+		expect(onLibraryUpdated).toHaveBeenCalled();
+	});
+
+	it("should handle standard audio playback error on non-iOS platform and advance to next track", async () => {
+		await playbackService.playTrack(0);
+
+		const audioEl = audioService.getAudioElement()!;
+		audioEl.dispatchEvent(new Event("error"));
+
+		expect(stateService.getState().isPlaying).toBe(false);
+
+		// Wait for the 800ms auto-advance timeout
+		await new Promise((r) => setTimeout(r, 850));
+		expect(stateService.getState().currentIndex).toBe(1);
+	});
+
+	it("should support delayPlay with direction prev and next", async () => {
+		await playbackService.playTrack(1, true, undefined, "next", false, true);
+		expect(stateService.getState().currentIndex).toBe(1);
+
+		await playbackService.playTrack(0, true, undefined, "prev", false, false);
+		expect(stateService.getState().currentIndex).toBe(0);
+	});
 });
 

@@ -130,6 +130,16 @@ graph TD
   - Instead of calling `readAudioFileBinary()` on entire 50MB files, read the initial 256KB chunk via vault adapter for tag discovery, drastically reducing RAM pressure and eliminating mobile OOM crashes.
 - [x] **Task 4.2: Mobile Action Launcher**
   - Provide an option in `main.ts` to attach an icon to the mobile navigation bar or bottom toolbar.
+- [x] **Task 4.3: Media Session API Integration**
+  - Integrate `navigator.mediaSession` in `MediaSessionService.ts` for Android notification shade player, iPadOS Control Center/Lock Screen widget, and hardware media keys (AirPods, headsets).
+- [x] **Task 4.4: Audio Error Handling & iPadOS WebKit OGG Auto-Skip**
+  - Listen for audio decode failures, warn specifically on iPadOS/iOS WebKit for unsupported `.ogg` tracks, and auto-advance playback.
+- [x] **Task 4.5: Screen Wake Lock Support**
+  - Implement `WakeLockService.ts` with user toggle to keep mobile/tablet screens on during music and lyric viewing.
+- [x] **Task 4.6: Event Loop GC Yielding During Library Indexing**
+  - Yield execution via `setTimeout(0)` every 4 tracks during library rebuilds to allow mobile garbage collection of ArrayBuffers.
+- [x] **Task 4.7: Touch Target Accessibility**
+  - Ensure minimum 44px clickable touch targets on coarse pointer devices.
 
 ---
 

@@ -263,3 +263,16 @@
 	font-weight: 500;
 }
 
+/* Touch & Mobile Accessibility Standards */
+@media (pointer: coarse) {
+	.music-player button.track-action-btn.clickable-icon {
+		min-width: 40px;
+		min-height: 40px;
+	}
+	.music-player .playback-rate-option {
+		padding: 6px 8px;
+		font-size: 13px;
+	}
+}
+
+

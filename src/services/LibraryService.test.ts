@@ -464,5 +464,30 @@ describe("LibraryService", () => {
 			expect(stateService.getState().currentLyrics[0].text).toBe("Is this the real life?");
 			expect(onUpdated).toHaveBeenCalled();
 		});
+
+		it("should handle error in updateTrackMetadata gracefully", async () => {
+			const { service, app } = createService();
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockImplementation(() => {
+				throw new Error("Vault error");
+			});
+
+			await expect(service.updateTrackMetadata("music/song1.mp3")).resolves.toBeUndefined();
+		});
+
+		it("should handle error in removeTrackFromLibrary gracefully", async () => {
+			const { service, plugin } = createService();
+			vi.spyOn(plugin, "saveSettings").mockRejectedValue(new Error("Save failed"));
+
+			await expect(service.removeTrackFromLibrary("music/song1.mp3")).resolves.toBeUndefined();
+		});
+
+		it("should log and rethrow error in renameTrackInLibrary", async () => {
+			const { service, app, plugin } = createService();
+			const file = createMockTFile("new.mp3");
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(file);
+			vi.spyOn(plugin, "saveSettings").mockRejectedValue(new Error("Rename persist failed"));
+
+			await expect(service.renameTrackInLibrary("old.mp3", "new.mp3")).rejects.toThrow("Rename persist failed");
+		});
 	});
 });
