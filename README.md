@@ -4,7 +4,8 @@
         <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.3.8-7f6df2?logo=obsidian" alt="Version 1.3.8"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-59%20passed-brightgreen" alt="Tests: 59 passed">
+        <img src="https://img.shields.io/badge/tests-350%20passed-brightgreen" alt="Tests: 350 passed">
+        <img src="https://img.shields.io/badge/coverage-92.7%25-brightgreen" alt="Coverage: 92.7%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -159,10 +160,16 @@ npm run build
 - **UI Framework**: React 18 & Vanilla CSS Design System
 - **Toolchain**: **Vite+** (`vp`) for next-generation developer tooling
 - **Compiler & Linter**: **Oxc** (`oxc-transform-react` & `vp lint`) for ultra-fast Rust-based parsing, transforms, and linting
-- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 59 passing unit tests
+- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 350 passing unit and E2E tests (92.7% line coverage)
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture
+
+---
+
+## 🗺️ Strategic Roadmap
+
+For upcoming engineering milestones (Markdown codeblock embeds, Web Audio 10-band EQ, dynamic cover art palette tinting, and smart playlists), see the [Strategic Roadmap](ROADMAP.md).
 
 ---
 
