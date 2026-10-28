@@ -39,6 +39,8 @@
 	"settings.syncFolderPlaylists.desc": "Automatically mirror music folders in the vault as dedicated playlists.",
 	"settings.folderPlaylistDepth.name": "Folder playlist scan depth",
 	"settings.folderPlaylistDepth.desc": "Depth of directory hierarchy to index as separate folder playlists (default: 1).",
+	"settings.enableWasmVorbisDecoder.name": "WebAssembly Vorbis codec (iOS/iPadOS parity)",
+	"settings.enableWasmVorbisDecoder.desc": "Decodes OGG/OPUS audio via inlined WebAssembly on platforms where native WebKit playback is unsupported.",
 	"view.title": "Liber Music Player",
 	"view.initFailed": "Liber Music Player failed to initialize: {detail}",
 	"nav.search": "Search",

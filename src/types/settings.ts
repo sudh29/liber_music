@@ -101,6 +101,8 @@ export interface MusicPlayerSettings {
 	syncFolderPlaylists?: boolean;
 	/** Folder nesting depth when generating folder playlists (default: 1) */
 	folderPlaylistDepth?: number;
+	/** Whether to use WebAssembly Vorbis decoder for OGG/OPUS playback on unsupported platforms (iOS/iPadOS/Safari) */
+	enableWasmVorbisDecoder?: boolean;
 }
 
 /**
@@ -190,4 +192,5 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	smartPlaylists: {},        // Default: no smart playlists
 	syncFolderPlaylists: false, // Default: folder auto-sync disabled
 	folderPlaylistDepth: 1,    // Default: depth 1
+	enableWasmVorbisDecoder: true, // Default: WASM Vorbis fallback enabled
 };

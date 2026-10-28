@@ -167,6 +167,14 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 					},
 				},
 			},
+			{
+				name: t('settings.enableWasmVorbisDecoder.name'),
+				desc: t('settings.enableWasmVorbisDecoder.desc'),
+				control: {
+					key: 'enableWasmVorbisDecoder',
+					type: 'toggle',
+				},
+			},
 		];
 	}
 }

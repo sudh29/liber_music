@@ -670,7 +670,8 @@ export class PlaybackService {
 		const ext = track.extension?.toLowerCase();
 		const isIosOrSafari = Platform.isIosApp || Platform.isSafari;
 
-		if (ext === "ogg" && isIosOrSafari) {
+		const wasmEnabled = this.plugin?.settings?.enableWasmVorbisDecoder ?? true;
+		if (ext === "ogg" && isIosOrSafari && !wasmEnabled) {
 			new Notice(t("notice.unsupportedFormatOggIos"), 6000);
 		} else {
 			new Notice(tWithParams("notice.playbackError", { name: track.basename }), 4000);

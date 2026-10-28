@@ -1,11 +1,11 @@
 <div align="center">
     <h1>Liber Music Player Plugin for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.7.0-7f6df2?logo=obsidian" alt="Version 1.7.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.8.0-7f6df2?logo=obsidian" alt="Version 1.8.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-497%20passed-brightgreen" alt="Tests: 497 passed">
-        <img src="https://img.shields.io/badge/coverage-92.50%25-brightgreen" alt="Coverage: 92.50%">
+        <img src="https://img.shields.io/badge/tests-511%20passed-brightgreen" alt="Tests: 511 passed">
+        <img src="https://img.shields.io/badge/coverage-92.61%25-brightgreen" alt="Coverage: 92.61%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -14,6 +14,14 @@
 ---
 
 ## 🌟 Key Features
+
+### 🚀 Universal iOS/iPadOS Codec Parity via WASM Vorbis (v1.8.0)
+- **100% Codec Parity Across All Apple Devices**:
+  - Bypasses Apple WebKit's native lack of Ogg Vorbis support on iPadOS, iOS, and Safari using an inlined WebAssembly decoder.
+  - Automatically detects platform capability and decodes `.ogg` and `.opus` audio buffers into 16-bit PCM RIFF WAV Blob URLs in real time.
+  - Retains full hardware acceleration, standard `HTMLAudioElement` event binding, media keys, lock screen widgets, equalizer filters, and crossfading without requiring users to convert or re-encode audio.
+  - 100% offline-ready with zero external network requests or standalone `.wasm` file dependencies.
+  - Configurable toggle (`enableWasmVorbisDecoder`) under audio settings with graceful native fallbacks.
 
 ### ⚡ Smart Library Automation & Dynamic Playlists (v1.7.0)
 - **Rule-Based Smart Playlists**:

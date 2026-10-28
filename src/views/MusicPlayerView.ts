@@ -167,7 +167,7 @@ export class MusicPlayerView extends ItemView {
 				void this.plugin.saveSettings();
 			}
 		);
-		this.audioService = new AudioService(this.app, this.equalizerService);
+		this.audioService = new AudioService(this.app, this.equalizerService, this.plugin);
 		this.libraryService = new LibraryService(
 			this.app,
 			this.plugin,

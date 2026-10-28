@@ -703,4 +703,5 @@ export const Platform = {
 	isIosApp: false,
 	isAndroidApp: false,
 	isMacOS: false,
+	isSafari: false,
 };

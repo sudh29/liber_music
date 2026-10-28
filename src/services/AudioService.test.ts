@@ -224,4 +224,63 @@ describe("AudioService", () => {
 		await audioService.play();
 		expect(mockEq.resumeContext).toHaveBeenCalledTimes(1);
 	});
+
+	it("should transcode OGG tracks to WAV Blob when shouldTranscodeVorbis is true", async () => {
+		const fs = await import("fs");
+		const path = await import("path");
+		const fixturePath = path.resolve(process.cwd(), "tests/fixtures/sample.ogg");
+		const oggBuffer = fs.readFileSync(fixturePath);
+
+		const trackFile = app.vault.createFile(
+			"music/track.ogg",
+			oggBuffer.buffer.slice(oggBuffer.byteOffset, oggBuffer.byteOffset + oggBuffer.byteLength)
+		);
+
+		const mockPlugin = {
+			settings: {
+				enableWasmVorbisDecoder: true,
+			},
+		} as any;
+		audioService.setPlugin(mockPlugin);
+
+		const handlers = {
+			onTimeUpdate: vi.fn(),
+			onLoadedMetadata: vi.fn(),
+			onEnded: vi.fn(),
+		};
+
+		const { Platform } = await import("obsidian");
+		Platform.isIosApp = true;
+
+		const audioEl = await audioService.createAudioElement(trackFile, 1.0, 1.0, handlers);
+		expect(audioEl).toBeDefined();
+		expect(globalThis.URL.createObjectURL).toHaveBeenCalledTimes(1);
+
+		Platform.isIosApp = false;
+	});
+
+	it("falls back to native blob when WASM Vorbis transcoding fails", async () => {
+		const trackFile = app.vault.createFile("music/corrupt.ogg", new ArrayBuffer(50));
+		const mockPlugin = {
+			settings: {
+				enableWasmVorbisDecoder: true,
+			},
+		} as any;
+		audioService.setPlugin(mockPlugin);
+
+		const { Platform } = await import("obsidian");
+		Platform.isIosApp = true;
+
+		const handlers = {
+			onTimeUpdate: vi.fn(),
+			onLoadedMetadata: vi.fn(),
+			onEnded: vi.fn(),
+		};
+
+		const audioEl = await audioService.createAudioElement(trackFile, 1.0, 1.0, handlers);
+		expect(audioEl).toBeDefined();
+
+		Platform.isIosApp = false;
+	});
 });
+

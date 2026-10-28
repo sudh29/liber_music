@@ -12,7 +12,7 @@ describe('MusicPlayerSettingTab', () => {
 
 		const definitions = tab.getSettingDefinitions();
 		expect(definitions).toBeInstanceOf(Array);
-		expect(definitions.length).toBe(14);
+		expect(definitions.length).toBe(15);
 
 		const keys = definitions.map((d: any) => d.control?.key);
 		expect(keys).toContain('musicFolder');
@@ -29,6 +29,7 @@ describe('MusicPlayerSettingTab', () => {
 		expect(keys).toContain('showVisualizer');
 		expect(keys).toContain('syncFolderPlaylists');
 		expect(keys).toContain('folderPlaylistDepth');
+		expect(keys).toContain('enableWasmVorbisDecoder');
 	});
 
 	it('should properly configure crossfade slider bounds', () => {

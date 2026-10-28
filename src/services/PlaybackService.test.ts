@@ -297,6 +297,7 @@ describe("PlaybackService", () => {
 		const { Platform } = await import("obsidian");
 		const originalIos = Platform.isIosApp;
 		(Platform as any).isIosApp = true;
+		plugin.settings.enableWasmVorbisDecoder = false;
 
 		try {
 			await playbackService.playTrack(0);
@@ -305,6 +306,13 @@ describe("PlaybackService", () => {
 			const audioEl = audioService.getAudioElement()!;
 			audioEl.dispatchEvent(new Event("error"));
 
+			expect(stateService.getState().isPlaying).toBe(false);
+
+			// Test when enableWasmVorbisDecoder is true
+			plugin.settings.enableWasmVorbisDecoder = true;
+			await playbackService.playTrack(0);
+			const audioEl2 = audioService.getAudioElement()!;
+			audioEl2.dispatchEvent(new Event("error"));
 			expect(stateService.getState().isPlaying).toBe(false);
 		} finally {
 			(Platform as any).isIosApp = originalIos;
