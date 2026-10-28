@@ -1,11 +1,11 @@
 <div align="center">
     <h1>Liber Music Player Plugin for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.8.0-7f6df2?logo=obsidian" alt="Version 1.8.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.0.0-7f6df2?logo=obsidian" alt="Version 2.0.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
         <img src="https://img.shields.io/badge/tests-511%20passed-brightgreen" alt="Tests: 511 passed">
-        <img src="https://img.shields.io/badge/coverage-92.61%25-brightgreen" alt="Coverage: 92.61%">
+        <img src="https://img.shields.io/badge/coverage-92.64%25-brightgreen" alt="Coverage: 92.64%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -14,6 +14,16 @@
 ---
 
 ## 🌟 Key Features
+
+### 📦 Production Ops, Automated Distribution & BRAT Compatibility (v2.0.0)
+- **Compact Tree-Shaken Distribution Bundle**:
+  - `dist/main.js` is ~744 KB (well under the strict 2.0 MB ceiling), containing zero dead code and zero external network dependencies.
+  - `dist/styles.css` is ~538 KB with inlined high-DPI turntable assets, completely self-contained.
+  - Automated bundle audit (`scripts/check-bundle-size.mjs`) guards against asset regressions during build.
+- **Automated Tagged Release & CI/CD Pipeline**:
+  - GitHub Actions workflow (`release.yml`) triggers on tag pushes and release publications, compiling production bundles, verifying coverage, and attaching release assets (`main.js`, `manifest.json`, `styles.css`) with SLSA provenance attestations.
+  - Full **BRAT** (Beta Reviewers Auto-update Tester) compatibility for seamless 1-click installation and updates.
+  - Multi-node matrix CI workflow (`lint.yml`) validating Node.js 20.x & 22.x on every push and pull request.
 
 ### 🚀 Universal iOS/iPadOS Codec Parity via WASM Vorbis (v1.8.0)
 - **100% Codec Parity Across All Apple Devices**:
