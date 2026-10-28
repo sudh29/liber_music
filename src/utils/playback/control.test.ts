@@ -54,6 +54,13 @@ describe("playback/control utilities", () => {
 			const prev = getPreviousIndex(nextIdx!, mockFiles, "normal", true, manager);
 			expect(prev).toBe(0); // returned to previous track
 		});
+
+		it("should auto-initialize uninitialized shuffleManager in getPreviousIndex", () => {
+			const manager = new ShuffleManager(); // totalCount is 0
+			const prev = getPreviousIndex(0, mockFiles, "normal", true, manager);
+			expect(manager.getTotalCount()).toBe(mockFiles.length);
+			expect(prev).toBe(2); // previous track fallback
+		});
 	});
 
 	describe("getNextIndex", () => {
@@ -167,6 +174,13 @@ describe("playback/control utilities", () => {
 			manager.initialize(mockFiles.length, 0);
 			// 2 tracks remaining
 			const res = handleTrackEnd("normal", 0, mockFiles, true, manager);
+			expect(res).toEqual({ shouldPlayNext: true, shouldRepeat: false, shouldStop: false });
+		});
+
+		it("should auto-initialize uninitialized shuffleManager in handleTrackEnd", () => {
+			const manager = new ShuffleManager(); // totalCount is 0
+			const res = handleTrackEnd("normal", 0, mockFiles, true, manager);
+			expect(manager.getTotalCount()).toBe(mockFiles.length);
 			expect(res).toEqual({ shouldPlayNext: true, shouldRepeat: false, shouldStop: false });
 		});
 

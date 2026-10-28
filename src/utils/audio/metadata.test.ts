@@ -90,6 +90,29 @@ describe("metadata audio utilities", () => {
 			const result = await readAudioFileBinary(app, file);
 			expect(result).toBeNull();
 		});
+
+		it("should catch unexpected error and log error in outer catch block", async () => {
+			const app = new App();
+			let accessCount = 0;
+			const corruptFile = {
+				get path(): string {
+					accessCount++;
+					if (accessCount <= 2) {
+						throw new Error("Vault filesystem engine crash");
+					}
+					return "music/test.mp3";
+				},
+			} as any;
+
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const result = await readAudioFileBinary(app, corruptFile);
+			expect(result).toBeNull();
+			expect(errorSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Error reading audio file"),
+				expect.any(Error)
+			);
+			errorSpy.mockRestore();
+		});
 	});
 
 	describe("readAudioFileHeaderBinary", () => {
@@ -307,6 +330,25 @@ describe("metadata audio utilities", () => {
 
 			const cover = await getEmbeddedCoverFromFile(app, file);
 			expect(cover).toBeUndefined();
+		});
+
+		it("should catch unexpected error and log error in getEmbeddedCoverFromFile outer catch block", async () => {
+			const app = new App();
+			const corruptFile = {
+				path: "music/crash.mp3",
+				get extension(): string {
+					throw new Error("Extension getter failure");
+				},
+			} as any;
+
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const cover = await getEmbeddedCoverFromFile(app, corruptFile);
+			expect(cover).toBeUndefined();
+			expect(errorSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Error getting embedded cover"),
+				expect.any(Error)
+			);
+			errorSpy.mockRestore();
 		});
 	});
 });

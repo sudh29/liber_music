@@ -135,5 +135,18 @@ describe("URI & Protocol Utilities", () => {
 			expect(payload.time).toBe(45);
 			expect(payload.autoplay).toBe(false);
 		});
+
+		it("should handle malformed URI decoding by falling back to raw track string", () => {
+			const payload = parseObsidianMusicProtocol({
+				track: "%E0%A4%A",
+			});
+			expect(payload.track).toBe("%E0%A4%A");
+		});
+
+		it("should handle colon time strings with non-numeric parts or excess segments", () => {
+			expect(parseTimeString("12:abc")).toBe(0);
+			expect(parseTimeString("12:-5")).toBe(0);
+			expect(parseTimeString("01:02:03:04")).toBe(0);
+		});
 	});
 });

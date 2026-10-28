@@ -175,6 +175,77 @@ describe('palette extraction and theming', () => {
 				(globalThis as any).Image = origImage;
 			}
 		});
+
+		it('should fallback to default palette when canvas 2D context is null', async () => {
+			const origImage = globalThis.Image;
+			const origCreateElement = document.createElement.bind(document);
+
+			try {
+				class MockImage {
+					crossOrigin = '';
+					src = '';
+					onload: (() => void) | null = null;
+					constructor() {
+						setTimeout(() => this.onload?.(), 0);
+					}
+				}
+				(globalThis as any).Image = MockImage as any;
+
+				vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+					const el = origCreateElement(tagName);
+					if (tagName === 'canvas') {
+						const mockCanvas = el as HTMLCanvasElement;
+						mockCanvas.getContext = vi.fn().mockReturnValue(null);
+						return mockCanvas;
+					}
+					return el;
+				});
+
+				const res = await extractPaletteFromImageUrl('https://example.com/null-context.jpg', 500);
+				expect(res).toEqual(DEFAULT_PALETTE_THEME);
+			} finally {
+				(globalThis as any).Image = origImage;
+				vi.restoreAllMocks();
+			}
+		});
+
+		it('should fallback to default palette when canvas context throws on getImageData', async () => {
+			const origImage = globalThis.Image;
+			const origCreateElement = document.createElement.bind(document);
+
+			try {
+				class MockImage {
+					crossOrigin = '';
+					src = '';
+					onload: (() => void) | null = null;
+					constructor() {
+						setTimeout(() => this.onload?.(), 0);
+					}
+				}
+				(globalThis as any).Image = MockImage as any;
+
+				vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+					const el = origCreateElement(tagName);
+					if (tagName === 'canvas') {
+						const mockCanvas = el as HTMLCanvasElement;
+						mockCanvas.getContext = vi.fn().mockReturnValue({
+							drawImage: vi.fn(),
+							getImageData: vi.fn().mockImplementation(() => {
+								throw new DOMException('The canvas has been tainted by cross-origin data', 'SecurityError');
+							}),
+						});
+						return mockCanvas;
+					}
+					return el;
+				});
+
+				const res = await extractPaletteFromImageUrl('https://example.com/cors-tainted.jpg', 500);
+				expect(res).toEqual(DEFAULT_PALETTE_THEME);
+			} finally {
+				(globalThis as any).Image = origImage;
+				vi.restoreAllMocks();
+			}
+		});
 	});
 
 	describe('applyPaletteTheme', () => {

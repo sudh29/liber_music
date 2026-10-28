@@ -77,4 +77,43 @@ describe("library/updater utilities", () => {
 
 		vi.restoreAllMocks();
 	});
+
+	it("should clean stale trackIndex entries if any are present before cleanup", async () => {
+		const { app, plugin } = createPlugin();
+		app.vault.createFile("music/song.mp3", new ArrayBuffer(50));
+
+		// Mock track metadata
+		vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
+			title: "Song",
+			artist: "Artist",
+		});
+
+		// Spy on saveSettings to inject a stale trackIndex right before cleanup
+		const originalSave = plugin.saveSettings;
+		plugin.saveSettings = vi.fn().mockImplementation(async () => {
+			plugin.settings.trackIndex["stale-unindexed-id"] = "music/deleted.mp3";
+			return originalSave();
+		});
+
+		const count = await rebuildAllData(app, plugin);
+		expect(count).toBe(1);
+		vi.restoreAllMocks();
+	});
+
+	it("should catch and rethrow errors during rebuildAllData and show notice", async () => {
+		const { app, plugin } = createPlugin();
+		app.vault.createFile("music/corrupt.mp3", new ArrayBuffer(50));
+
+		plugin.saveSettings = vi.fn().mockRejectedValue(new Error("Disk write fault"));
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await expect(rebuildAllData(app, plugin)).rejects.toThrow("Disk write fault");
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Error rebuilding music library:"),
+			expect.any(Error)
+		);
+		errorSpy.mockRestore();
+		vi.restoreAllMocks();
+	});
 });
+

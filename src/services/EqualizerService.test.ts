@@ -197,4 +197,20 @@ describe("EqualizerService", () => {
 		expect(energy.treble).toBeGreaterThanOrEqual(0);
 		expect(energy.overall).toBeGreaterThanOrEqual(0);
 	});
+
+	it("should return zero energy when frequency data is unavailable", () => {
+		const service = new EqualizerService();
+		// No audio element attached, mock getFrequencyData returning null
+		vi.spyOn(service, "getFrequencyData").mockReturnValue(null);
+
+		const energy = service.getSpectrumEnergy();
+		expect(energy).toEqual({ bass: 0, mid: 0, treble: 0, overall: 0 });
+	});
+
+	it("should return null for getFrequencyData if audioContext is unavailable", () => {
+		const service = new EqualizerService();
+		vi.spyOn(service, "getAudioContext").mockReturnValue(null as any);
+
+		expect(service.getFrequencyData()).toBeNull();
+	});
 });

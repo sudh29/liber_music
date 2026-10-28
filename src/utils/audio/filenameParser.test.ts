@@ -118,4 +118,30 @@ describe("filenameParser", () => {
 			title: "Saari Duniya Jalaa Denge - Extended",
 		});
 	});
+
+	it("should parse 2-part 'YYYY - Title' format", () => {
+		const result = parseTrackFilename("1999 - Smooth.mp3");
+		expect(result).toEqual({
+			year: 1999,
+			title: "Smooth",
+		});
+	});
+
+	it("should parse 3-part 'Artist - Album - Title' without leading year or track number", () => {
+		const result = parseTrackFilename("Queen - A Night at the Opera - Bohemian Rhapsody.mp3");
+		expect(result).toEqual({
+			artist: "Queen",
+			album: "A Night at the Opera",
+			title: "Bohemian Rhapsody",
+		});
+	});
+
+	it("should parse 4+ parts without leading year or track number", () => {
+		const result = parseTrackFilename("Pink Floyd - The Wall - Disc 1 - In The Flesh.mp3");
+		expect(result).toEqual({
+			artist: "Pink Floyd",
+			album: "The Wall",
+			title: "Disc 1 - In The Flesh",
+		});
+	});
 });

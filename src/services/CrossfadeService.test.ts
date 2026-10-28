@@ -130,6 +130,27 @@ describe("CrossfadeService", () => {
 			await vi.advanceTimersByTimeAsync(0);
 
 			expect(service.isCrossfadeActive()).toBe(false);
+
+			// Test returning null incomingElement
+			onTrigger.mockResolvedValueOnce(null);
+			service.onTimeUpdate(98, 100, outgoingEl);
+			await vi.advanceTimersByTimeAsync(0);
+			expect(service.isCrossfadeActive()).toBe(false);
+		});
+
+		it("should clear transitionTimer during cancelCrossfade if scheduled", () => {
+			const service = new CrossfadeService(3);
+			const timerId = setTimeout(() => {}, 5000);
+			(service as any).transitionTimer = timerId;
+
+			service.cancelCrossfade();
+			expect((service as any).transitionTimer).toBeNull();
+		});
+
+		it("should reset track state and cancel crossfade on resetTrackState", () => {
+			const service = new CrossfadeService(3);
+			service.resetTrackState();
+			expect(service.isCrossfadeActive()).toBe(false);
 		});
 
 		it("should ignore onTimeUpdate with invalid parameters", () => {

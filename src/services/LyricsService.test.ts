@@ -300,6 +300,46 @@ describe("LyricsService", () => {
 
 		vi.doUnmock("@/utils/audio/metadata");
 	});
+
+	it("should handle background companion load without lrcFile, with save failure, and with read failure", async () => {
+		const app = new App();
+		const plugin = {
+			app,
+			settings: {
+				...DEFAULT_SETTINGS,
+				trackIndex: {},
+				tracks: {},
+			},
+			saveSettings: vi.fn().mockRejectedValue(new Error("Save failed")),
+		} as unknown as MusicPlayerPlugin;
+
+		const companionLrc = createMockTFile("Music/test.lrc");
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(companionLrc);
+		vi.spyOn(app.vault, "read").mockResolvedValue("[00:01.00]Test line");
+
+		const service = new LyricsService(plugin);
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		// Call without lrcFile argument (triggers readCompanionLrc and saveSettings failure)
+		await (service as any).loadCompanionLrcAsync("Music/test.mp3");
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to save background companion lyrics:"),
+			expect.any(Error)
+		);
+
+		// Trigger outer catch block when ensureTrackEntry throws
+		vi.spyOn(service as any, "ensureTrackEntry").mockImplementation(() => {
+			throw new Error("Track entry fault");
+		});
+
+		await (service as any).loadCompanionLrcAsync("Music/error.mp3");
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to load companion lyrics (Music/error.mp3):"),
+			expect.any(Error)
+		);
+
+		warnSpy.mockRestore();
+	});
 });
 
 

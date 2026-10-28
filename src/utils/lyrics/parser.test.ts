@@ -36,4 +36,20 @@ describe("LyricsParser", () => {
 		const cleaned = LyricsParser.cleanText(text);
 		expect(cleaned).toBe("Hello World");
 	});
+
+	it("should skip lines with only timestamps and no text content", () => {
+		const lrc = `
+[00:01.00]
+[00:02.00]   
+[00:03.00]Actual lyric line
+`;
+		const parsed = LyricsParser.parseLRC(lrc);
+		expect(parsed).toHaveLength(1);
+		expect(parsed[0]?.text).toBe("Actual lyric line");
+	});
+
+	it("should return empty array when parsing empty string or non-matching text", () => {
+		expect(LyricsParser.parseLRC("")).toEqual([]);
+		expect(LyricsParser.parseLRC("Plain text without timestamps")).toEqual([]);
+	});
 });

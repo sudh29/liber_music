@@ -131,4 +131,23 @@ describe("LyricsExtendedParser", () => {
 		expect(LyricsExtendedParser.parse("")).toEqual([]);
 		expect(LyricsExtendedParser.parse("   ")).toEqual([]);
 	});
+
+	it("should parse line with line timestamp but without character timestamps", () => {
+		const lrc = "[00:05.00]Simple line without char stamps";
+		const parsed = LyricsExtendedParser.parse(lrc);
+
+		expect(parsed).toHaveLength(1);
+		expect(parsed[0]?.time).toBe(5.0);
+		expect(parsed[0]?.text).toBe("Simple line without char stamps");
+		expect(parsed[0]?.chars.length).toBe("Simple line without char stamps".length);
+		expect(parsed[0]?.chars[0]?.time).toBe(5.0);
+	});
+
+	it("should skip lines with empty text after removing timestamps", () => {
+		const lrc = "[00:01.00]   \n[00:02.00]\n[00:03.00]Valid line";
+		const parsed = LyricsExtendedParser.parse(lrc);
+
+		expect(parsed).toHaveLength(1);
+		expect(parsed[0]?.text).toBe("Valid line");
+	});
 });

@@ -92,4 +92,28 @@ describe("ShuffleManager (Non-Repeating Smart Shuffle)", () => {
 		expect(manager.getNextTrack()).toBeNull();
 		expect(manager.startNewCycle()).toBe(0);
 	});
+
+	it("should reset shuffle deck and history on reset()", () => {
+		const manager = new ShuffleManager();
+		manager.initialize(5, 0);
+		manager.getNextTrack();
+		manager.reset(5, 2);
+
+		expect(manager.getPlayedCount()).toBe(1);
+		expect(manager.getRemainingCount()).toBe(4);
+	});
+
+	it("should ignore onTrackSelected when index is out of bounds or identical to current", () => {
+		const manager = new ShuffleManager();
+		manager.initialize(5, 1);
+
+		// Out of bounds
+		manager.onTrackSelected(-1);
+		manager.onTrackSelected(99);
+		expect(manager.getPlayedCount()).toBe(1);
+
+		// Duplicate of current track (index 1)
+		manager.onTrackSelected(1);
+		expect(manager.getPlayedCount()).toBe(1);
+	});
 });

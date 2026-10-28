@@ -149,5 +149,105 @@ describe("ScrobblerService", () => {
 				expect.stringContaining("Offline Track")
 			);
 		});
+
+		it("should return false when track is null or undefined", async () => {
+			const result = await scrobbler.scrobbleTrack(null as any);
+			expect(result).toBe(false);
+		});
+
+		it("should prepend new record to existing history.json records", async () => {
+			mockApp.vault.adapter.exists.mockResolvedValue(true);
+			mockApp.vault.adapter.read.mockResolvedValue(
+				JSON.stringify([{ title: "Older Song", trackPath: "Music/Older.mp3" }])
+			);
+
+			await scrobbler.scrobbleTrack(mockFile, { title: "New Song" });
+
+			expect(mockApp.vault.adapter.write).toHaveBeenCalledWith(
+				expect.stringContaining("history.json"),
+				expect.stringMatching(/"title": "New Song"[\s\S]*"title": "Older Song"/)
+			);
+		});
+
+		it("should reset records to empty array if history.json contains invalid JSON or non-array", async () => {
+			mockApp.vault.adapter.exists.mockResolvedValue(true);
+			mockApp.vault.adapter.read.mockResolvedValue("{ malformed json }");
+
+			await scrobbler.scrobbleTrack(mockFile, { title: "Fresh Song" });
+
+			expect(mockApp.vault.adapter.write).toHaveBeenCalledWith(
+				expect.stringContaining("history.json"),
+				expect.stringContaining("Fresh Song")
+			);
+
+			// Test non-array JSON object
+			mockApp.vault.adapter.read.mockResolvedValue(JSON.stringify({ notAnArray: true }));
+			const freshFile = new TFile();
+			freshFile.path = "Music/Another.mp3";
+			freshFile.basename = "Another";
+
+			await scrobbler.scrobbleTrack(freshFile, { title: "Another Song" });
+			expect(mockApp.vault.adapter.write).toHaveBeenCalledWith(
+				expect.stringContaining("history.json"),
+				expect.stringContaining("Another Song")
+			);
+		});
+
+		it("should cap history.json records to 1000 entries", async () => {
+			mockApp.vault.adapter.exists.mockResolvedValue(true);
+			const hugeHistory = Array.from({ length: 1050 }, (_, i) => ({
+				title: `Song ${i}`,
+				trackPath: `Music/Song${i}.mp3`,
+			}));
+			mockApp.vault.adapter.read.mockResolvedValue(JSON.stringify(hugeHistory));
+
+			await scrobbler.scrobbleTrack(mockFile, { title: "Overflow Song" });
+
+			expect(mockApp.vault.adapter.write).toHaveBeenCalledWith(
+				expect.stringContaining("history.json"),
+				expect.toSatisfy((content: string) => {
+					const parsed = JSON.parse(content);
+					return Array.isArray(parsed) && parsed.length === 1000 && parsed[0].title === "Overflow Song";
+				})
+			);
+		});
+
+		it("should handle history.json write error gracefully", async () => {
+			mockApp.vault.adapter.exists.mockResolvedValue(false);
+			mockApp.vault.adapter.write.mockRejectedValue(new Error("Disk full"));
+			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+			const result = await scrobbler.scrobbleTrack(mockFile);
+			expect(result).toBe(true);
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Failed to record track to history.json"),
+				expect.any(Error)
+			);
+			warnSpy.mockRestore();
+		});
+
+		it("should create parent folder for daily notes if folder does not exist", async () => {
+			mockApp.vault.getAbstractFileByPath.mockReturnValue(null);
+			mockApp.vault.createFolder.mockRejectedValueOnce(new Error("Folder already exists"));
+
+			const result = await scrobbler.scrobbleTrack(mockFile, { title: "Folder Test" });
+			expect(result).toBe(true);
+			expect(mockApp.vault.createFolder).toHaveBeenCalledWith("Daily Notes");
+			expect(mockApp.vault.create).toHaveBeenCalled();
+		});
+
+		it("should handle error gracefully when recording to daily note fails", async () => {
+			mockApp.vault.getAbstractFileByPath.mockReturnValue(null);
+			mockApp.vault.create.mockRejectedValue(new Error("Vault write error"));
+			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+			const result = await scrobbler.scrobbleTrack(mockFile);
+			expect(result).toBe(true);
+			expect(warnSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Failed to record track to Daily Notes"),
+				expect.any(Error)
+			);
+			warnSpy.mockRestore();
+		});
 	});
 });

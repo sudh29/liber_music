@@ -76,5 +76,39 @@ describe("companionLrc utility", () => {
 		const result = await readCompanionLrc(app, "Music/no-lyrics.mp3");
 		expect(result).toBeNull();
 	});
+
+	it("should catch adapter error and return null", async () => {
+		const app = new App();
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(null);
+		(app.vault as unknown as { adapter: { exists: any; read: any } }).adapter = {
+			exists: vi.fn().mockResolvedValue(true),
+			read: vi.fn().mockRejectedValue(new Error("Adapter read error")),
+		};
+
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const result = await readCompanionLrc(app, "Music/corrupt.mp3");
+		expect(result).toBeNull();
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Adapter read failed for companion .lrc"),
+			expect.any(Error)
+		);
+		warnSpy.mockRestore();
+	});
+
+	it("should catch unexpected error in outer try/catch and return null", async () => {
+		const app = new App();
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockImplementation(() => {
+			throw new Error("Vault internal error");
+		});
+
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const result = await readCompanionLrc(app, "Music/crash.mp3");
+		expect(result).toBeNull();
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to read companion .lrc lyric file"),
+			expect.any(Error)
+		);
+		warnSpy.mockRestore();
+	});
 });
 

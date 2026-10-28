@@ -470,5 +470,70 @@ describe("PlaybackService", () => {
 		await playbackService.setTrackRating("Music/song1.mp3", 4);
 		expect(plugin.settings.ratings?.["Music/song1.mp3"]).toBe(4);
 	});
+
+	it("should return false when playByPath receives unknown path", async () => {
+		const result = await playbackService.playByPath("unknown/nonexistent.mp3");
+		expect(result).toBe(false);
+	});
+
+	it("should return true when playByPath finds matching path", async () => {
+		const result = await playbackService.playByPath("track2.mp3");
+		expect(result).toBe(true);
+		expect(stateService.getState().currentTrack).toBe(mockFiles[1]);
+	});
+
+	it("should handle playCategory with empty list and valid list", async () => {
+		await playbackService.playCategory("artist", "Queen", []);
+		expect(stateService.getState().currentList).toBeNull();
+
+		await playbackService.playCategory("artist", "Queen", [mockFiles[2]]);
+		expect(stateService.getState().currentList?.name).toBe("Queen");
+		expect(stateService.getState().currentTrack).toBe(mockFiles[2]);
+	});
+
+	it("should rewind to beginning when toggling play if playback was near track end", async () => {
+		await playbackService.playTrack(0);
+		stateService.setIsPlaying(false);
+		const audioEl = audioService.getAudioElement()!;
+		Object.defineProperty(audioEl, "duration", { value: 100, configurable: true });
+		audioEl.currentTime = 99.98;
+
+		await playbackService.togglePlay();
+		expect(audioEl.currentTime).toBe(0);
+		expect(stateService.getState().isPlaying).toBe(true);
+	});
+
+	it("should catch AbortError silently during togglePlay", async () => {
+		await playbackService.playTrack(0);
+		stateService.setIsPlaying(false);
+		vi.spyOn(audioService, "play").mockRejectedValue(new DOMException("The play() request was interrupted", "AbortError"));
+
+		await expect(playbackService.togglePlay()).resolves.not.toThrow();
+	});
+
+	it("should handle playback error when togglePlay rejects with non-abort error", async () => {
+		await playbackService.playTrack(0);
+		stateService.setIsPlaying(false);
+		vi.spyOn(audioService, "play").mockRejectedValue(new Error("Playback hardware failure"));
+
+		await expect(playbackService.togglePlay()).resolves.not.toThrow();
+	});
+
+	it("should handle error during repeat play in handleTrackEnd", async () => {
+		await playbackService.playTrack(0);
+		stateService.setPlayMode("repeat-one");
+
+		const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(audioService, "play").mockRejectedValue(new Error("Audio hardware disconnected"));
+		(playbackService as any).lastHandleTrackEndAt = 0;
+
+		playbackService.handleTrackEnd();
+		await new Promise((r) => setTimeout(r, 20));
+		expect(errSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Error during repeat play"),
+			expect.any(Error)
+		);
+		errSpy.mockRestore();
+	});
 });
 

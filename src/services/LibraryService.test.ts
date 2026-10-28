@@ -541,5 +541,43 @@ describe("LibraryService", () => {
 
 			await expect(service.renameTrackInLibrary("old.mp3", "new.mp3")).rejects.toThrow("Rename persist failed");
 		});
+
+		it("should update track ID references across favorites and playlists", () => {
+			const { service, plugin } = createService();
+			plugin.settings.favorites = ["old-id", "other-id"];
+			plugin.settings.playlists = {
+				Rock: ["old-id", "another-id"],
+			};
+
+			(service as any).updateTrackIdReferences("old-id", "new-migrated-id");
+
+			expect(plugin.settings.favorites).toContain("new-migrated-id");
+			expect(plugin.settings.favorites).not.toContain("old-id");
+			expect(plugin.settings.playlists["Rock"]).toContain("new-migrated-id");
+			expect(plugin.settings.playlists["Rock"]).not.toContain("old-id");
+		});
+
+		it("should fall back to companion .lrc file in updateTrackMetadata when embedded lyrics are empty", async () => {
+			const { service, app, plugin } = createService();
+			const file = createMockTFile("music/ballad.mp3");
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(file);
+
+			const metadataModule = await import("@/utils/audio/metadata");
+			vi.spyOn(metadataModule, "readAudioFileBinary").mockResolvedValue(new ArrayBuffer(10));
+			vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
+				title: "Ballad",
+				artist: "Singer",
+				lyricsText: "", // empty embedded lyrics
+			});
+			vi.spyOn(metadataModule, "readCompanionLrc").mockResolvedValue("[00:02.00]Companion lyric line");
+
+			await service.updateTrackMetadata("music/ballad.mp3");
+
+			const trackId = Object.keys(plugin.settings.tracks).find((k) =>
+				plugin.settings.tracks[k].title === "Ballad"
+			);
+			expect(trackId).toBeDefined();
+			expect(plugin.settings.tracks[trackId!].lyrics).toBe("[00:02.00]Companion lyric line");
+		});
 	});
 });

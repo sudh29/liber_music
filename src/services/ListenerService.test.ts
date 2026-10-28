@@ -203,4 +203,53 @@ describe("ListenerService", () => {
 
 		service.cleanup();
 	});
+
+	it("should restore currentTime and handle resume error when playing track is renamed", async () => {
+		const {
+			service,
+			app,
+			libraryService,
+			stateService,
+			audioService,
+			lyricsService,
+		} = createService();
+		service.setup();
+
+		const oldFile = new TFile("Music/active.mp3");
+		const newFile = new TFile("Music/active_renamed.mp3");
+
+		stateService.setCurrentTrack(oldFile, 0);
+		stateService.setIsPlaying(true);
+
+		const fakeAudioEl = {
+			currentTime: 35.5,
+			volume: 0.75,
+			playbackRate: 1.25,
+		};
+		vi.spyOn(audioService, "getAudioElement").mockReturnValue(fakeAudioEl as any);
+		vi.spyOn(audioService, "pause");
+		vi.spyOn(audioService, "cleanup").mockResolvedValue(undefined);
+		vi.spyOn(audioService, "createAudioElement").mockResolvedValue(fakeAudioEl as any);
+		vi.spyOn(lyricsService, "loadLyrics").mockReturnValue({ lyrics: [], extendedLyrics: [] });
+
+		// Simulate error during resume play
+		vi.spyOn(audioService, "play").mockRejectedValue(new Error("Audio context decode fault"));
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		vi.mocked(libraryService.renameTrackInLibrary).mockImplementation(async () => {
+			stateService.setCurrentTrack(newFile, 0);
+		});
+
+		app.vault.trigger("rename", newFile, "Music/active.mp3");
+		await new Promise((r) => setTimeout(r, 20));
+
+		expect(fakeAudioEl.currentTime).toBe(35.5);
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Error resuming playback: Music/active_renamed.mp3"),
+			expect.any(Error)
+		);
+
+		errorSpy.mockRestore();
+		service.cleanup();
+	});
 });
