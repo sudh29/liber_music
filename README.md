@@ -4,8 +4,8 @@
         <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.0.0-7f6df2?logo=obsidian" alt="Version 2.0.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-511%20passed-brightgreen" alt="Tests: 511 passed">
-        <img src="https://img.shields.io/badge/coverage-92.64%25-brightgreen" alt="Coverage: 92.64%">
+        <img src="https://img.shields.io/badge/tests-672%20passed-brightgreen" alt="Tests: 672 passed">
+        <img src="https://img.shields.io/badge/coverage-98.32%25-brightgreen" alt="Coverage: 98.32%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -13,12 +13,42 @@
 
 ---
 
+## ⚡ Improvements Over Upstream (Fork Comparison)
+
+> **Fork Lineage:** Liber Music Player was forked from [`TracingOrigins/obsidian-music-player-plugin`](https://github.com/TracingOrigins/obsidian-music-player-plugin) (v1.3.8).  
+> While the original plugin offered a foundational sidebar vinyl player, Liber Music Player has undergone an end-to-end architectural overhaul, elevating it from a simple playback widget into a **production-ready, audiophile-grade Personal Knowledge Management (PKM) audio engine**.
+
+### 📊 Comprehensive Comparison Matrix
+
+| Feature / Capability | Upstream (`TracingOrigins`) | Liber Music Player (`v2.0.0`) | Architectural & User Impact |
+|:---|:---:|:---:|:---|
+| **Automated Testing & CI** | ❌ **0 tests (0% coverage)** | ✅ **672 tests across 79 suites (98.32% lines, 85.33% branches)** | Strict quality regression gates; every parser, decoder, and state hook is verified in CI. |
+| **iOS / iPadOS OGG Playback** | ❌ Fails (Apple WebKit cannot decode OGG/Opus) | ✅ **100% Codec Parity via inlined WASM Vorbis** | Bypasses WebKit limitations; decodes `.ogg` & `.opus` to WAV Blob URLs on iOS/iPadOS without user re-encoding. |
+| **Audio DSP & Equalizer** | ❌ None (raw browser output only) | ✅ **10-Band Biquad EQ & Gapless Sinusoidal Crossfading** | ISO octave bands (31Hz–16kHz), ±12dB preamp, 7 tuned presets (Harman Target, Bass Boost, etc.), and 0s–10s crossfade. |
+| **Markdown Note Integration** | ❌ None (sidebar only) | ✅ **````music```` Codeblock Player Embeds** | Embed interactive mini-players directly inside Obsidian markdown notes with custom start/end timestamps and lyrics. |
+| **Lyric Deep-Linking** | ❌ None | ✅ **1-Click Timestamp URI Citation Links** | Click 🔗 on any lyric line to copy `obsidian://music-player?track=...&t=...` that jumps to exact moments across the vault. |
+| **Daily Notes Scrobbler** | ❌ None | ✅ **Automated Listening Journaling** | Logs completed listening sessions (>70%) to active Daily Notes with an offline audit ledger (`history.json`). |
+| **Smart Playlists** | ❌ None (static lists only) | ✅ **Dynamic Rule-Based Smart Playlists** | Composable boolean rules (rating, year, genre, duration, title, etc.), AND/OR logic, instant preview, and 1-click presets. |
+| **Vault Folder Sync** | ❌ None | ✅ **Automatic Folder-to-Playlist Mirroring** | Maps vault directories (e.g. `📁 Jazz`, `📁 Classical`) directly into playlists with configurable nesting (1–3 levels). |
+| **In-App Tag & LRC Editor** | ❌ None (metadata read-only) | ✅ **Full In-App Metadata & Lyric Editor** | Edit title, artist, album, year, genre, star rating, and companion `.lrc` text files directly inside Obsidian with vault write-back. |
+| **External Companion `.lrc`** | ❌ Ignored (embedded tags only) | ✅ **Full Companion `.lrc` Auto-Discovery** | Automatically finds and synchronizes standalone `.lrc` files located alongside audio files in the vault. |
+| **Visualizer & Theming** | ❌ Static CSS, 1 fixed vinyl look | ✅ **Real-Time Spectrum Visualizer & Dynamic Palette** | 16-bar Web Audio spectrum monitor; offscreen canvas quantizes album art colors into CSS variables; 3 turntable styles. |
+| **Mobile System Integration** | ❌ None (stops on lock) | ✅ **MediaSession API & Screen Wake Lock** | Lock screen player widget, Android notification controls, Bluetooth headphone keys, and screen keep-awake toggle. |
+| **Mobile Memory Safety** | ⚠️ High RAM (reads entire 50MB files) | ✅ **512KB Header-Only Binary Chunking** | Streamed header reads eliminate mobile out-of-memory crashes; event-loop yielding prevents UI freezes. |
+| **Shuffle Queue Correctness** | ⚠️ Flawed (repeats songs, button erasure) | ✅ **True Non-Repeating Fisher-Yates Shuffle** | Dedicated `ShuffleManager` guarantees 100% of tracks play before recycling; preserved icon rendering. |
+| **Loudness Normalization** | ❌ None | ✅ **ReplayGain & EBU R128 Tag Support** | Automatic volume normalization across disparate track masters. |
+| **Build & Toolchain** | ⚠️ Basic legacy esbuild | ✅ **Vite+ (`vp`) & Rust Oxc Compiler / Linter** | Rust-powered transforms (`oxc-transform-react`), 0 lint warnings across 179 files, and automated bundle size audits. |
+| **Release & Distribution** | ⚠️ Manual file drops | ✅ **Automated GitHub Actions & BRAT Support** | Automated tagged releases with SLSA provenance attestations and 1-click beta updates via BRAT. |
+| **Localization & Repo Hygiene** | ⚠️ Chinese/English mix, Python `.gitignore` | ✅ **Clean English Architecture & Strict Hygiene** | 100% localized English docs/codebase, strict Node/Obsidian `.gitignore`, and zero untracked binaries in repository. |
+
+---
+
 ## 🌟 Key Features
 
 ### 📦 Production Ops, Automated Distribution & BRAT Compatibility (v2.0.0)
 - **Compact Tree-Shaken Distribution Bundle**:
-  - `dist/main.js` is ~744 KB (well under the strict 2.0 MB ceiling), containing zero dead code and zero external network dependencies.
-  - `dist/styles.css` is ~538 KB with inlined high-DPI turntable assets, completely self-contained.
+  - `dist/main.js` is ~747 KB (well under the strict 2.0 MB ceiling), containing zero dead code and zero external network dependencies.
+  - `dist/styles.css` is ~86 KB with inlined high-DPI turntable assets, completely self-contained.
   - Automated bundle audit (`scripts/check-bundle-size.mjs`) guards against asset regressions during build.
 - **Automated Tagged Release & CI/CD Pipeline**:
   - GitHub Actions workflow (`release.yml`) triggers on tag pushes and release publications, compiling production bundles, verifying coverage, and attaching release assets (`main.js`, `manifest.json`, `styles.css`) with SLSA provenance attestations.
@@ -256,7 +286,7 @@ npm run build
 - **UI Framework**: React 18 & Vanilla CSS Design System
 - **Toolchain**: **Vite+** (`vp`) for next-generation developer tooling
 - **Compiler & Linter**: **Oxc** (`oxc-transform-react` & `vp lint`) for ultra-fast Rust-based parsing, transforms, and linting
-- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 456 passing unit and E2E tests across 58 test suites (92.29% line coverage)
+- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 672 passing unit and integration tests across 79 test suites (98.32% line coverage)
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture
@@ -265,7 +295,7 @@ npm run build
 
 ## 🗺️ Strategic Roadmap
 
-For upcoming engineering milestones (Markdown codeblock embeds, Web Audio 10-band EQ, dynamic cover art palette tinting, and smart playlists), see the [Strategic Roadmap](ROADMAP.md).
+For in-depth architecture blueprints, cross-platform hardware evaluation, and completed engineering milestones, see the [Strategic Roadmap](ROADMAP.md).
 
 ---
 
