@@ -3,7 +3,7 @@
  */
 
 export { usePlaybackState } from "./usePlaybackState";
-export type { UsePlaybackStateReturn } from "./usePlaybackState";
+export type { UsePlaybackStateReturn, UsePlaybackStateOptions } from "./usePlaybackState";
 
 export { useLibraryState } from "./useLibraryState";
 export type { UseLibraryStateReturn } from "./useLibraryState";

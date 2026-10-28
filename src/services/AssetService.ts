@@ -40,6 +40,8 @@ function mimeTypeForImageExtension(ext: string): string {
 			return "image/gif";
 		case ".svg":
 			return "image/svg+xml";
+		case ".webp":
+			return "image/webp";
 		default:
 			return "image/png";
 	}

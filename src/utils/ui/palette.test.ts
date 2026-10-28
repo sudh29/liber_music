@@ -7,6 +7,7 @@ import {
 	extractPaletteFromImageData,
 	extractPaletteFromImageUrl,
 	getLuminance,
+	getPaletteCacheSize,
 	rgbToHsl,
 } from './palette';
 
@@ -276,6 +277,45 @@ describe('palette extraction and theming', () => {
 			el.style.setProperty('--player-dynamic-accent', 'blue');
 			applyPaletteTheme(el, { ...DEFAULT_PALETTE_THEME }, false);
 			expect(el.style.getPropertyValue('--player-dynamic-accent')).toBe('');
+		});
+	});
+
+	describe('paletteCache bounded capacity', () => {
+		it('caps paletteCache at max 50 entries without memory leak', async () => {
+			clearPaletteCache();
+			expect(getPaletteCacheSize()).toBe(0);
+
+			const origGetContext = HTMLCanvasElement.prototype.getContext;
+			const origImage = (globalThis as any).Image;
+
+			try {
+				class FakeImage {
+					onload: (() => void) | null = null;
+					src = '';
+					constructor() {
+						setTimeout(() => {
+							if (this.onload) this.onload();
+						}, 0);
+					}
+				}
+				(globalThis as any).Image = FakeImage;
+
+				HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+					drawImage: vi.fn(),
+					getImageData: vi.fn().mockReturnValue({
+						data: new Uint8ClampedArray(24 * 24 * 4),
+					}),
+				}) as any;
+
+				for (let i = 0; i < 55; i++) {
+					await extractPaletteFromImageUrl(`https://example.com/cover_${i}.jpg`);
+				}
+
+				expect(getPaletteCacheSize()).toBe(50);
+			} finally {
+				HTMLCanvasElement.prototype.getContext = origGetContext;
+				(globalThis as any).Image = origImage;
+			}
 		});
 	});
 });

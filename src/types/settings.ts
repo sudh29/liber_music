@@ -29,6 +29,10 @@ export interface TrackInfo {
 	replayGainDb?: number;
 	/** User star rating (0 to 5) */
 	rating?: number;
+	/** File modification timestamp (mtime) in ms for incremental scanning */
+	mtime?: number;
+	/** File size in bytes for incremental scanning */
+	size?: number;
 }
 
 /**

@@ -13,6 +13,7 @@ export default defineConfig({
 	},
 	test: {
 		globals: true,
+		isolate: false,
 		environment: "node",
 		include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.{ts,tsx}"],
 		coverage: {
@@ -21,10 +22,10 @@ export default defineConfig({
 			include: ["src/utils/**", "src/constants/**", "src/services/**"],
 			exclude: ["**/*.test.{ts,tsx}", "**/index.ts"],
 			thresholds: {
-				statements: 85,
-				branches: 70,
-				functions: 85,
-				lines: 85,
+				statements: 90,
+				branches: 75,
+				functions: 90,
+				lines: 92,
 			},
 		},
 	},

@@ -71,4 +71,30 @@ describe("TrackList", () => {
 
 		expect(screen.getByText("No tracks")).toBeDefined();
 	});
+
+	it("virtualizes list when tracks count exceeds 60", () => {
+		const largeTracks: ReactTrackInfo[] = Array.from({ length: 100 }, (_, i) => ({
+			path: `music/track_${i}.mp3`,
+			title: `Track ${i}`,
+			artist: "Artist",
+		}));
+
+		const { container } = render(
+			<TrackList
+				tracks={largeTracks}
+				activePath="music/track_0.mp3"
+				sectionId="all"
+				currentList="all"
+				onPlay={vi.fn()}
+				onToggleFavorite={vi.fn()}
+				onAddToPlaylist={vi.fn()}
+				library={{ ...mockLibrary, allTracks: largeTracks }}
+			/>
+		);
+
+		const renderedRows = container.querySelectorAll(".track-item");
+		// Virtualized: mounts fewer than 100 rows
+		expect(renderedRows.length).toBeLessThan(100);
+		expect(renderedRows.length).toBeGreaterThan(0);
+	});
 });

@@ -23,16 +23,25 @@ export const DEFAULT_PALETTE_THEME: PaletteTheme = {
 	textOnAccent: '#ffffff',
 };
 
+import { LRUMap } from "../data/lruMap";
+
 /**
- * In-memory cache of extracted palettes keyed by cover URL.
+ * In-memory bounded LRU cache of extracted palettes keyed by cover URL (max 50 entries).
  */
-const paletteCache = new Map<string, PaletteTheme>();
+const paletteCache = new LRUMap<string, PaletteTheme>(50);
 
 /**
  * Clears the palette cache (useful in tests).
  */
 export function clearPaletteCache(): void {
 	paletteCache.clear();
+}
+
+/**
+ * Gets the current number of cached palette themes (useful in tests).
+ */
+export function getPaletteCacheSize(): number {
+	return paletteCache.size;
 }
 
 /**

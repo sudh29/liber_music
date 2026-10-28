@@ -34,13 +34,13 @@ export interface MusicPlayerRootProps {
 }
 
 export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
-	// Manage state with hooks
-	const { playback } = usePlaybackState(view);
-	const { library, refreshSnapshot } = useLibraryState(view);
-
 	// Navigation state management
 	const navigation = useNavigation();
 	const pageState = usePageState();
+
+	// Manage state with hooks (tab-aware playback state throttling)
+	const { playback } = usePlaybackState(view, { activeTab: navigation.tab });
+	const { library, refreshSnapshot } = useLibraryState(view);
 
 	// Encapsulate business logic with hooks
 	const playbackControl = usePlaybackControl(view);

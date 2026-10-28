@@ -115,5 +115,37 @@ describe("library/updater utilities", () => {
 		errorSpy.mockRestore();
 		vi.restoreAllMocks();
 	});
+
+	it("should incrementally reuse cached track info when mtime and size match without re-reading", async () => {
+		const { app, plugin } = createPlugin();
+		const file = app.vault.createFile("music/track.mp3", new ArrayBuffer(100));
+		// Provide mock stat
+		(file as any).stat = { mtime: 1700000000, size: 100 };
+
+		const metaSpy = vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
+			title: "Cached Song",
+			artist: "Cached Artist",
+		});
+
+		// Pass 1: Cold scan
+		const count1 = await rebuildAllData(app, plugin);
+		expect(count1).toBe(1);
+		expect(metaSpy).toHaveBeenCalledTimes(1);
+
+		const trackKeys = Object.keys(plugin.settings.tracks);
+		const trackId = trackKeys[0]!;
+		expect(plugin.settings.tracks[trackId]?.mtime).toBe(1700000000);
+		expect(plugin.settings.tracks[trackId]?.size).toBe(100);
+
+		// Pass 2: Incremental rebuild with identical stat
+		metaSpy.mockClear();
+		const count2 = await rebuildAllData(app, plugin);
+		expect(count2).toBe(1);
+		// Zero binary parses!
+		expect(metaSpy).not.toHaveBeenCalled();
+		expect(plugin.settings.tracks[trackId]?.title).toBe("Cached Song");
+
+		vi.restoreAllMocks();
+	});
 });
 

@@ -43,11 +43,18 @@ export function AudioVisualizer({
 			return;
 		}
 
-		let rafId: number;
+		let rafId: number | null = null;
 		let lastSampleTime = 0;
 		const targetInterval = 25; // ~40fps throttling for power efficiency
+		let isDestroyed = false;
 
 		const renderFrame = (timestamp: number) => {
+			if (isDestroyed) return;
+			if (typeof document !== "undefined" && document.hidden) {
+				rafId = null;
+				return;
+			}
+
 			if (timestamp - lastSampleTime >= targetInterval) {
 				const freqData = equalizerService.getFrequencyData();
 				if (freqData && freqData.length > 0) {
@@ -74,9 +81,28 @@ export function AudioVisualizer({
 			rafId = window.requestAnimationFrame(renderFrame);
 		};
 
-		rafId = window.requestAnimationFrame(renderFrame);
+		const handleVisibilityChange = () => {
+			if (typeof document !== "undefined" && !document.hidden && rafId === null && !isDestroyed) {
+				rafId = window.requestAnimationFrame(renderFrame);
+			}
+		};
+
+		if (typeof document !== "undefined") {
+			document.addEventListener("visibilitychange", handleVisibilityChange);
+		}
+
+		if (typeof document === "undefined" || !document.hidden) {
+			rafId = window.requestAnimationFrame(renderFrame);
+		}
+
 		return () => {
-			window.cancelAnimationFrame(rafId);
+			isDestroyed = true;
+			if (rafId !== null) {
+				window.cancelAnimationFrame(rafId);
+			}
+			if (typeof document !== "undefined") {
+				document.removeEventListener("visibilitychange", handleVisibilityChange);
+			}
 		};
 	}, [isPlaying, equalizerService, barsCount]);
 

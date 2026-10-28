@@ -13,7 +13,7 @@ const distDir = path.join(projectRoot, 'dist');
 // Distribution constraints
 const LIMITS = {
 	'main.js': 2 * 1024 * 1024,      // 2.0 MB maximum
-	'styles.css': 1024 * 1024,       // 1.0 MB maximum (includes inlined vinyl assets)
+	'styles.css': 120 * 1024,        // 120 KB maximum (optimized inlined vinyl assets)
 	'manifest.json': 50 * 1024,      // 50 KB maximum
 };
 

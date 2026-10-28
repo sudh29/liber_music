@@ -53,5 +53,8 @@ describe("AssetService", () => {
 
 		const jpgUri = await service.getAssetPath("photo.jpg");
 		expect(jpgUri).toMatch(/^data:image\/jpeg;base64,/);
+
+		const webpUri = await service.getAssetPath("needle.webp");
+		expect(webpUri).toMatch(/^data:image\/webp;base64,/);
 	});
 });
