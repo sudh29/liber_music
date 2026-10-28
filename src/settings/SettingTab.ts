@@ -116,6 +116,35 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 					},
 				},
 			},
+			{
+				name: t('settings.turntableStyle.name'),
+				desc: t('settings.turntableStyle.desc'),
+				control: {
+					key: 'turntableStyle',
+					type: 'dropdown',
+					options: {
+						obsidian: 'Brushed Obsidian (Stealth Dark)',
+						walnut: 'Vintage Walnut (Wood Grain)',
+						acrylic: 'Cyberpunk Acrylic (Frosted Glass)',
+					},
+				},
+			},
+			{
+				name: t('settings.dynamicAlbumTheme.name'),
+				desc: t('settings.dynamicAlbumTheme.desc'),
+				control: {
+					key: 'dynamicAlbumTheme',
+					type: 'toggle',
+				},
+			},
+			{
+				name: t('settings.showVisualizer.name'),
+				desc: t('settings.showVisualizer.desc'),
+				control: {
+					key: 'showVisualizer',
+					type: 'toggle',
+				},
+			},
 		];
 	}
 }

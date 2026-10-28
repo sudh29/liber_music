@@ -255,6 +255,21 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 						onOpenEqualizer={() => {
 							new EqualizerModal(view.app, view.plugin, view.equalizerService).open();
 						}}
+						turntableStyle={playback.turntableStyle}
+						showVisualizer={playback.showVisualizer}
+						dynamicAlbumTheme={playback.dynamicAlbumTheme}
+						equalizerService={view.equalizerService}
+						onToggleVisualizer={() => {
+							view.plugin.settings.showVisualizer = !playback.showVisualizer;
+							void view.plugin.saveSettings();
+						}}
+						onToggleTurntableStyle={() => {
+							const styles: Array<"obsidian" | "walnut" | "acrylic"> = ["obsidian", "walnut", "acrylic"];
+							const currentIdx = styles.indexOf(playback.turntableStyle ?? "obsidian");
+							const nextStyle = styles[(currentIdx + 1) % styles.length]!;
+							view.plugin.settings.turntableStyle = nextStyle;
+							void view.plugin.saveSettings();
+						}}
 					/>
 			) : null}
 

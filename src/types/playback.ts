@@ -64,4 +64,10 @@ export interface ReactPlaybackSnapshot {
 	rating: number;
 	/** Active artwork presentation mode */
 	artworkDisplayMode: 'vinyl' | 'card';
+	/** Turntable body faceplate style */
+	turntableStyle: 'obsidian' | 'walnut' | 'acrylic';
+	/** Whether dynamic album art accent color palette extraction is enabled */
+	dynamicAlbumTheme: boolean;
+	/** Whether real-time audio spectrum groove visualizer is enabled */
+	showVisualizer: boolean;
 }

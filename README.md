@@ -1,11 +1,11 @@
 <div align="center">
     <h1>Liber Music Player Plugin for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.5.0-7f6df2?logo=obsidian" alt="Version 1.5.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.6.0-7f6df2?logo=obsidian" alt="Version 1.6.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-439%20passed-brightgreen" alt="Tests: 439 passed">
-        <img src="https://img.shields.io/badge/coverage-92.34%25-brightgreen" alt="Coverage: 92.34%">
+        <img src="https://img.shields.io/badge/tests-456%20passed-brightgreen" alt="Tests: 456 passed">
+        <img src="https://img.shields.io/badge/coverage-92.29%25-brightgreen" alt="Coverage: 92.29%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -14,6 +14,23 @@
 ---
 
 ## 🌟 Key Features
+
+### 🌈 Reactive Visuals & Dynamic Aesthetics (v1.6.0)
+- **Dynamic Accent Palette Extraction**:
+  - Automatically samples and quantizes dominant swatches from active album art using an offscreen canvas.
+  - Dynamically updates player CSS variables (`--player-dynamic-accent`, `--player-dynamic-secondary`, `--player-dynamic-glow`, `--player-karaoke-highlight`, `--player-text-on-accent`) with smooth 600ms transitions.
+  - In-memory URL caching prevents redundant canvas quantization, falling back gracefully to the vault accent theme when art is unavailable.
+- **Real-Time Audio Spectrum Visualizer**:
+  - Web Audio `AnalyserNode` (`fftSize = 64`) post-EQ frequency monitoring.
+  - Sleek 16-bar frequency spectrum visualizer rendered via throttled `requestAnimationFrame` and direct DOM ref mutation to eliminate React re-render overhead.
+  - Automatically hibernates during pause (0% idle CPU utilization).
+  - Quick-toggle visualizer button (`activity`) directly in the turntable action bar.
+- **Custom Turntable Materials & Dynamic Grooves**:
+  - **Brushed Obsidian**: Modern stealth dark matte aluminum with cyan indicator LEDs and brushed platter ring.
+  - **Vintage Walnut**: Warm mahogany wood grain body with brass tonearm and gold platter accents.
+  - **Cyberpunk Acrylic**: Semi-transparent frosted glass plinth with neon purple glow and underlighting.
+  - Animated pulsing vinyl groove halo reactively illuminating playback state.
+  - Quick-cycle style toggle button (`sparkles`) and persistent settings dropdown.
 
 ### 🎚️ Audiophile Web Audio DSP Engine (v1.5.0)
 - **10-Band Graphic & Parametric Equalizer**: Biquad filtering across 10 ISO standard octave frequencies (`31Hz`, `62Hz`, `125Hz`, `250Hz`, `500Hz`, `1kHz`, `2kHz`, `4kHz`, `8kHz`, `16kHz`).
@@ -205,7 +222,7 @@ npm run build
 - **UI Framework**: React 18 & Vanilla CSS Design System
 - **Toolchain**: **Vite+** (`vp`) for next-generation developer tooling
 - **Compiler & Linter**: **Oxc** (`oxc-transform-react` & `vp lint`) for ultra-fast Rust-based parsing, transforms, and linting
-- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 398 passing unit and E2E tests across 51 test suites (92.31% line coverage)
+- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 456 passing unit and E2E tests across 58 test suites (92.29% line coverage)
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture

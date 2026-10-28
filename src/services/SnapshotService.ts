@@ -228,6 +228,9 @@ export class SnapshotService {
 			isShuffle: this.plugin.settings.isShuffle ?? false,
 			rating: track?.rating ?? (trackId ? this.plugin.settings.ratings?.[trackId] : 0) ?? 0,
 			artworkDisplayMode: this.plugin.settings.artworkDisplayMode ?? 'vinyl',
+			turntableStyle: this.plugin.settings.turntableStyle ?? 'obsidian',
+			dynamicAlbumTheme: this.plugin.settings.dynamicAlbumTheme ?? true,
+			showVisualizer: this.plugin.settings.showVisualizer ?? true,
 		};
 	}
 

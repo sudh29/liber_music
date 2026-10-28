@@ -160,6 +160,26 @@ export class MockMediaElementAudioSourceNode extends MockAudioNode {
 	}
 }
 
+export class MockAnalyserNode extends MockAudioNode {
+	public fftSize: number = 64;
+	public frequencyBinCount: number = 32;
+	public minDecibels: number = -100;
+	public maxDecibels: number = -30;
+	public smoothingTimeConstant: number = 0.8;
+
+	getByteFrequencyData(array: Uint8Array): void {
+		for (let i = 0; i < array.length; i++) {
+			array[i] = Math.max(0, 160 - i * 4);
+		}
+	}
+
+	getByteTimeDomainData(array: Uint8Array): void {
+		for (let i = 0; i < array.length; i++) {
+			array[i] = 128;
+		}
+	}
+}
+
 export class MockAudioContext extends EventTarget {
 	public state: "suspended" | "running" | "closed" = "suspended";
 	public currentTime: number = 0;
@@ -192,6 +212,10 @@ export class MockAudioContext extends EventTarget {
 
 	createBiquadFilter(): MockBiquadFilterNode {
 		return new MockBiquadFilterNode(this);
+	}
+
+	createAnalyser(): MockAnalyserNode {
+		return new MockAnalyserNode(this);
 	}
 
 	createMediaElementSource(element: HTMLAudioElement): MockMediaElementAudioSourceNode {

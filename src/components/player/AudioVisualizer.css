@@ -1,0 +1,46 @@
+/**
+ * Audio Spectrum Frequency Visualizer Styles
+ */
+
+.music-player-visualizer {
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	gap: 3px;
+	height: 36px;
+	width: 100%;
+	max-width: 260px;
+	margin: 8px auto;
+	padding: 2px 8px;
+	border-radius: 8px;
+	background: rgba(0, 0, 0, 0.04);
+	backdrop-filter: blur(8px);
+	transition: background 0.4s ease, box-shadow 0.4s ease;
+	user-select: none;
+}
+
+.theme-dark .music-player-visualizer {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.music-player-visualizer.is-active {
+	box-shadow: 0 4px 16px -4px var(--player-dynamic-glow, rgba(127, 109, 242, 0.25));
+}
+
+.music-player-visualizer-bar {
+	flex: 1;
+	max-width: 5px;
+	min-width: 2px;
+	border-radius: 2px 2px 1px 1px;
+	background: linear-gradient(
+		to top,
+		var(--player-dynamic-accent, var(--interactive-accent, #7f6df2)),
+		var(--player-dynamic-secondary, #5b86e5)
+	);
+	transition: height 0.06s ease-out, opacity 0.15s ease;
+	will-change: height, opacity;
+}
+
+.music-player-visualizer:hover .music-player-visualizer-bar {
+	filter: brightness(1.15);
+}

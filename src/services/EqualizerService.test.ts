@@ -177,4 +177,24 @@ describe("EqualizerService", () => {
 		await service.dispose();
 		expect(service.getAudioContext()).toBeNull();
 	});
+
+	it("should provide audio spectrum frequency data and energy metrics", () => {
+		const service = new EqualizerService();
+		const audioEl = new MockAudioElement() as unknown as HTMLAudioElement;
+		service.attachAudioElement(audioEl);
+
+		const analyser = service.getAnalyserNode();
+		expect(analyser).toBeDefined();
+
+		const freqData = service.getFrequencyData();
+		expect(freqData).toBeInstanceOf(Uint8Array);
+		expect(freqData?.length).toBe(32);
+
+		const energy = service.getSpectrumEnergy();
+		expect(energy.bass).toBeGreaterThanOrEqual(0);
+		expect(energy.bass).toBeLessThanOrEqual(1);
+		expect(energy.mid).toBeGreaterThanOrEqual(0);
+		expect(energy.treble).toBeGreaterThanOrEqual(0);
+		expect(energy.overall).toBeGreaterThanOrEqual(0);
+	});
 });

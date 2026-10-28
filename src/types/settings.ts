@@ -89,6 +89,12 @@ export interface MusicPlayerSettings {
 	eqBands?: number[];
 	/** Equalizer preamp gain in dB (-12dB to +12dB) */
 	preampGainDb?: number;
+	/** Turntable body faceplate style */
+	turntableStyle?: 'obsidian' | 'walnut' | 'acrylic';
+	/** Whether dynamic album art accent color palette extraction is enabled */
+	dynamicAlbumTheme?: boolean;
+	/** Whether real-time audio spectrum groove visualizer is enabled */
+	showVisualizer?: boolean;
 }
 
 /**
@@ -117,4 +123,7 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	eqPreset: 'Flat',          // Default preset
 	eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Default 10 flat bands
 	preampGainDb: 0,           // Default 0 dB preamp
+	turntableStyle: 'obsidian', // Default: stealth dark matte aluminum
+	dynamicAlbumTheme: true,   // Default: dynamic album art theming enabled
+	showVisualizer: true,      // Default: real-time spectrum visualizer enabled
 };

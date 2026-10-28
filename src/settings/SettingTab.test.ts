@@ -12,7 +12,7 @@ describe('MusicPlayerSettingTab', () => {
 
 		const definitions = tab.getSettingDefinitions();
 		expect(definitions).toBeInstanceOf(Array);
-		expect(definitions.length).toBe(9);
+		expect(definitions.length).toBe(12);
 
 		const keys = definitions.map((d: any) => d.control?.key);
 		expect(keys).toContain('musicFolder');
@@ -24,6 +24,9 @@ describe('MusicPlayerSettingTab', () => {
 		expect(keys).toContain('crossfadeDuration');
 		expect(keys).toContain('eqEnabled');
 		expect(keys).toContain('eqPreset');
+		expect(keys).toContain('turntableStyle');
+		expect(keys).toContain('dynamicAlbumTheme');
+		expect(keys).toContain('showVisualizer');
 	});
 
 	it('should properly configure crossfade slider bounds', () => {

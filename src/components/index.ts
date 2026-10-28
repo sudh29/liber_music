@@ -31,6 +31,7 @@ export { LyricsFull } from "./player/LyricsFull";
 export { LyricsTriplet } from "./player/LyricsTriplet";
 export { LyricsExtendedFull } from "./player/LyricsExtendedFull";
 export { LyricsExtendedTriplet } from "./player/LyricsExtendedTriplet";
+export { AudioVisualizer } from "./player/AudioVisualizer";
 
 // Shared Components
 export { IconButton } from "./shared/IconButton";

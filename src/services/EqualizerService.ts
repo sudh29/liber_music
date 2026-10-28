@@ -24,6 +24,13 @@ export interface EqState {
 	preampDb: number;
 }
 
+export interface AudioSpectrumEnergy {
+	bass: number;
+	mid: number;
+	treble: number;
+	overall: number;
+}
+
 export class EqualizerService {
 	private audioContext: AudioContext | null = null;
 	private activeElement: HTMLAudioElement | null = null;
@@ -31,6 +38,8 @@ export class EqualizerService {
 	private preampNode: GainNode | null = null;
 	private filterNodes: BiquadFilterNode[] = [];
 	private masterGainNode: GainNode | null = null;
+	private analyserNode: AnalyserNode | null = null;
+	private frequencyDataBuffer: Uint8Array | null = null;
 	private elementSources = new WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>();
 
 	private enabled: boolean = false;
@@ -128,8 +137,14 @@ export class EqualizerService {
 			this.filterNodes.push(filter);
 		}
 
+		this.analyserNode = this.audioContext.createAnalyser();
+		this.analyserNode.fftSize = 64; // 32 frequency bins
+		this.analyserNode.smoothingTimeConstant = 0.8;
+		this.frequencyDataBuffer = new Uint8Array(this.analyserNode.frequencyBinCount);
+
 		prevNode.connect(this.masterGainNode);
 		this.masterGainNode.connect(this.audioContext.destination);
+		this.masterGainNode.connect(this.analyserNode);
 
 		this.applyGainsToGraph();
 	}
@@ -321,6 +336,63 @@ export class EqualizerService {
 	}
 
 	/**
+	 * Gets real-time audio spectrum frequency data array (0-255 per bin).
+	 */
+	getFrequencyData(): Uint8Array | null {
+		if (!this.analyserNode) {
+			const ctx = this.getAudioContext();
+			if (!ctx || !this.analyserNode) return null;
+		}
+		if (!this.analyserNode || !this.frequencyDataBuffer) return null;
+		this.analyserNode.getByteFrequencyData(this.frequencyDataBuffer as any);
+		return this.frequencyDataBuffer;
+	}
+
+	/**
+	 * Computes normalized frequency energy (0.0 - 1.0) for bass, midrange, treble, and overall.
+	 */
+	getSpectrumEnergy(): AudioSpectrumEnergy {
+		const data = this.getFrequencyData();
+		if (!data || data.length === 0) {
+			return { bass: 0, mid: 0, treble: 0, overall: 0 };
+		}
+
+		const len = data.length;
+		const bassEnd = Math.max(1, Math.floor(len * 0.25));
+		const midEnd = Math.max(bassEnd + 1, Math.floor(len * 0.75));
+
+		let bassSum = 0;
+		for (let i = 0; i < bassEnd; i++) bassSum += data[i]!;
+		const bass = Math.min(1.0, bassSum / (bassEnd * 255));
+
+		let midSum = 0;
+		for (let i = bassEnd; i < midEnd; i++) midSum += data[i]!;
+		const mid = Math.min(1.0, midSum / ((midEnd - bassEnd) * 255));
+
+		let trebleSum = 0;
+		for (let i = midEnd; i < len; i++) trebleSum += data[i]!;
+		const treble = Math.min(1.0, trebleSum / ((len - midEnd) * 255));
+
+		let totalSum = 0;
+		for (let i = 0; i < len; i++) totalSum += data[i]!;
+		const overall = Math.min(1.0, totalSum / (len * 255));
+
+		return {
+			bass: Math.round(bass * 100) / 100,
+			mid: Math.round(mid * 100) / 100,
+			treble: Math.round(treble * 100) / 100,
+			overall: Math.round(overall * 100) / 100,
+		};
+	}
+
+	/**
+	 * Returns the internal Web Audio AnalyserNode.
+	 */
+	getAnalyserNode(): AnalyserNode | null {
+		return this.analyserNode;
+	}
+
+	/**
 	 * Disposes audio context and disconnects all nodes.
 	 */
 	async dispose(): Promise<void> {
@@ -331,6 +403,14 @@ export class EqualizerService {
 			} catch {}
 			this.sourceNode = null;
 		}
+
+		if (this.analyserNode) {
+			try {
+				this.analyserNode.disconnect();
+			} catch {}
+			this.analyserNode = null;
+		}
+		this.frequencyDataBuffer = null;
 
 		if (this.audioContext && this.audioContext.state !== "closed") {
 			try {
