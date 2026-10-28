@@ -599,10 +599,12 @@ export class Setting {
 }
 
 export class ItemView {
+	app: App;
 	containerEl: MockElement = new MockElement("div", { cls: "view-container" });
 	contentEl: MockElement = new MockElement("div", { cls: "view-content" });
 
 	constructor(public leaf: any) {
+		this.app = leaf?.app;
 		this.containerEl.appendChild(this.contentEl);
 	}
 

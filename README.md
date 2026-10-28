@@ -4,7 +4,7 @@
         <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.0.0-7f6df2?logo=obsidian" alt="Version 2.0.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-672%20passed-brightgreen" alt="Tests: 672 passed">
+        <img src="https://img.shields.io/badge/tests-675%20passed-brightgreen" alt="Tests: 675 passed">
         <img src="https://img.shields.io/badge/coverage-98.32%25-brightgreen" alt="Coverage: 98.32%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
@@ -22,7 +22,7 @@
 
 | Feature / Capability | Upstream (`TracingOrigins`) | Liber Music Player (`v2.0.0`) | Architectural & User Impact |
 |:---|:---:|:---:|:---|
-| **Automated Testing & CI** | ❌ **0 tests (0% coverage)** | ✅ **672 tests across 79 suites (98.32% lines, 85.33% branches)** | Strict quality regression gates; every parser, decoder, and state hook is verified in CI. |
+| **Automated Testing & CI** | ❌ **0 tests (0% coverage)** | ✅ **675 tests across 80 suites (98.32% lines, 85.37% branches)** | Strict quality regression gates; every parser, decoder, and state hook is verified in CI. |
 | **iOS / iPadOS OGG Playback** | ❌ Fails (Apple WebKit cannot decode OGG/Opus) | ✅ **100% Codec Parity via inlined WASM Vorbis** | Bypasses WebKit limitations; decodes `.ogg` & `.opus` to WAV Blob URLs on iOS/iPadOS without user re-encoding. |
 | **Audio DSP & Equalizer** | ❌ None (raw browser output only) | ✅ **10-Band Biquad EQ & Gapless Sinusoidal Crossfading** | ISO octave bands (31Hz–16kHz), ±12dB preamp, 7 tuned presets (Harman Target, Bass Boost, etc.), and 0s–10s crossfade. |
 | **Markdown Note Integration** | ❌ None (sidebar only) | ✅ **````music```` Codeblock Player Embeds** | Embed interactive mini-players directly inside Obsidian markdown notes with custom start/end timestamps and lyrics. |
@@ -308,16 +308,10 @@ npm run build
 - **UI Framework**: React 18 & Vanilla CSS Design System
 - **Toolchain**: **Vite+** (`vp`) for next-generation developer tooling
 - **Compiler & Linter**: **Oxc** (`oxc-transform-react` & `vp lint`) for ultra-fast Rust-based parsing, transforms, and linting
-- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 672 passing unit and integration tests across 79 test suites (98.32% line coverage)
+- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 675 passing unit and integration tests across 80 test suites (98.32% line coverage)
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture
-
----
-
-## 🗺️ Strategic Roadmap
-
-For in-depth architecture blueprints, cross-platform hardware evaluation, and completed engineering milestones, see the [Strategic Roadmap](ROADMAP.md).
 
 ---
 

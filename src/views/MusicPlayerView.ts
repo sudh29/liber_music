@@ -179,6 +179,7 @@ export class MusicPlayerView extends ItemView {
 			}
 		);
 		this.listService = new ListService(this.libraryService, this.playlistService, this.plugin);
+		this.snapshotService = new SnapshotService(this.app, this.plugin, this.listService, this.libraryService);
 		this.mediaSessionService = new MediaSessionService({
 			onPlay: () => this.playbackService.togglePlay(),
 			onPause: () => this.playbackService.togglePlay(),
