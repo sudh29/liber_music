@@ -81,22 +81,73 @@ describe("library/updater utilities", () => {
 	it("should clean stale trackIndex entries if any are present before cleanup", async () => {
 		const { app, plugin } = createPlugin();
 		app.vault.createFile("music/song.mp3", new ArrayBuffer(50));
+		plugin.settings.trackIndex = {
+			"stale-id": "music/deleted.mp3",
+		};
 
-		// Mock track metadata
 		vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
 			title: "Song",
 			artist: "Artist",
 		});
 
-		// Spy on saveSettings to inject a stale trackIndex right before cleanup
-		const originalSave = plugin.saveSettings;
-		plugin.saveSettings = vi.fn().mockImplementation(async () => {
-			plugin.settings.trackIndex["stale-unindexed-id"] = "music/deleted.mp3";
-			return originalSave();
+		const count = await rebuildAllData(app, plugin);
+		expect(count).toBe(1);
+		expect(plugin.settings.trackIndex["stale-id"]).toBeUndefined();
+		vi.restoreAllMocks();
+	});
+
+	it("should fall back to full binary read when header binary yields no metadata, and handle batch yielding and errors", async () => {
+		const { app, plugin } = createPlugin();
+
+		// Create 4 files to trigger processed % 4 === 0 event-loop yield
+		for (let i = 1; i <= 4; i++) {
+			app.vault.createFile(`music/track${i}.mp3`, new ArrayBuffer(50));
+		}
+
+		// Mock readAudioFileHeaderBinary to return null for track1, prompting full read
+		const headerSpy = vi.spyOn(metadataModule, "readAudioFileHeaderBinary").mockImplementation(async (_app, file) => {
+			if (file.path === "music/track1.mp3") return null;
+			return new ArrayBuffer(10);
+		});
+
+		const fullReadSpy = vi.spyOn(metadataModule, "readAudioFileBinary").mockResolvedValue(new ArrayBuffer(100));
+
+		vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockImplementation(async (buffer) => {
+			if (buffer.byteLength === 100) {
+				return { title: "From Full Binary", artist: "Artist 1" };
+			}
+			return { title: "From Header", artist: "Header Artist" };
 		});
 
 		const count = await rebuildAllData(app, plugin);
+		expect(count).toBe(4);
+		expect(fullReadSpy).toHaveBeenCalled();
+
+		headerSpy.mockRestore();
+		fullReadSpy.mockRestore();
+		vi.restoreAllMocks();
+	});
+
+	it("should catch inner file processing errors and continue processing remaining files", async () => {
+		const { app, plugin } = createPlugin();
+		app.vault.createFile("music/fail.mp3", new ArrayBuffer(50));
+		app.vault.createFile("music/ok.mp3", new ArrayBuffer(50));
+
+		vi.spyOn(metadataModule, "readAudioFileHeaderBinary").mockImplementation(async (_app, file) => {
+			if (file.path === "music/fail.mp3") {
+				throw new Error("File corrupt");
+			}
+			return new ArrayBuffer(10);
+		});
+
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const count = await rebuildAllData(app, plugin);
 		expect(count).toBe(1);
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Error processing file music/fail.mp3:"),
+			expect.any(Error)
+		);
+		errorSpy.mockRestore();
 		vi.restoreAllMocks();
 	});
 

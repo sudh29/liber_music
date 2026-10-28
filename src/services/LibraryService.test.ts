@@ -579,5 +579,32 @@ describe("LibraryService", () => {
 			expect(trackId).toBeDefined();
 			expect(plugin.settings.tracks[trackId!].lyrics).toBe("[00:02.00]Companion lyric line");
 		});
+
+		it("should initialize trackIndex if undefined when renaming a track", async () => {
+			const { service, app, plugin } = createService();
+			const newFile = createMockTFile("music/new_track.mp3");
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(newFile);
+
+			delete (plugin.settings as any).trackIndex;
+
+			await service.renameTrackInLibrary("music/old_track.mp3", "music/new_track.mp3");
+			expect(plugin.settings.trackIndex).toBeDefined();
+		});
+
+		it("should catch and log error if refreshMusicList throws during handleLibraryUpdated", async () => {
+			const { service } = createService();
+			const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+			vi.spyOn(service, "refreshMusicList").mockImplementation(() => {
+				throw new Error("Disk refresh error");
+			});
+
+			await service.handleLibraryUpdated(new Set());
+			expect(errSpy).toHaveBeenCalledWith(
+				"Error handling library update refresh:",
+				expect.any(Error)
+			);
+			errSpy.mockRestore();
+		});
 	});
 });

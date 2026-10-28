@@ -253,6 +253,75 @@ describe("metadata audio utilities", () => {
 			expect(metadata?.lyricsText).toContain("[00:01.00]Timestamped line 1");
 		});
 
+		it("should group multiple chunks under the same format and tag ID and handle slash rejoining", async () => {
+			const buffer = new ArrayBuffer(100);
+
+			mockParseBuffer.mockResolvedValue({
+				format: {},
+				common: {},
+				native: {
+					"ID3v2.3": [
+						{
+							id: "TXXX:UNSYNCED_LYRICS",
+							value: "First verse chunk",
+						},
+						{
+							id: "TXXX:UNSYNCED_LYRICS",
+							value: "second verse chunk",
+						},
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const metadata = await getEmbeddedAudioMetadataFromBuffer(buffer);
+			expect(metadata?.lyricsText).toBe("First verse chunk/second verse chunk");
+		});
+
+		it("should match lyrics tags by description when id is not an explicit lyrics id", async () => {
+			const buffer = new ArrayBuffer(100);
+
+			mockParseBuffer.mockResolvedValue({
+				format: {},
+				common: {},
+				native: {
+					"ID3v2.3": [
+						// Non-matching tag (COMM) with non-matching description object
+						{
+							id: "COMM",
+							value: { description: "comment", text: "just a comment" },
+						},
+						// Tag with invalid description types to test descriptionFromUnknown
+						{
+							id: "OTHER",
+							value: { description: 123, text: "invalid desc" },
+						},
+						{
+							id: "OTHER2",
+							value: "plain string no desc",
+						},
+						// Empty text tag that should be skipped
+						{
+							id: "USLT",
+							value: "   ",
+						},
+						// Matching by description
+						{
+							id: "TXXX",
+							value: {
+								description: "SubRip Lyrics",
+								text: "[00:03.50]Synchronized via description",
+							},
+						},
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const metadata = await getEmbeddedAudioMetadataFromBuffer(buffer);
+			expect(metadata?.lyricsText).toBe("[00:03.50]Synchronized via description");
+		});
+
 		it("should fall back to common.lyrics if native lyrics tags are absent", async () => {
 			const buffer = new ArrayBuffer(100);
 
@@ -262,6 +331,10 @@ describe("metadata audio utilities", () => {
 					lyrics: [
 						{ text: "Common lyrics line 1" },
 						"Common lyrics line 2",
+						null,
+						123,
+						{ text: 456 },
+						{ other: "no-text" },
 					],
 				},
 				native: {},

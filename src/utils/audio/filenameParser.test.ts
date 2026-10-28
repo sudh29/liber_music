@@ -144,4 +144,18 @@ describe("filenameParser", () => {
 			title: "Disc 1 - In The Flesh",
 		});
 	});
+
+	it("should handle Windows backslash paths and extensionless filenames", () => {
+		const winResult = parseTrackFilename("C:\\Music\\Pink Floyd - Money.mp3");
+		expect(winResult).toEqual({
+			artist: "Pink Floyd",
+			title: "Money",
+		});
+
+		const noExt = parseTrackFilename("Coldplay - Yellow");
+		expect(noExt).toEqual({
+			artist: "Coldplay",
+			title: "Yellow",
+		});
+	});
 });

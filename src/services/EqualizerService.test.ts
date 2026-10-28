@@ -213,4 +213,46 @@ describe("EqualizerService", () => {
 
 		expect(service.getFrequencyData()).toBeNull();
 	});
+
+	it("should expose isEnabled and getCurrentPreset getters and detect named presets", () => {
+		const service = new EqualizerService();
+		expect(service.isEnabled()).toBe(false);
+		expect(service.getCurrentPreset()).toBe("Flat");
+
+		service.setEnabled(true);
+		expect(service.isEnabled()).toBe(true);
+
+		// Set preset to Rock & Metal
+		expect(service.setPreset("Rock & Metal")).toBe(true);
+		expect(service.getCurrentPreset()).toBe("Rock & Metal");
+
+		// Set bands matching Bass Boost preset exactly
+		service.setBands([...EQ_PRESETS["Bass Boost"]!]);
+		expect(service.getCurrentPreset()).toBe("Bass Boost");
+
+		// Custom bands not matching any preset
+		service.setBands([1.2, 3.4, 5.6, 0, 0, 0, 0, 0, 0, 0]);
+		expect(service.getCurrentPreset()).toBe("Custom");
+	});
+
+	it("should handle AudioContext constructor failure gracefully", () => {
+		const origAudioContext = (globalThis as any).AudioContext;
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		(globalThis as any).AudioContext = vi.fn().mockImplementation(() => {
+			throw new Error("Hardware audio context busy");
+		});
+
+		const service = new EqualizerService();
+		const ctx = service.getAudioContext();
+
+		expect(ctx).toBeNull();
+		expect(warnSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Failed to initialize AudioContext"),
+			expect.any(Error)
+		);
+
+		(globalThis as any).AudioContext = origAudioContext;
+		warnSpy.mockRestore();
+	});
 });

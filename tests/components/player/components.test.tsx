@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, fireEvent, screen } from "@testing-library/react";
 import { PlaybackControls } from "@/components/player/PlaybackControls";
 import { formatTime, ProgressBar } from "@/components/player/ProgressBar";
@@ -10,6 +10,9 @@ import { StarRating } from "@/components/player/StarRating";
 import { AlbumCard } from "@/components/player/AlbumCard";
 
 describe("Player Components", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
 	describe("PlaybackControls", () => {
 		it("should render 6 playback buttons and handle clicks including dedicated shuffle", () => {
 			const onTogglePlay = vi.fn();

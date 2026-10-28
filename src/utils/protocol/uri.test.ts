@@ -90,15 +90,23 @@ describe("URI & Protocol Utilities", () => {
 			);
 		});
 
-		it("should fall back to title when lyric text is missing", () => {
-			const link = generateLyricMarkdownLink(
+		it("should fall back to title when lyric text is missing, or just time if neither is given", () => {
+			const linkWithTitle = generateLyricMarkdownLink(
 				"Music/Track.mp3",
 				125,
 				"",
 				"Track Name"
 			);
-			expect(link).toBe(
+			expect(linkWithTitle).toBe(
 				"[Track Name (02:05)](obsidian://music-player?track=Music%2FTrack.mp3&t=125)"
+			);
+
+			const linkTimeOnly = generateLyricMarkdownLink(
+				"Music/Track.mp3",
+				125
+			);
+			expect(linkTimeOnly).toBe(
+				"[02:05](obsidian://music-player?track=Music%2FTrack.mp3&t=125)"
 			);
 		});
 	});
@@ -125,7 +133,7 @@ describe("URI & Protocol Utilities", () => {
 			expect(payload.autoplay).toBe(false);
 		});
 
-		it("should handle alternative parameter names", () => {
+		it("should handle alternative parameter names (path, start)", () => {
 			const payload = parseObsidianMusicProtocol({
 				file: "Audio/Beatles.flac",
 				time: "45",
@@ -134,6 +142,21 @@ describe("URI & Protocol Utilities", () => {
 			expect(payload.track).toBe("Audio/Beatles.flac");
 			expect(payload.time).toBe(45);
 			expect(payload.autoplay).toBe(false);
+
+			const payloadPath = parseObsidianMusicProtocol({
+				path: "Audio/Stones.flac",
+				start: "30",
+			});
+			expect(payloadPath.track).toBe("Audio/Stones.flac");
+			expect(payloadPath.time).toBe(30);
+			expect(payloadPath.autoplay).toBe(true);
+		});
+
+		it("should handle empty or whitespace track safely", () => {
+			const payload = parseObsidianMusicProtocol({
+				track: "   ",
+			});
+			expect(payload.track).toBeUndefined();
 		});
 
 		it("should handle malformed URI decoding by falling back to raw track string", () => {
@@ -147,6 +170,8 @@ describe("URI & Protocol Utilities", () => {
 			expect(parseTimeString("12:abc")).toBe(0);
 			expect(parseTimeString("12:-5")).toBe(0);
 			expect(parseTimeString("01:02:03:04")).toBe(0);
+			expect(parseTimeString(-100)).toBe(0);
+			expect(parseTimeString(NaN)).toBe(0);
 		});
 	});
 });

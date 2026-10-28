@@ -5,6 +5,28 @@ import { StateService } from "./StateService";
 import { AudioService } from "./AudioService";
 import type { ListService, PlaybackService, FavoriteService, PlaylistService } from "./index";
 import type MusicPlayerPlugin from "@/main";
+import { MetadataEditorModal } from "@/components/modal/MetadataEditorModal";
+import { SmartPlaylistModal } from "@/components/modal/SmartPlaylistModal";
+
+vi.mock("@/components/modal/MetadataEditorModal", () => {
+	const MockModal = vi.fn().mockImplementation(function (_app, _plugin, _path, options) {
+		return {
+			open: vi.fn(),
+			options,
+		};
+	});
+	return { MetadataEditorModal: MockModal };
+});
+
+vi.mock("@/components/modal/SmartPlaylistModal", () => {
+	const MockModal = vi.fn().mockImplementation(function (_app, _plugin, options) {
+		return {
+			open: vi.fn(),
+			options,
+		};
+	});
+	return { SmartPlaylistModal: MockModal };
+});
 
 describe("ReactApiService", () => {
 	function createService() {
@@ -199,26 +221,74 @@ describe("ReactApiService", () => {
 
 	it("should open metadata editor modal and trigger smart playlist actions", async () => {
 		const { service, playlistService, callbacks, plugin } = createService();
-		(playlistService as any).deleteSmartPlaylist = vi.fn().mockResolvedValue(true);
+		const mockDeleteSmartPlaylist = vi.fn().mockResolvedValue(true);
+		(playlistService as unknown as { deleteSmartPlaylist: typeof mockDeleteSmartPlaylist }).deleteSmartPlaylist = mockDeleteSmartPlaylist;
 		plugin.settings.smartPlaylists = {
 			"sp1": { id: "sp1", name: "Smart 1", matchType: "all", rules: [] },
 		};
 
 		const api = service.getApi();
 
-		// openMetadataEditor
+		// openMetadataEditor and invoke onSave
 		api.openMetadataEditor("song1.mp3");
+		const metaCalls = (MetadataEditorModal as unknown as { mock: { results: Array<{ value: { open: () => void; options: { onSave?: () => Promise<void> } } }> } }).mock.results;
+		const metaModalInstance = metaCalls[metaCalls.length - 1]?.value;
+		expect(metaModalInstance?.open).toBeDefined();
+		await metaModalInstance?.options.onSave?.();
+		expect(callbacks.onLibraryUpdated).toHaveBeenCalledTimes(1);
 
-		// createSmartPlaylist
+		// createSmartPlaylist and invoke onSave
 		await api.createSmartPlaylist();
+		const smartCalls = (SmartPlaylistModal as unknown as { mock: { results: Array<{ value: { open: () => void; options: { onSave?: () => Promise<void> } } }> } }).mock.results;
+		const createSmartInstance = smartCalls[smartCalls.length - 1]?.value;
+		expect(createSmartInstance?.open).toBeDefined();
+		await createSmartInstance?.options.onSave?.();
+		expect(callbacks.onLibraryUpdated).toHaveBeenCalledTimes(2);
 
-		// editSmartPlaylist
+		// editSmartPlaylist and invoke onSave
 		await api.editSmartPlaylist("sp1");
+		const editSmartInstance = smartCalls[smartCalls.length - 1]?.value;
+		await editSmartInstance?.options.onSave?.();
+		expect(callbacks.onLibraryUpdated).toHaveBeenCalledTimes(3);
 
-		// deleteSmartPlaylist
+		// editSmartPlaylist with nonexistent id should return early
+		const countBefore = smartCalls.length;
+		await api.editSmartPlaylist("nonexistent-id");
+		expect(smartCalls.length).toBe(countBefore);
+
+		// deleteSmartPlaylist returning false
+		mockDeleteSmartPlaylist.mockResolvedValueOnce(false);
 		await api.deleteSmartPlaylist("sp1");
-		expect((playlistService as any).deleteSmartPlaylist).toHaveBeenCalledWith("sp1");
-		expect(callbacks.onLibraryUpdated).toHaveBeenCalled();
+		expect(callbacks.onLibraryUpdated).toHaveBeenCalledTimes(3);
+
+		// deleteSmartPlaylist returning true
+		mockDeleteSmartPlaylist.mockResolvedValueOnce(true);
+		await api.deleteSmartPlaylist("sp1");
+		expect(mockDeleteSmartPlaylist).toHaveBeenCalledWith("sp1");
+		expect(callbacks.onLibraryUpdated).toHaveBeenCalledTimes(4);
+	});
+
+	it("should return fallback volume and playbackRate when audio element is absent or has default values", () => {
+		const { service, stateService, audioService } = createService();
+		const api = service.getApi();
+
+		// When audio element has values
+		const mockAudioEl = { volume: 0.75, playbackRate: 1.25 } as unknown as HTMLAudioElement;
+		vi.spyOn(audioService, "getAudioElement").mockReturnValue(mockAudioEl);
+		expect(api.getVolume()).toBe(0.75);
+		expect(api.getPlaybackRate()).toBe(1.25);
+
+		// When audio element is null, fallback to stateService or 1.0
+		vi.spyOn(audioService, "getAudioElement").mockReturnValue(null);
+		stateService.setVolume(0.6);
+		stateService.setPlaybackRate(1.5);
+		expect(api.getVolume()).toBe(0.6);
+		expect(api.getPlaybackRate()).toBe(1.5);
+
+		// When stateService properties are null / undefined
+		vi.spyOn(stateService, "getState").mockReturnValue({} as any);
+		expect(api.getVolume()).toBe(1.0);
+		expect(api.getPlaybackRate()).toBe(1.0);
 	});
 });
 

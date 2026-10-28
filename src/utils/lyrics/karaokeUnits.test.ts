@@ -51,6 +51,30 @@ describe("lyrics/karaokeUnits", () => {
 		expect(units).toHaveLength(1);
 		expect(units[0]?.text).toBe("don't");
 		expect(units[0]?.charTime).toBe(2.0);
+
+		// "state-of-the-art"
+		const hyphenChars: ExtendedLyricChar[] = "state-of-the-art".split("").map((char, i) => ({
+			char,
+			time: 3.0 + i * 0.1,
+		}));
+		const hyphenUnits = buildKaraokeUnits(hyphenChars, { lineTimeStamps: 3.0 });
+		expect(hyphenUnits).toHaveLength(1);
+		expect(hyphenUnits[0]?.text).toBe("state-of-the-art");
+	});
+
+	it("should not merge apostrophe or hyphen if not surrounded by alphanumeric characters", () => {
+		// "-rock-" with spaces or edges
+		const chars: ExtendedLyricChar[] = [
+			{ char: "-", time: 1.0 },
+			{ char: "r", time: 1.1 },
+			{ char: "o", time: 1.2 },
+			{ char: "c", time: 1.3 },
+			{ char: "k", time: 1.4 },
+			{ char: "-", time: 1.5 },
+			{ char: " ", time: 1.6 },
+		];
+		const units = buildKaraokeUnits(chars, { lineTimeStamps: 1.0 });
+		expect(units.map((u) => u.text)).toEqual(["-", "rock", "-", " "]);
 	});
 
 	it("should handle mixed CJK and Latin sentences", () => {
@@ -69,5 +93,33 @@ describe("lyrics/karaokeUnits", () => {
 		const chars: ExtendedLyricChar[] = [{ char: "A", time: 5.0 }];
 		const units = buildKaraokeUnits(chars, { lineTimeStamps: 5.0 });
 		expect(units[0]?.charEndTime).toBeCloseTo(5.12, 2);
+
+		// Standalone punctuation fallback
+		const punctChars: ExtendedLyricChar[] = [{ char: "!", time: 6.0 }];
+		const punctUnits = buildKaraokeUnits(punctChars, { lineTimeStamps: 6.0 });
+		expect(punctUnits[0]?.text).toBe("!");
+		expect(punctUnits[0]?.charEndTime).toBeCloseTo(6.12, 2);
+
+		// Trailing apostrophe: "rock'" followed by nothing or space
+		const trailingChars: ExtendedLyricChar[] = [
+			{ char: "r", time: 7.0 },
+			{ char: "o", time: 7.1 },
+			{ char: "c", time: 7.2 },
+			{ char: "k", time: 7.3 },
+			{ char: "'", time: 7.4 },
+		];
+		const trailingUnits = buildKaraokeUnits(trailingChars, { lineTimeStamps: 7.0 });
+		expect(trailingUnits.map((u) => u.text)).toEqual(["rock", "'"]);
+
+		// Apostrophe followed by space: "it' s"
+		const spacedChars: ExtendedLyricChar[] = [
+			{ char: "i", time: 8.0 },
+			{ char: "t", time: 8.1 },
+			{ char: "'", time: 8.2 },
+			{ char: " ", time: 8.3 },
+			{ char: "s", time: 8.4 },
+		];
+		const spacedUnits = buildKaraokeUnits(spacedChars, { lineTimeStamps: 8.0 });
+		expect(spacedUnits.map((u) => u.text)).toEqual(["it", "'", " ", "s"]);
 	});
 });

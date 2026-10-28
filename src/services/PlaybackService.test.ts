@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { App, TFile } from "obsidian";
+import { App, Platform, TFile } from "obsidian";
 import { PlaybackService } from "./PlaybackService";
 import { StateService } from "./StateService";
 import { AudioService } from "./AudioService";
@@ -533,6 +533,123 @@ describe("PlaybackService", () => {
 			expect.stringContaining("Error during repeat play"),
 			expect.any(Error)
 		);
+		errSpy.mockRestore();
+	});
+
+	it("should play track 0 when togglePlay is called with no active audio element or track", async () => {
+		stateService.setCurrentTrack(null, -1);
+		vi.spyOn(audioService, "getAudioElement").mockReturnValue(null);
+		const playSpy = vi.spyOn(playbackService, "playTrack").mockResolvedValue();
+
+		await playbackService.togglePlay();
+		expect(playSpy).toHaveBeenCalledWith(0);
+
+		// If trackList is empty
+		stateService.setTrackList([]);
+		playSpy.mockClear();
+		await playbackService.togglePlay();
+		expect(playSpy).not.toHaveBeenCalled();
+	});
+
+	it("should catch non-AbortError in playTrack autoPlay and invoke handlePlaybackError", async () => {
+		const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(audioService, "play").mockRejectedValue(new Error("Media decode error"));
+
+		await playbackService.playTrack(0, true);
+		expect(errSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Playback failure on track1.mp3"),
+			null
+		);
+		errSpy.mockRestore();
+	});
+
+	it("should restore last played track matching autoPlayOpenTrackPath and handle autoPlay false", async () => {
+		plugin.settings.autoPlayOpenTrackPath = "track2.mp3";
+		const playSpy = vi.spyOn(playbackService, "playTrack").mockResolvedValue();
+
+		await playbackService.restoreLastPlayedTrack(false);
+		expect(playSpy).toHaveBeenCalledWith(1, false, undefined, undefined, false);
+
+		// Empty track list
+		stateService.setTrackList([]);
+		playSpy.mockClear();
+		await playbackService.restoreLastPlayedTrack(true);
+		expect(playSpy).not.toHaveBeenCalled();
+	});
+
+	it("should handle setTrackRating clamped values and deletion on rating 0", async () => {
+		await playbackService.setTrackRating("track1.mp3", 6); // Clamped to 5
+		expect(plugin.settings.ratings?.["track1.mp3"]).toBe(5);
+
+		await playbackService.setTrackRating("track1.mp3", 0); // Deletion
+		expect(plugin.settings.ratings?.["track1.mp3"]).toBeUndefined();
+	});
+
+	it("should seekToTime accurately and ignore non-finite or empty durations", () => {
+		const audioEl = audioService.getAudioElement();
+		expect(audioEl).toBeDefined();
+		if (!audioEl) return;
+
+		// Normal duration
+		Object.defineProperty(audioEl, "duration", { value: 200, configurable: true });
+		playbackService.seekToTime(50);
+		expect(audioEl.currentTime).toBe(50);
+
+		// Clamped to bounds
+		playbackService.seekToTime(-10);
+		expect(audioEl.currentTime).toBe(0);
+		playbackService.seekToTime(300);
+		expect(audioEl.currentTime).toBe(200);
+
+		// Non-finite duration should be ignored
+		Object.defineProperty(audioEl, "duration", { value: Number.NaN, configurable: true });
+		playbackService.seekToTime(80);
+		expect(audioEl.currentTime).toBe(200);
+	});
+
+	it("should expose equalizer and crossfade service getters and duration setter", () => {
+		const mockEq = {} as any;
+		const mockCrossfade = { setDuration: vi.fn() } as any;
+		const service = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{},
+			undefined,
+			undefined,
+			undefined,
+			mockEq,
+			mockCrossfade
+		);
+
+		expect(service.getEqualizerService()).toBe(mockEq);
+		expect(service.getCrossfadeService()).toBe(mockCrossfade);
+
+		service.setCrossfadeDuration(4);
+		expect(mockCrossfade.setDuration).toHaveBeenCalledWith(4);
+	});
+
+	it("should display iOS OGG unsupported notice when WASM Vorbis decoder is disabled", async () => {
+		const oggFile = new TFile();
+		oggFile.path = "audio.ogg";
+		(oggFile as any).extension = "ogg";
+		(oggFile as any).basename = "audio";
+
+		const origIos = Platform.isIosApp;
+		(Platform as any).isIosApp = true;
+		plugin.settings.enableWasmVorbisDecoder = false;
+
+		const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		(playbackService as any).handlePlaybackError(null, oggFile);
+
+		expect(errSpy).toHaveBeenCalledWith("Playback failure on audio.ogg:", null);
+
+		(Platform as any).isIosApp = origIos;
+		plugin.settings.enableWasmVorbisDecoder = true;
 		errSpy.mockRestore();
 	});
 });

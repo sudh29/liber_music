@@ -452,22 +452,15 @@ export class LibraryService {
 				return;
 			}
 
-			// 2. Resolve track ID
+			// 2. Ensure trackIndex exists and resolve track ID
+			if (!this.plugin.settings.trackIndex) {
+				this.plugin.settings.trackIndex = {};
+			}
 			const trackId = getOrCreateTrackId(oldPath, this.plugin.settings);
 			
 			// 3. Update trackIndex path mapping
-			if (this.plugin.settings.trackIndex && this.plugin.settings.trackIndex[trackId]) {
-				this.plugin.settings.trackIndex[trackId] = newPath;
-				console.debug(`Updated path mapping: ${oldPath} -> ${newPath} (ID: ${trackId})`);
-			} else {
-				const newTrackId = getOrCreateTrackId(newPath, this.plugin.settings);
-				const oldTrackData = this.plugin.settings.tracks?.[trackId];
-				if (oldTrackData) {
-					this.plugin.settings.tracks[newTrackId] = oldTrackData;
-					delete this.plugin.settings.tracks[trackId];
-					this.updateTrackIdReferences(trackId, newTrackId);
-				}
-			}
+			this.plugin.settings.trackIndex[trackId] = newPath;
+			console.debug(`Updated path mapping: ${oldPath} -> ${newPath} (ID: ${trackId})`);
 
 			// 4. Regenerate artists and albums
 			const { artists, albums } = generateArtistsAndAlbums(this.plugin.settings);

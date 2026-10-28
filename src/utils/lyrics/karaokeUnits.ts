@@ -68,8 +68,7 @@ export function buildKaraokeUnits(
 			const charTime = chars[start]?.time ?? 0;
 			const lastChar = chars[last];
 			const charEndTime =
-				(last !== undefined ? ends[last] : undefined) ??
-				(lastChar?.time ?? charTime) + 0.12;
+				ends[last] ?? (lastChar?.time ?? charTime) + 0.12;
 			units.push({ text, charTime, charEndTime });
 			i = j;
 		} else {

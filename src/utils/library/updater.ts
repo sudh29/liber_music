@@ -156,7 +156,7 @@ export async function rebuildAllData(
 
 				// Yield to event loop periodically to allow mobile browser GC to reclaim ArrayBuffers
 				if (processed % 4 === 0) {
-					await new Promise((resolve) => window.setTimeout(resolve, 0));
+					await new Promise((resolve) => setTimeout(resolve, 0));
 				}
 			} catch (error) {
 				console.error(`Error processing file ${file.path}:`, error);
