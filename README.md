@@ -1,11 +1,11 @@
 <div align="center">
     <h1>Liber Music Player Plugin for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.3.8-7f6df2?logo=obsidian" alt="Version 1.3.8"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.4.0-7f6df2?logo=obsidian" alt="Version 1.4.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-350%20passed-brightgreen" alt="Tests: 350 passed">
-        <img src="https://img.shields.io/badge/coverage-92.7%25-brightgreen" alt="Coverage: 92.7%">
+        <img src="https://img.shields.io/badge/tests-398%20passed-brightgreen" alt="Tests: 398 passed">
+        <img src="https://img.shields.io/badge/coverage-92.31%25-brightgreen" alt="Coverage: 92.31%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -57,6 +57,27 @@
 - **File System Watchers**: Listens to vault file creation, deletion, rename, and move events in real time.
 - **Consistency Verification**: Automatically compares the cached index against vault contents on startup.
 - **Visual Reindex Indicator**: An unobtrusive dot notification on the Rebuild button indicates index drift, enabling clean one-click cache reconstruction.
+
+### 📝 PKM & Note Deep Integration (v1.4.0)
+- **Interactive Markdown Codeblock Player**: Embed lightweight, self-contained music players directly inside notes using ````music```` codeblocks. Supports start/end timestamps, custom lyrics display, and compact or card layouts:
+  ````markdown
+  ```music
+  track: "Music/Classical/Chopin - Nocturne Op. 9.mp3"
+  start: "01:23"
+  end: "03:45"
+  showLyrics: true
+  compact: false
+  autoplay: false
+  ```
+  ````
+- **Timestamped Lyric Citations & URI Deep-Linking**:
+  - Hover or tap any line in the full lyric view to reveal the **Copy Timestamp Link** button (`🔗`).
+  - Generates markdown citation links: `[01:23 — "Lyric text"](obsidian://music-player?track=...&t=83)`.
+  - Clicking this link anywhere in Obsidian activates the sidebar player, loads the track, and jumps directly to that timestamp.
+- **Daily Notes Listening History Scrobbler**:
+  - Automatically records completed tracks (>70% listened) to your active Daily Note journal under a configurable heading (e.g. `## 🎧 Music Log`).
+  - Maintains an offline, persistent audit ledger in `.obsidian/plugins/liber-music-player-plugin/history.json`.
+- **Single-Source Audio Coordination**: Playing an in-note snippet automatically pauses sidebar playback and vice versa to eliminate conflicting audio streams.
 
 ---
 
@@ -123,6 +144,9 @@ Word timestamps are enclosed within `<mm:ss.xx>` tags following the line timesta
 - **Music Folder Path**: Specify a dedicated vault subfolder (e.g. `Music/` or `Media/Audio`) to scan. Leaving this empty scans the entire vault.
 - **Autoplay on Launch**: Automatically resume or start the first track when the player view opens.
 - **Autoplay Track**: Pick a specific track to start on launch.
+- **Record listening history to Daily Notes**: Automatically logs completed listening sessions to your daily note journal.
+- **Daily Notes Section Heading**: Heading title under which song logs are appended (default: `## 🎧 Music Log`).
+- **Keep Screen Awake**: Toggle Screen Wake Lock API to prevent device sleep during synchronized karaoke lyric tracking.
 
 ---
 
@@ -160,7 +184,7 @@ npm run build
 - **UI Framework**: React 18 & Vanilla CSS Design System
 - **Toolchain**: **Vite+** (`vp`) for next-generation developer tooling
 - **Compiler & Linter**: **Oxc** (`oxc-transform-react` & `vp lint`) for ultra-fast Rust-based parsing, transforms, and linting
-- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 350 passing unit and E2E tests (92.7% line coverage)
+- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 398 passing unit and E2E tests across 51 test suites (92.31% line coverage)
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture

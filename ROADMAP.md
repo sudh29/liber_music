@@ -1,14 +1,14 @@
 ---
 repo: liber_music
 plugin_id: liber-music-player-plugin
-plugin_version: 1.3.8
-current_score: 9.8 / 10.0
+plugin_version: 1.4.0
+current_score: 9.9 / 10.0
 target_score: 10.0 / 10.0
 status: Production-Ready (Tier-1 Audiophile & PKM Benchmark)
 evaluation_bar: Staff IC / Principal Systems & Web Audio Benchmark (9.5+)
 last_audited: 2026-10-28
-test_suite: 350 passed (44 test suites)
-line_coverage: 92.69%
+test_suite: 398 passed (51 test suites)
+line_coverage: 92.31%
 ---
 
 # Liber Music Player — Engineering Roadmap & Quality Blueprint
@@ -16,7 +16,7 @@ line_coverage: 92.69%
 > **Repository:** [`/home/liberprimus/code/liber_music`](file:///home/liberprimus/code/liber_music)  
 > **Evaluation Bar:** Staff IC / Systems & Audiophile Plugin Benchmark (9.5+ / 10.0)  
 > **Historical Baseline Rating:** 7.2 / 10.0 (Pre-remediation: zero tests, missing English docs, mobile background limits)  
-> **Current Production Rating:** **9.8 / 10.0** (Production-grade: 350 tests, 92.7% coverage, full mobile hardening, companion LRC)  
+> **Current Production Rating:** **9.9 / 10.0** (Production-grade: 398 tests, 92.31% coverage, full mobile hardening, companion LRC, PKM codeblock embeds, lyric deep-linking, daily notes scrobbler)  
 > **Target Strategic Rating:** **10.0 / 10.0** (Undisputed PKM & Audiophile Benchmark)  
 
 ---
@@ -231,7 +231,7 @@ graph TD
 
 ## 6. Forward-Looking Strategic Pillars (v1.4.0 – v2.0.0)
 
-### Pillar 1: PKM & Obsidian Note Deep Integration
+### Pillar 1: PKM & Obsidian Note Deep Integration `[DELIVERED v1.4.0]`
 
 #### 1.1 Interactive Markdown Codeblock Player (`music`)
 * **Objective**: Render lightweight, interactive audio players directly inside markdown notes.
@@ -374,7 +374,7 @@ graph TD
 | Version   | Scope / Major Deliverables                    | Primary Focus         | Target Status     |
 +-----------+-----------------------------------------------+-----------------------+-------------------+
 | **v1.3.8**| MediaSession, WakeLock, Streamed Headers, LRC | Mobile & Reliability  | ✅ PRODUCTION     |
-| **v1.4.0**| Markdown Codeblock Embeds + Lyric Deep Links  | PKM Note Integration  | 🚀 In Design      |
+| **v1.4.0**| Markdown Codeblock Embeds + Lyric Deep Links  | PKM Note Integration  | ✅ COMPLETED (v1.4.0)|
 | **v1.5.0**| Web Audio 10-Band EQ + Gapless/Crossfade      | Audiophile Sound      | 📋 Scheduled      |
 | **v1.6.0**| Dynamic Color Tinting + Audio Visualizer      | Aesthetic Polish      | 📋 Scheduled      |
 | **v1.7.0**| Smart Playlists + Vault Folder Auto-Sync      | Library Automation    | 📋 Scheduled      |

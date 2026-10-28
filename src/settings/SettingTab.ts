@@ -62,6 +62,24 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 					type: 'toggle',
 				},
 			},
+			{
+				name: t('settings.dailyNotesScrobbler.name'),
+				desc: t('settings.dailyNotesScrobbler.desc'),
+				control: {
+					key: 'dailyNotesScrobbler',
+					type: 'toggle',
+				},
+			},
+			{
+				name: t('settings.dailyNotesHeading.name'),
+				desc: t('settings.dailyNotesHeading.desc'),
+				visible: () => this.plugin.settings.dailyNotesScrobbler ?? false,
+				control: {
+					key: 'dailyNotesHeading',
+					type: 'text',
+					placeholder: '## 🎧 Music Log',
+				},
+			},
 		];
 	}
 }

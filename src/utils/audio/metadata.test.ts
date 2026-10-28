@@ -41,8 +41,8 @@ describe("metadata audio utilities", () => {
 		vi.clearAllMocks();
 	});
 
-	it("should define METADATA_HEADER_CHUNK_SIZE as 256KB", () => {
-		expect(METADATA_HEADER_CHUNK_SIZE).toBe(256 * 1024);
+	it("should define METADATA_HEADER_CHUNK_SIZE as 512KB", () => {
+		expect(METADATA_HEADER_CHUNK_SIZE).toBe(512 * 1024);
 	});
 
 	describe("readAudioFileBinary", () => {

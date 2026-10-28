@@ -251,6 +251,8 @@ export function PlayPage({
 						onSeek={handleSeekToTime}
 						scrollRef={scrollRef}
 						lineRefs={lineRefs}
+						currentPath={currentPath}
+						trackTitle={title}
 					/>
 				) : (
 					<LyricsFull
@@ -261,6 +263,8 @@ export function PlayPage({
 						onSeek={handleSeekToTime}
 						scrollRef={scrollRef}
 						lineRefs={lineRefs}
+						currentPath={currentPath}
+						trackTitle={title}
 					/>
 				)}
 			</div>

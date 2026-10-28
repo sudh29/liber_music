@@ -19,6 +19,7 @@ import { type CurrentList, ListService } from "./ListService";
 import { SnapshotService } from "./SnapshotService";
 import { MediaSessionService } from "./MediaSessionService";
 import { WakeLockService } from "./WakeLockService";
+import { ScrobblerService } from "./ScrobblerService";
 import { findTrackIndexInGlobalList, getNextIndex, getPreviousIndex, handleTrackEnd } from "@/utils/playback/control";
 import { ShuffleManager } from "@/utils/playback/shuffle";
 import { ANIMATION_TIMINGS } from "@/constants/ui";
@@ -92,7 +93,8 @@ export class PlaybackService {
 		private snapshotService: SnapshotService,
 		private callbacks: PlaybackCallbacks = {},
 		private mediaSessionService?: MediaSessionService,
-		private wakeLockService?: WakeLockService
+		private wakeLockService?: WakeLockService,
+		private scrobblerService?: ScrobblerService
 	) {}
 
 	/**
@@ -466,6 +468,16 @@ export class PlaybackService {
 		this.lastHandleTrackEndAt = now;
 
 		const state = this.stateService.getState();
+
+		// Record finished listening session to Daily Notes and offline history
+		if (state.currentTrack) {
+			const trackPath = state.currentTrack.path;
+			const trackInfo = this.plugin.settings.tracks?.[trackPath];
+			const audioEl = this.audioService.getAudioElement();
+			const duration = audioEl?.duration;
+			void this.scrobblerService?.scrobbleTrack(state.currentTrack, trackInfo, duration, duration);
+		}
+
 		const { list } = this.listService.getCurrentPlaylistForTrack(
 			state.currentTrack,
 			state.currentList,

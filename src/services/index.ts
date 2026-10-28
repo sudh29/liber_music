@@ -26,5 +26,6 @@ export { ListenerService } from "./ListenerService";
 export { MediaSessionService } from "./MediaSessionService";
 export type { MediaSessionCallbacks } from "./MediaSessionService";
 export { WakeLockService } from "./WakeLockService";
+export { ScrobblerService } from "./ScrobblerService";
 export type { ReactApi } from "@/types";
 

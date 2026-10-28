@@ -75,6 +75,10 @@ export interface MusicPlayerSettings {
 	ratings?: Record<string, number>;
 	/** Whether to prevent display sleep via Screen Wake Lock while audio is playing */
 	keepScreenAwake?: boolean;
+	/** Whether to record finished listening history to Daily Notes */
+	dailyNotesScrobbler?: boolean;
+	/** Daily note section/heading to append tracks under (default: "## 🎧 Music Log") */
+	dailyNotesHeading?: string;
 }
 
 /**
@@ -96,4 +100,6 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	artworkDisplayMode: 'vinyl', // Default: classic vinyl mode
 	ratings: {},               // Default: no ratings
 	keepScreenAwake: false,     // Default: do not keep screen awake
+	dailyNotesScrobbler: false, // Default: do not record to Daily Notes
+	dailyNotesHeading: '## 🎧 Music Log', // Default heading in Daily Notes
 };

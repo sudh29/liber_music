@@ -15,7 +15,7 @@ import MusicPlayerPlugin from "@/main";
 import { KeyboardShortcutHandler, setupKeyboardShortcuts } from "@/utils/keyboard/shortcuts";
 import { QueueModal, TrackSearchModal } from "@/components";
 import type { ReactLibrarySnapshot, ReactPlaybackSnapshot } from "@/types";
-import { AssetService, AudioService, FavoriteService, LibraryService, ListenerService, ListService, LyricsService, MediaSessionService, PlaybackService, PlaylistService, ReactApiService, SnapshotService, StateService, ViewSetupService, WakeLockService } from "@/services";
+import { AssetService, AudioService, FavoriteService, LibraryService, ListenerService, ListService, LyricsService, MediaSessionService, PlaybackService, PlaylistService, ReactApiService, ScrobblerService, SnapshotService, StateService, ViewSetupService, WakeLockService } from "@/services";
 import { togglePlayMode } from "@/utils/playback/control";
 import type { ReactApi } from "@/types";
 import { t, tWithParams } from "@/utils/i18n/i18n";
@@ -61,13 +61,14 @@ export class MusicPlayerView extends ItemView {
 	private audioService: AudioService;
 	private listService: ListService;
 	private snapshotService: SnapshotService;
-	private playbackService: PlaybackService;
+	public playbackService: PlaybackService;
 	private assetService: AssetService;
 	private viewSetupService: ViewSetupService;
 	private reactApiService: ReactApiService;
 	private listenerService: ListenerService;
 	private mediaSessionService?: MediaSessionService;
 	private wakeLockService?: WakeLockService;
+	private scrobblerService?: ScrobblerService;
 	private keyboardShortcuts?: KeyboardShortcutHandler;
 	private libraryUpdateListeners: Set<() => void> = new Set();
 	private reactRoot: Root | null = null;
@@ -172,6 +173,7 @@ export class MusicPlayerView extends ItemView {
 		});
 		this.wakeLockService = new WakeLockService();
 		this.wakeLockService.setEnabled(this.plugin.settings.keepScreenAwake ?? false);
+		this.scrobblerService = new ScrobblerService(this.app, this.plugin);
 
 		this.playbackService = new PlaybackService(
 			this.plugin,
@@ -188,7 +190,8 @@ export class MusicPlayerView extends ItemView {
 				},
 			},
 			this.mediaSessionService,
-			this.wakeLockService
+			this.wakeLockService,
+			this.scrobblerService
 		);
 		this.assetService = new AssetService(this.app, this.plugin);
 		this.viewSetupService = new ViewSetupService(this.app);

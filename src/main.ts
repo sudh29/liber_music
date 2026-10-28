@@ -12,7 +12,7 @@
 import { initBufferPolyfill } from "./utils/polyfills/buffer";
 initBufferPolyfill();
 
-import { Plugin } from 'obsidian';
+import { Notice, Plugin } from 'obsidian';
 import { MusicPlayerView, VIEW_TYPE_MUSIC_PLAYER } from './views/MusicPlayerView';
 import { generateArtistsAndAlbums } from './utils/data/transform';
 import { getTrackPath } from './utils/track/id';
@@ -20,6 +20,10 @@ import { MusicPlayerSettingTab } from './settings/SettingTab';
 import type { MusicPlayerSettings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { t } from './utils/i18n/i18n';
+import { MusicCodeblockRenderChild } from './components/codeblock/MusicCodeblockRenderChild';
+import { parseObsidianMusicProtocol } from './utils/protocol/uri';
+import { resolveVaultAudioFile } from './utils/codeblock/resolver';
+import { codeblockCoordinator } from './utils/codeblock/coordinator';
 
 /**
  * Playback modes:
@@ -75,6 +79,22 @@ export default class MusicPlayerPlugin extends Plugin {
 
 		// Add settings tab
 		this.addSettingTab(new MusicPlayerSettingTab(this.app, this));
+
+		// Register markdown codeblock processor: ```music
+		this.registerMarkdownCodeBlockProcessor('music', (source, el, ctx) => {
+			const child = new MusicCodeblockRenderChild(el, this, source);
+			ctx.addChild(child);
+		});
+
+		// Register obsidian protocol handler: obsidian://music-player?track=...&t=...
+		this.registerObsidianProtocolHandler('music-player', (params) => {
+			void this.handleProtocolAction(params);
+		});
+
+		// Coordinate single-source playback between in-note codeblocks and sidebar player
+		codeblockCoordinator.setGlobalPauseCallback(() => {
+			this.pauseActivePlayback();
+		});
 	}
 
 	/**
@@ -184,6 +204,63 @@ export default class MusicPlayerPlugin extends Plugin {
 
 		if (typeof setting.openTabById === "function") {
 			await setting.openTabById(this.manifest.id);
+		}
+	}
+
+	/**
+	 * Gets the active MusicPlayerView instance from workspace leaves, if open.
+	 */
+	getView(): MusicPlayerView | null {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MUSIC_PLAYER);
+		const firstLeaf = leaves[0];
+		if (firstLeaf && firstLeaf.view instanceof MusicPlayerView) {
+			return firstLeaf.view;
+		}
+		return null;
+	}
+
+	/**
+	 * Pauses active playback in the sidebar player view.
+	 */
+	pauseActivePlayback(): void {
+		const view = this.getView();
+		if (view && view.isPlaying) {
+			void view.playbackService.togglePlay();
+		}
+	}
+
+	/**
+	 * Handles obsidian://music-player protocol deep links
+	 */
+	async handleProtocolAction(params: Record<string, string>): Promise<void> {
+		const payload = parseObsidianMusicProtocol(params);
+
+		// Activate/reveal the sidebar player view
+		await this.activateView();
+
+		if (!payload.track) {
+			return;
+		}
+
+		const file = resolveVaultAudioFile(this.app, payload.track, this.settings.trackIndex);
+		if (!file) {
+			new Notice(t('notice.trackMissing'));
+			return;
+		}
+
+		const view = this.getView();
+		if (!view) {
+			return;
+		}
+
+		await view.playbackService.playByPath(file.path, false, false);
+
+		if (payload.time !== undefined && payload.time > 0) {
+			view.playbackService.seekToTime(payload.time);
+		}
+
+		if (!payload.autoplay && view.isPlaying) {
+			await view.playbackService.togglePlay();
 		}
 	}
 }

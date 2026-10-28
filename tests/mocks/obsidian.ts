@@ -507,6 +507,8 @@ export class Plugin {
 	registerEvent(_ref: any): void {}
 	registerDomEvent(_el: any, _type: string, _cb: any): void {}
 	registerInterval(_id: any): void {}
+	registerMarkdownCodeBlockProcessor(_language: string, _handler: any): void {}
+	registerObsidianProtocolHandler(_action: string, _handler: any): void {}
 }
 
 export class PluginSettingTab {
@@ -625,6 +627,37 @@ export function normalizePath(path: string): string {
 export function setIcon(el: any, iconId: string): void {
 	if (el) {
 		el.setAttribute?.("data-icon", iconId);
+	}
+}
+
+export class Component {
+	load(): void {
+		void this.onload();
+	}
+	onload(): Promise<void> | void {}
+	unload(): void {
+		this.onunload();
+	}
+	onunload(): void {}
+	addChild<T extends Component>(child: T): T {
+		return child;
+	}
+	removeChild<T extends Component>(child: T): T {
+		return child;
+	}
+	register(cb: () => any): void {}
+	registerEvent(eventRef: any): void {}
+	registerDomEvent(el: any, type: string, callback: any): void {}
+	registerInterval(id: number): number {
+		return id;
+	}
+}
+
+export class MarkdownRenderChild extends Component {
+	containerEl: HTMLElement;
+	constructor(containerEl: HTMLElement) {
+		super();
+		this.containerEl = containerEl;
 	}
 }
 

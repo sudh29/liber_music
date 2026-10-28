@@ -100,6 +100,26 @@ export async function getTrackCover(
 		}
 	}
 
+	// Priority 2.5: Vault assets cover cache (_assets/covers/<genre>/...)
+	const pathParts = trackFile.path.split("/");
+	if (pathParts.length >= 3 && pathParts[0] === "music") {
+		const genre = pathParts[1];
+		for (const extWithDot of IMAGE_EXTENSIONS) {
+			const ext = extWithDot.startsWith(".") ? extWithDot.slice(1) : extWithDot;
+			const assetPaths = [
+				`music/_assets/covers/${genre}/${trackNameWithoutExt}.${ext}`,
+				`music/_assets/covers/${genre}/cover.${ext}`,
+			];
+			for (const ap of assetPaths) {
+				const f = app.vault.getAbstractFileByPath(ap);
+				if (f && f instanceof TFile) {
+					const url = await imageFileToUrl(app, f);
+					if (url) return url;
+				}
+			}
+		}
+	}
+
 	// Priority 3: Embedded metadata artwork
 	if (!includeEmbedded) return undefined;
 	return await getEmbeddedCoverFromFile(app, trackFile);

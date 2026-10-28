@@ -8,9 +8,11 @@
  */
 
 import React from "react";
+import { Notice } from "obsidian";
 import "./LyricsFull.css";
 import type { LyricLine } from "@/utils/lyrics/parser";
 import { t } from "@/utils/i18n/i18n";
+import { generateLyricMarkdownLink } from "@/utils/protocol/uri";
 
 /**
  * Props interface for LyricsFull component
@@ -30,6 +32,10 @@ export interface LyricsFullProps {
 	scrollRef: React.RefObject<HTMLDivElement>;
 	/** Array of line refs for scroll targeting */
 	lineRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
+	/** Current playing track path (for deep-linking) */
+	currentPath?: string | null;
+	/** Current track title */
+	trackTitle?: string;
 }
 
 /**
@@ -47,6 +53,8 @@ export function LyricsFull({
 	onSeek,
 	scrollRef,
 	lineRefs,
+	currentPath,
+	trackTitle,
 }: LyricsFullProps) {
 	// Place half-container-height padding at top and bottom so the first and last
 	// lines can be scrolled to the center (otherwise first line clamps to top, last to bottom)
@@ -71,6 +79,15 @@ export function LyricsFull({
 			</div>
 		);
 	}
+
+	const handleCopyLyricLink = (e: React.MouseEvent, line: LyricLine) => {
+		e.stopPropagation();
+		if (!currentPath) return;
+		const link = generateLyricMarkdownLink(currentPath, line.time, line.text, trackTitle);
+		navigator.clipboard.writeText(link).then(() => {
+			new Notice(t("playback.copiedTimestampLink"));
+		}).catch(() => {});
+	};
 
 	return (
 		<div className="lyrics lyrics-scroll" ref={scrollRef}>
@@ -100,6 +117,20 @@ export function LyricsFull({
 						>
 							{displayText}
 						</span>
+						{currentPath && Number.isFinite(line.time) && (
+							<button
+								type="button"
+								className="lyrics-copy-btn"
+								title={t("playback.copyTimestampLink")}
+								aria-label={t("playback.copyTimestampLink")}
+								onClick={(e) => handleCopyLyricLink(e, line)}
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
+									<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+									<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+								</svg>
+							</button>
+						)}
 					</div>
 				);
 			})}

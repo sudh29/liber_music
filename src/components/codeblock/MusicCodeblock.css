@@ -1,0 +1,248 @@
+/**
+ * Styles for interactive in-note music codeblock player
+ */
+
+.music-codeblock-wrapper {
+	margin: 1.25rem 0;
+	width: 100%;
+}
+
+.music-codeblock-container {
+	border-radius: 8px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	font-family: var(--font-interface);
+}
+
+.music-codeblock-container:hover {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Compact layout */
+.music-codeblock-container.is-compact {
+	display: flex;
+	align-items: center;
+	padding: 6px 12px;
+	gap: 12px;
+}
+
+.music-codeblock-container.is-compact .music-codeblock-meta {
+	display: flex;
+	align-items: baseline;
+	overflow: hidden;
+	white-space: nowrap;
+	min-width: 120px;
+	max-width: 280px;
+}
+
+.music-codeblock-container.is-compact .music-codeblock-title {
+	font-weight: 600;
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-size: 0.9rem;
+}
+
+.music-codeblock-container.is-compact .music-codeblock-artist {
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.music-codeblock-container.is-compact .music-codeblock-scrubber {
+	flex: 1;
+	min-width: 80px;
+}
+
+.music-codeblock-container.is-compact .music-codeblock-time {
+	font-size: 0.78rem;
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+/* Card layout */
+.music-codeblock-container.is-card {
+	padding: 16px 20px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.music-codeblock-header {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.music-codeblock-disc-icon {
+	color: var(--interactive-accent);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.music-codeblock-container.is-card .music-codeblock-meta {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.music-codeblock-container.is-card .music-codeblock-title {
+	font-size: 1.05rem;
+	font-weight: 600;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.music-codeblock-container.is-card .music-codeblock-artist {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.music-codeblock-controls {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.music-codeblock-timeline {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.music-codeblock-time-row {
+	font-size: 0.75rem;
+	color: var(--text-muted);
+	font-variant-numeric: tabular-nums;
+	display: flex;
+	justify-content: flex-end;
+}
+
+/* Buttons */
+.music-codeblock-btn {
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	color: var(--text-muted);
+	transition: all 0.2s ease;
+	flex-shrink: 0;
+}
+
+.music-codeblock-btn:hover {
+	color: var(--interactive-accent);
+	transform: scale(1.08);
+}
+
+.music-codeblock-play-btn {
+	width: 32px;
+	height: 32px;
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.music-codeblock-play-btn.is-prominent {
+	width: 40px;
+	height: 40px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.music-codeblock-play-btn.is-prominent:hover {
+	filter: brightness(1.1);
+	color: var(--text-on-accent);
+}
+
+.music-codeblock-ext-btn {
+	width: 28px;
+	height: 28px;
+}
+
+/* Range input scrubber */
+.music-codeblock-scrubber {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 100%;
+	height: 5px;
+	border-radius: 3px;
+	background: var(--background-modifier-border);
+	outline: none;
+	cursor: pointer;
+	margin: 0;
+	transition: background 0.15s ease;
+}
+
+.music-codeblock-scrubber::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--interactive-accent);
+	cursor: pointer;
+	transition: transform 0.15s ease;
+}
+
+.music-codeblock-scrubber::-webkit-slider-thumb:hover {
+	transform: scale(1.3);
+}
+
+/* Lyrics in codeblock */
+.music-codeblock-lyrics-container {
+	margin-top: 8px;
+	padding-top: 10px;
+	border-top: 1px dashed var(--background-modifier-border);
+	max-height: 160px;
+	overflow-y: auto;
+	scroll-behavior: smooth;
+}
+
+.music-codeblock-lyrics-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.music-codeblock-lyric-line {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: 4px;
+	transition: all 0.2s ease;
+}
+
+.music-codeblock-lyric-line:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.music-codeblock-lyric-line.is-active {
+	color: var(--interactive-accent);
+	font-weight: 600;
+	background: var(--background-modifier-hover);
+}
+
+/* Error box */
+.music-codeblock-error {
+	padding: 10px 14px;
+	border-radius: 6px;
+	background: rgba(255, 75, 75, 0.1);
+	border: 1px solid rgba(255, 75, 75, 0.3);
+	color: var(--text-normal);
+	font-size: 0.85rem;
+}
