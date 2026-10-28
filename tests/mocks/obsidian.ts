@@ -108,6 +108,11 @@ export class MockElement {
 
 	dispatchEvent(event: any): boolean {
 		const type = typeof event === "string" ? event : event?.type;
+		if (typeof event === "object" && !event.target) {
+			try {
+				event.target = this;
+			} catch {}
+		}
 		const handlers = this.listeners.get(type);
 		if (handlers) {
 			for (const h of handlers) {
@@ -131,6 +136,36 @@ export class MockElement {
 
 	select(): void {
 		this.dispatchEvent({ type: "select" });
+	}
+
+	click(): void {
+		this.dispatchEvent(new Event("click"));
+	}
+
+	querySelector(selector: string): MockElement | null {
+		const all = this.querySelectorAll(selector);
+		return all.length > 0 ? (all[0] ?? null) : null;
+	}
+
+	querySelectorAll(selector: string): MockElement[] {
+		const results: MockElement[] = [];
+		const isClass = selector.startsWith(".");
+		const className = isClass ? selector.slice(1) : "";
+		const tag = selector.toUpperCase();
+
+		const traverse = (node: MockElement) => {
+			for (const child of node.children) {
+				if (isClass && child.hasClass(className)) {
+					results.push(child);
+				} else if (!isClass && child.tagName === tag) {
+					results.push(child);
+				}
+				traverse(child);
+			}
+		};
+
+		traverse(this);
+		return results;
 	}
 }
 
@@ -541,6 +576,7 @@ export class Setting {
 		cb({
 			setValue: () => ({}),
 			onChange: () => ({}),
+			toggleEl: new MockElement("div"),
 		});
 		return this;
 	}

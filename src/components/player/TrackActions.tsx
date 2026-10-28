@@ -48,6 +48,8 @@ export interface TrackActionsProps {
 	onToggleArtworkDisplayMode?: () => void;
 	/** Callback function to set track rating */
 	onRate?: (rating: number) => void;
+	/** Callback function to open 10-band equalizer modal */
+	onOpenEqualizer?: () => void;
 }
 
 /**
@@ -71,6 +73,7 @@ export function TrackActions({
 	onPlaybackRateChange,
 	onToggleArtworkDisplayMode,
 	onRate,
+	onOpenEqualizer,
 }: TrackActionsProps) {
 	const [isVolumeMenuVisible, setIsVolumeMenuVisible] = React.useState(false);
 	const [isPlaybackRateMenuVisible, setIsPlaybackRateMenuVisible] = React.useState(false);
@@ -263,6 +266,15 @@ export function TrackActions({
 						label={artworkDisplayMode === "vinyl" ? "Switch to Album Card mode" : "Switch to Vinyl Disc mode"}
 						className="track-action-btn clickable-icon artwork-mode-btn"
 						onClick={onToggleArtworkDisplayMode}
+					/>
+				)}
+
+				{onOpenEqualizer && (
+					<IconButton
+						icon="sliders-horizontal"
+						label={t("equalizer.title") || "10-Band Equalizer"}
+						className="track-action-btn clickable-icon equalizer-btn"
+						onClick={onOpenEqualizer}
 					/>
 				)}
 			</div>

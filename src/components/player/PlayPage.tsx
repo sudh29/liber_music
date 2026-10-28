@@ -88,6 +88,7 @@ export interface PlayPageProps {
 	onToggleFavorite: (path: string, sectionId?: string) => void;
 	onVolumeChange: (volume: number) => void;
 	onPlaybackRateChange: (rate: number) => void;
+	onOpenEqualizer?: () => void;
 }
 
 export function PlayPage({
@@ -137,6 +138,7 @@ export function PlayPage({
 	onToggleFavorite,
 	onVolumeChange,
 	onPlaybackRateChange,
+	onOpenEqualizer,
 }: PlayPageProps) {
 	// Determine whether to use extended lyrics
 	const useExtendedLyrics = viewMode === "disc" 
@@ -283,6 +285,7 @@ export function PlayPage({
 				onPlaybackRateChange={onPlaybackRateChange}
 				onToggleArtworkDisplayMode={onToggleArtworkDisplayMode}
 				onRate={onRate}
+				onOpenEqualizer={onOpenEqualizer}
 			/>
 			<ProgressBar
 				current={currentTime}

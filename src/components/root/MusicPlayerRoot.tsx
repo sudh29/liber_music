@@ -14,7 +14,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Platform, TFile } from "obsidian";
 import "./MusicPlayerRoot.css";
-import { ConfirmModal, LibraryPage, NavigationBar, PlayPage } from "@/components";
+import { ConfirmModal, EqualizerModal, LibraryPage, NavigationBar, PlayPage } from "@/components";
 import { t } from "@/utils/i18n/i18n";
 import {
 	useLibraryManagement,
@@ -252,6 +252,9 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 						onToggleFavorite={(path, sectionId) => { void libraryManagement.toggleFavorite(path, sectionId); }}
 						onVolumeChange={(volume) => { void handleVolumeChange(volume); }}
 						onPlaybackRateChange={(rate) => { void handlePlaybackRateChange(rate); }}
+						onOpenEqualizer={() => {
+							new EqualizerModal(view.app, view.plugin, view.equalizerService).open();
+						}}
 					/>
 			) : null}
 

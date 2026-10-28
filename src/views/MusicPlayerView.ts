@@ -15,7 +15,7 @@ import MusicPlayerPlugin from "@/main";
 import { KeyboardShortcutHandler, setupKeyboardShortcuts } from "@/utils/keyboard/shortcuts";
 import { QueueModal, TrackSearchModal } from "@/components";
 import type { ReactLibrarySnapshot, ReactPlaybackSnapshot } from "@/types";
-import { AssetService, AudioService, FavoriteService, LibraryService, ListenerService, ListService, LyricsService, MediaSessionService, PlaybackService, PlaylistService, ReactApiService, ScrobblerService, SnapshotService, StateService, ViewSetupService, WakeLockService } from "@/services";
+import { AssetService, AudioService, CrossfadeService, EqualizerService, FavoriteService, LibraryService, ListenerService, ListService, LyricsService, MediaSessionService, PlaybackService, PlaylistService, ReactApiService, ScrobblerService, SnapshotService, StateService, ViewSetupService, WakeLockService } from "@/services";
 import { togglePlayMode } from "@/utils/playback/control";
 import type { ReactApi } from "@/types";
 import { t, tWithParams } from "@/utils/i18n/i18n";
@@ -69,6 +69,8 @@ export class MusicPlayerView extends ItemView {
 	private mediaSessionService?: MediaSessionService;
 	private wakeLockService?: WakeLockService;
 	private scrobblerService?: ScrobblerService;
+	public equalizerService: EqualizerService;
+	public crossfadeService: CrossfadeService;
 	private keyboardShortcuts?: KeyboardShortcutHandler;
 	private libraryUpdateListeners: Set<() => void> = new Set();
 	private reactRoot: Root | null = null;
@@ -150,7 +152,22 @@ export class MusicPlayerView extends ItemView {
 		this.playlistService = new PlaylistService(this.app, this.plugin);
 		this.favoriteService = new FavoriteService(this.plugin);
 		this.lyricsService = new LyricsService(this.plugin);
-		this.audioService = new AudioService(this.app);
+		this.equalizerService = new EqualizerService(
+			{
+				enabled: this.plugin.settings.eqEnabled,
+				preset: this.plugin.settings.eqPreset,
+				bands: this.plugin.settings.eqBands,
+				preampGainDb: this.plugin.settings.preampGainDb,
+			},
+			(eqState) => {
+				this.plugin.settings.eqEnabled = eqState.enabled;
+				this.plugin.settings.eqPreset = eqState.preset;
+				this.plugin.settings.eqBands = eqState.bands;
+				this.plugin.settings.preampGainDb = eqState.preampDb;
+				void this.plugin.saveSettings();
+			}
+		);
+		this.audioService = new AudioService(this.app, this.equalizerService);
 		this.libraryService = new LibraryService(
 			this.app,
 			this.plugin,
@@ -175,6 +192,25 @@ export class MusicPlayerView extends ItemView {
 		this.wakeLockService.setEnabled(this.plugin.settings.keepScreenAwake ?? false);
 		this.scrobblerService = new ScrobblerService(this.app, this.plugin);
 
+		this.crossfadeService = new CrossfadeService(
+			this.plugin.settings.crossfadeDuration ?? 0,
+			{
+				onTriggerTransition: async () => {
+					await this.playbackService.playNext();
+					return this.audioService.getAudioElement();
+				},
+				onPrebufferNextTrack: async () => {
+					const state = this.stateService.getState();
+					const nextTrack = state.trackList[(state.currentIndex + 1) % Math.max(1, state.trackList.length)];
+					if (nextTrack) {
+						try {
+							await this.app.vault.readBinary(nextTrack);
+						} catch {}
+					}
+				},
+			}
+		);
+
 		this.playbackService = new PlaybackService(
 			this.plugin,
 			this.stateService,
@@ -191,7 +227,9 @@ export class MusicPlayerView extends ItemView {
 			},
 			this.mediaSessionService,
 			this.wakeLockService,
-			this.scrobblerService
+			this.scrobblerService,
+			this.equalizerService,
+			this.crossfadeService
 		);
 		this.assetService = new AssetService(this.app, this.plugin);
 		this.viewSetupService = new ViewSetupService(this.app);
@@ -371,6 +409,8 @@ export class MusicPlayerView extends ItemView {
 		if (this.keyboardShortcuts) this.keyboardShortcuts.cleanup();
 		if (this.mediaSessionService) this.mediaSessionService.destroy();
 		if (this.wakeLockService) this.wakeLockService.destroy();
+		if (this.crossfadeService) this.crossfadeService.dispose();
+		if (this.equalizerService) await this.equalizerService.dispose();
 		// Clean up file system listeners
 		this.listenerService.cleanup();
 		if (this.reactRoot) {

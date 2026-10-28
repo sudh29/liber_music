@@ -10,6 +10,7 @@
 
 import { App } from "obsidian";
 import { TFile } from "obsidian";
+import { EqualizerService } from "./EqualizerService";
 
 /**
  * Audio event handlers interface
@@ -77,7 +78,17 @@ export class AudioService {
 	 * 
 	 * @param app - Obsidian App instance
 	 */
-	constructor(private app: App) {}
+	constructor(private app: App, private equalizerService?: EqualizerService) {}
+
+	/**
+	 * Sets the equalizer service and connects active audio element if available.
+	 */
+	setEqualizerService(eqService: EqualizerService): void {
+		this.equalizerService = eqService;
+		if (this.audioElement) {
+			this.equalizerService.attachAudioElement(this.audioElement);
+		}
+	}
 
 	/**
 	 * Creates and initializes the audio element.
@@ -123,6 +134,11 @@ export class AudioService {
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
 			this.audioElement.addEventListener("error", this.onAudioError);
 
+			// Connect to Web Audio equalizer graph if enabled
+			if (this.equalizerService) {
+				this.equalizerService.attachAudioElement(this.audioElement);
+			}
+
 			return this.audioElement;
 		} catch (error) {
 			console.error(`Failed to create audio element via Blob URL, falling back to direct file path: ${trackFile.path}`, error);
@@ -139,6 +155,10 @@ export class AudioService {
 			this.audioElement.addEventListener("ended", handlers.onEnded);
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
 			this.audioElement.addEventListener("error", this.onAudioError);
+
+			if (this.equalizerService) {
+				this.equalizerService.attachAudioElement(this.audioElement);
+			}
 
 			return this.audioElement;
 		}
@@ -239,6 +259,7 @@ export class AudioService {
 		}
 		
 		try {
+			await this.equalizerService?.resumeContext();
 			await this.audioElement.play();
 		} catch (error) {
 			// AbortError when pause() interrupts play() during track changes is normal

@@ -1,11 +1,11 @@
 <div align="center">
     <h1>Liber Music Player Plugin for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.4.0-7f6df2?logo=obsidian" alt="Version 1.4.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.5.0-7f6df2?logo=obsidian" alt="Version 1.5.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-398%20passed-brightgreen" alt="Tests: 398 passed">
-        <img src="https://img.shields.io/badge/coverage-92.31%25-brightgreen" alt="Coverage: 92.31%">
+        <img src="https://img.shields.io/badge/tests-439%20passed-brightgreen" alt="Tests: 439 passed">
+        <img src="https://img.shields.io/badge/coverage-92.34%25-brightgreen" alt="Coverage: 92.34%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -14,6 +14,27 @@
 ---
 
 ## 🌟 Key Features
+
+### 🎚️ Audiophile Web Audio DSP Engine (v1.5.0)
+- **10-Band Graphic & Parametric Equalizer**: Biquad filtering across 10 ISO standard octave frequencies (`31Hz`, `62Hz`, `125Hz`, `250Hz`, `500Hz`, `1kHz`, `2kHz`, `4kHz`, `8kHz`, `16kHz`).
+- **Master Bypass Switch**: Bit-transparent, click-free unity audio passthrough when disabled without rebuilding graph nodes.
+- **Preamp Gain Stage**: Independent `-12dB` to `+12dB` preamp volume slider with dynamic headroom protection.
+- **Acoustic Presets**:
+  - **Flat**: Bit-transparent standard reference.
+  - **Bass Boost**: Deep low-end rumble and punch.
+  - **Vocal Clarity**: Forward, articulate midrange for podcasts and vocals.
+  - **Acoustic**: Natural instrument warmth for classical, folk, and strings.
+  - **Rock & Metal**: Punchy V-shaped dynamic response.
+  - **Harman Target Curve**: Scientifically calibrated listener preference target.
+  - **Electronic**: Sub-bass extension and sparkling highs.
+  - **Custom**: User-adjusted band gains.
+- **Strict Gapless Playback & Equal-Power Crossfading**:
+  - `0s` setting provides strict gapless playback with pre-buffered track transitions.
+  - Configurable `1s - 10s` smooth transitions using equal-power sinusoidal crossfade curves (`cos(t * π/2)` / `sin(t * π/2)`).
+- **Interactive Equalizer Modal & Commands**:
+  - Quick-access equalizer button (`sliders-horizontal`) directly in the turntable track action bar.
+  - Obsidian command palette: `Open 10-Band Equalizer`.
+  - Settings tab toggles and default preset selection.
 
 ### 🎵 High-Fidelity Audio Playback
 - **Broad Format Support**: Plays `.mp3`, `.wav`, `.ogg`, `.m4a`, `.flac`, and `.aac` audio files directly from your Obsidian vault.

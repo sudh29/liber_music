@@ -79,6 +79,16 @@ export interface MusicPlayerSettings {
 	dailyNotesScrobbler?: boolean;
 	/** Daily note section/heading to append tracks under (default: "## 🎧 Music Log") */
 	dailyNotesHeading?: string;
+	/** Crossfade duration in seconds (0 = gapless playback without crossfade, 1-10s = crossfade) */
+	crossfadeDuration?: number;
+	/** Whether the 10-band Web Audio DSP Equalizer is enabled */
+	eqEnabled?: boolean;
+	/** Active equalizer preset name ('Flat', 'Bass Boost', etc.) */
+	eqPreset?: string;
+	/** 10-band equalizer gains in dB (-12dB to +12dB) */
+	eqBands?: number[];
+	/** Equalizer preamp gain in dB (-12dB to +12dB) */
+	preampGainDb?: number;
 }
 
 /**
@@ -102,4 +112,9 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	keepScreenAwake: false,     // Default: do not keep screen awake
 	dailyNotesScrobbler: false, // Default: do not record to Daily Notes
 	dailyNotesHeading: '## 🎧 Music Log', // Default heading in Daily Notes
+	crossfadeDuration: 0,      // Default: gapless playback (0s)
+	eqEnabled: false,          // Default: EQ disabled / bypassed
+	eqPreset: 'Flat',          // Default preset
+	eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Default 10 flat bands
+	preampGainDb: 0,           // Default 0 dB preamp
 };

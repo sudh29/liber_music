@@ -379,5 +379,88 @@ describe("PlaybackService", () => {
 		await playbackService.playTrack(0, true, undefined, "prev", false, false);
 		expect(stateService.getState().currentIndex).toBe(0);
 	});
+
+	it("should expose equalizer and crossfade service accessors", () => {
+		expect(playbackService.getEqualizerService()).toBeUndefined();
+		expect(playbackService.getCrossfadeService()).toBeUndefined();
+
+		const mockEq = {} as any;
+		const mockCrossfade = { setDuration: vi.fn(), cancelCrossfade: vi.fn() } as any;
+
+		const customPlayback = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{},
+			undefined,
+			undefined,
+			undefined,
+			mockEq,
+			mockCrossfade
+		);
+
+		expect(customPlayback.getEqualizerService()).toBe(mockEq);
+		expect(customPlayback.getCrossfadeService()).toBe(mockCrossfade);
+
+		customPlayback.setCrossfadeDuration(6);
+		expect(mockCrossfade.setDuration).toHaveBeenCalledWith(6);
+
+		customPlayback.seekToTime(45);
+		expect(mockCrossfade.cancelCrossfade).toHaveBeenCalledTimes(1);
+	});
+
+	it("should toggle shuffle and invoke library callback", async () => {
+		const onLibraryUpdated = vi.fn();
+		const ps = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{ onLibraryUpdated }
+		);
+
+		plugin.settings.isShuffle = false;
+		stateService.setCurrentTrack(mockFiles[0]);
+		const toggledOn = await ps.toggleShuffle();
+		expect(toggledOn).toBe(true);
+		expect(plugin.settings.isShuffle).toBe(true);
+		expect(onLibraryUpdated).toHaveBeenCalled();
+
+		const toggledOff = await ps.toggleShuffle();
+		expect(toggledOff).toBe(false);
+		expect(plugin.settings.isShuffle).toBe(false);
+	});
+
+	it("should toggle artwork display mode between vinyl and card", async () => {
+		const onLibraryUpdated = vi.fn();
+		const ps = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{ onLibraryUpdated }
+		);
+
+		plugin.settings.artworkDisplayMode = "vinyl";
+		const nextMode = await ps.toggleArtworkDisplayMode();
+		expect(nextMode).toBe("card");
+		expect(plugin.settings.artworkDisplayMode).toBe("card");
+		expect(onLibraryUpdated).toHaveBeenCalled();
+
+		const backToVinyl = await ps.toggleArtworkDisplayMode();
+		expect(backToVinyl).toBe("vinyl");
+	});
+
+	it("should set track rating", async () => {
+		await playbackService.setTrackRating("Music/song1.mp3", 4);
+		expect(plugin.settings.ratings?.["Music/song1.mp3"]).toBe(4);
+	});
 });
 

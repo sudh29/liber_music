@@ -4,6 +4,7 @@
  */
 import { App, PluginSettingTab, SettingDefinitionItem, TFile } from 'obsidian';
 import type MusicPlayerPlugin from '../main';
+import { EQ_PRESETS } from '../utils/audio/equalizer';
 import { t } from '../utils/i18n/i18n';
 
 /**
@@ -78,6 +79,41 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 					key: 'dailyNotesHeading',
 					type: 'text',
 					placeholder: '## 🎧 Music Log',
+				},
+			},
+			{
+				name: t('settings.crossfadeDuration.name'),
+				desc: t('settings.crossfadeDuration.desc'),
+				control: {
+					key: 'crossfadeDuration',
+					type: 'slider',
+					min: 0,
+					max: 10,
+					step: 1,
+				},
+			},
+			{
+				name: t('settings.eqEnabled.name'),
+				desc: t('settings.eqEnabled.desc'),
+				control: {
+					key: 'eqEnabled',
+					type: 'toggle',
+				},
+			},
+			{
+				name: t('settings.eqPreset.name'),
+				desc: t('settings.eqPreset.desc'),
+				visible: () => this.plugin.settings.eqEnabled ?? false,
+				control: {
+					key: 'eqPreset',
+					type: 'dropdown',
+					options: {
+						...Object.keys(EQ_PRESETS).reduce<Record<string, string>>((acc, name) => {
+							acc[name] = name;
+							return acc;
+						}, {}),
+						Custom: 'Custom',
+					},
 				},
 			},
 		];

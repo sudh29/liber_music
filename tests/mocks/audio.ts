@@ -82,3 +82,140 @@ export function installMockAudio(): () => void {
 		(globalThis as any).Audio = originalAudio;
 	};
 }
+
+export class MockAudioParam {
+	public value: number;
+	public defaultValue: number;
+	public minValue: number;
+	public maxValue: number;
+
+	constructor(defaultValue: number, min = -Infinity, max = Infinity) {
+		this.value = defaultValue;
+		this.defaultValue = defaultValue;
+		this.minValue = min;
+		this.maxValue = max;
+	}
+
+	setValueAtTime(value: number, _startTime: number): this {
+		this.value = value;
+		return this;
+	}
+
+	linearRampToValueAtTime(value: number, _endTime: number): this {
+		this.value = value;
+		return this;
+	}
+
+	exponentialRampToValueAtTime(value: number, _endTime: number): this {
+		this.value = value;
+		return this;
+	}
+}
+
+export class MockAudioNode {
+	public context: MockAudioContext;
+	public connectedNodes: (MockAudioNode | MockAudioParam)[] = [];
+
+	constructor(context: MockAudioContext) {
+		this.context = context;
+	}
+
+	connect(destination: MockAudioNode | MockAudioParam): any {
+		this.connectedNodes.push(destination);
+		return destination;
+	}
+
+	disconnect(): void {
+		this.connectedNodes = [];
+	}
+}
+
+export class MockGainNode extends MockAudioNode {
+	public gain: MockAudioParam;
+	constructor(context: MockAudioContext, defaultGain = 1.0) {
+		super(context);
+		this.gain = new MockAudioParam(defaultGain);
+	}
+}
+
+export class MockBiquadFilterNode extends MockAudioNode {
+	public type: string = "peaking";
+	public frequency: MockAudioParam;
+	public Q: MockAudioParam;
+	public gain: MockAudioParam;
+
+	constructor(context: MockAudioContext) {
+		super(context);
+		this.frequency = new MockAudioParam(350, 0, 24000);
+		this.Q = new MockAudioParam(1, 0.0001, 1000);
+		this.gain = new MockAudioParam(0, -40, 40);
+	}
+}
+
+export class MockMediaElementAudioSourceNode extends MockAudioNode {
+	public mediaElement: HTMLAudioElement;
+	constructor(context: MockAudioContext, mediaElement: HTMLAudioElement) {
+		super(context);
+		this.mediaElement = mediaElement;
+	}
+}
+
+export class MockAudioContext extends EventTarget {
+	public state: "suspended" | "running" | "closed" = "suspended";
+	public currentTime: number = 0;
+	public destination: MockAudioNode;
+	private attachedElements = new WeakSet<any>();
+
+	constructor() {
+		super();
+		this.destination = new MockAudioNode(this);
+	}
+
+	async resume(): Promise<void> {
+		this.state = "running";
+		this.dispatchEvent(new Event("statechange"));
+	}
+
+	async suspend(): Promise<void> {
+		this.state = "suspended";
+		this.dispatchEvent(new Event("statechange"));
+	}
+
+	async close(): Promise<void> {
+		this.state = "closed";
+		this.dispatchEvent(new Event("statechange"));
+	}
+
+	createGain(): MockGainNode {
+		return new MockGainNode(this);
+	}
+
+	createBiquadFilter(): MockBiquadFilterNode {
+		return new MockBiquadFilterNode(this);
+	}
+
+	createMediaElementSource(element: HTMLAudioElement): MockMediaElementAudioSourceNode {
+		if (this.attachedElements.has(element)) {
+			const err = new DOMException("MediaElementAudioSourceNode already created for this element", "InvalidStateError");
+			throw err;
+		}
+		this.attachedElements.add(element);
+		return new MockMediaElementAudioSourceNode(this, element);
+	}
+}
+
+/**
+ * Installs MockAudioContext into globalThis.
+ */
+export function installMockWebAudio(): () => void {
+	const originalContext = (globalThis as any).AudioContext;
+	const originalWebkit = (globalThis as any).webkitAudioContext;
+
+	(globalThis as any).AudioContext = MockAudioContext as any;
+	(globalThis as any).webkitAudioContext = MockAudioContext as any;
+
+	return () => {
+		(globalThis as any).AudioContext = originalContext;
+		(globalThis as any).webkitAudioContext = originalWebkit;
+	};
+}

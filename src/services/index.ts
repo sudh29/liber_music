@@ -27,5 +27,9 @@ export { MediaSessionService } from "./MediaSessionService";
 export type { MediaSessionCallbacks } from "./MediaSessionService";
 export { WakeLockService } from "./WakeLockService";
 export { ScrobblerService } from "./ScrobblerService";
+export { EqualizerService } from "./EqualizerService";
+export type { EqState } from "./EqualizerService";
+export { CrossfadeService, calculateCrossfadeGains } from "./CrossfadeService";
+export type { CrossfadeCallbacks, CrossfadeGains } from "./CrossfadeService";
 export type { ReactApi } from "@/types";
 

@@ -21,6 +21,7 @@ import type { MusicPlayerSettings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { t } from './utils/i18n/i18n';
 import { MusicCodeblockRenderChild } from './components/codeblock/MusicCodeblockRenderChild';
+import { EqualizerModal } from './components/modal/EqualizerModal';
 import { parseObsidianMusicProtocol } from './utils/protocol/uri';
 import { resolveVaultAudioFile } from './utils/codeblock/resolver';
 import { codeblockCoordinator } from './utils/codeblock/coordinator';
@@ -74,6 +75,19 @@ export default class MusicPlayerPlugin extends Plugin {
 			name: t('commands.openSettings'),
 			callback: () => {
 				void this.openSettings();
+			}
+		});
+
+		// Add command: open 10-band equalizer
+		this.addCommand({
+			id: 'open-equalizer',
+			name: t('commands.openEqualizer') || 'Open 10-Band Equalizer',
+			callback: async () => {
+				await this.activateView();
+				const view = this.getView();
+				if (view) {
+					new EqualizerModal(this.app, this, view.equalizerService).open();
+				}
 			}
 		});
 
@@ -157,6 +171,20 @@ export default class MusicPlayerPlugin extends Plugin {
 	 */
 	async saveSettings() {
 		await this.saveData(this.settings);
+		const view = this.getView();
+		if (view) {
+			if (view.crossfadeService && this.settings.crossfadeDuration !== undefined) {
+				view.crossfadeService.setDuration(this.settings.crossfadeDuration);
+			}
+			if (view.equalizerService) {
+				if (this.settings.eqEnabled !== undefined && view.equalizerService.isEnabled() !== this.settings.eqEnabled) {
+					view.equalizerService.setEnabled(this.settings.eqEnabled);
+				}
+				if (this.settings.eqPreset && view.equalizerService.getState().preset !== this.settings.eqPreset) {
+					view.equalizerService.setPreset(this.settings.eqPreset);
+				}
+			}
+		}
 	}
 
 	/**

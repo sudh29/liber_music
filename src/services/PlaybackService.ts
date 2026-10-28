@@ -20,6 +20,8 @@ import { SnapshotService } from "./SnapshotService";
 import { MediaSessionService } from "./MediaSessionService";
 import { WakeLockService } from "./WakeLockService";
 import { ScrobblerService } from "./ScrobblerService";
+import { EqualizerService } from "./EqualizerService";
+import { CrossfadeService } from "./CrossfadeService";
 import { findTrackIndexInGlobalList, getNextIndex, getPreviousIndex, handleTrackEnd } from "@/utils/playback/control";
 import { ShuffleManager } from "@/utils/playback/shuffle";
 import { ANIMATION_TIMINGS } from "@/constants/ui";
@@ -94,7 +96,9 @@ export class PlaybackService {
 		private callbacks: PlaybackCallbacks = {},
 		private mediaSessionService?: MediaSessionService,
 		private wakeLockService?: WakeLockService,
-		private scrobblerService?: ScrobblerService
+		private scrobblerService?: ScrobblerService,
+		private equalizerService?: EqualizerService,
+		private crossfadeService?: CrossfadeService
 	) {}
 
 	/**
@@ -283,12 +287,15 @@ export class PlaybackService {
 		const effectiveVolume = applyReplayGainToVolume(userVolume, trackInfo?.replayGainDb);
 		const savedPlaybackRate = this.audioService.getAudioElement()?.playbackRate ?? state.playbackRate ?? 1.0;
 		
+		this.crossfadeService?.resetTrackState();
+
 		await this.audioService.createAudioElement(track, effectiveVolume, savedPlaybackRate, {
 			onTimeUpdate: () => {
 				this.callbacks.onProgressUpdate?.();
 				const el = this.audioService.getAudioElement();
 				if (el && Number.isFinite(el.duration) && el.duration > 0) {
 					this.mediaSessionService?.updatePositionState(el.duration, el.currentTime, el.playbackRate);
+					this.crossfadeService?.onTimeUpdate(el.currentTime, el.duration, el, effectiveVolume);
 				}
 			},
 			onLoadedMetadata: () => {
@@ -433,6 +440,7 @@ export class PlaybackService {
 		}
 		
 		if (state.isPlaying) {
+			this.crossfadeService?.cancelCrossfade();
 			this.audioService.pause();
 			this.stateService.setIsPlaying(false);
 			this.mediaSessionService?.updatePlaybackState(false);
@@ -618,6 +626,7 @@ export class PlaybackService {
 	 * @param seconds Target time in seconds
 	 */
 	seekToTime(seconds: number): void {
+		this.crossfadeService?.cancelCrossfade();
 		const el = this.audioService.getAudioElement();
 		if (!el) return;
 		const d = el.duration;
@@ -625,6 +634,27 @@ export class PlaybackService {
 		const target = Math.max(0, Math.min(seconds, d));
 		el.currentTime = target;
 		this.mediaSessionService?.updatePositionState(d, target, el.playbackRate);
+	}
+
+	/**
+	 * Gets the EqualizerService instance, if configured.
+	 */
+	getEqualizerService(): EqualizerService | undefined {
+		return this.equalizerService;
+	}
+
+	/**
+	 * Gets the CrossfadeService instance, if configured.
+	 */
+	getCrossfadeService(): CrossfadeService | undefined {
+		return this.crossfadeService;
+	}
+
+	/**
+	 * Sets the active crossfade duration in seconds.
+	 */
+	setCrossfadeDuration(seconds: number): void {
+		this.crossfadeService?.setDuration(seconds);
 	}
 
 	/**

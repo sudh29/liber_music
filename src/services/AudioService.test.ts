@@ -203,4 +203,25 @@ describe("AudioService", () => {
 		vi.spyOn(audioEl, "play").mockRejectedValueOnce(new Error("Network error"));
 		await expect(audioService.play()).rejects.toThrow("Network error");
 	});
+
+	it("should integrate with EqualizerService on createAudioElement and play", async () => {
+		const mockEq = {
+			attachAudioElement: vi.fn(),
+			resumeContext: vi.fn().mockResolvedValue(undefined),
+		} as any;
+
+		audioService.setEqualizerService(mockEq);
+
+		const track = app.vault.createFile("eq_track.mp3", new ArrayBuffer(50));
+		const audioEl = await audioService.createAudioElement(track, 1, 1, {
+			onTimeUpdate: vi.fn(),
+			onLoadedMetadata: vi.fn(),
+			onEnded: vi.fn(),
+		});
+
+		expect(mockEq.attachAudioElement).toHaveBeenCalledWith(audioEl);
+
+		await audioService.play();
+		expect(mockEq.resumeContext).toHaveBeenCalledTimes(1);
+	});
 });
