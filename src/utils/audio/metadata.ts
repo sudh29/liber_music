@@ -310,8 +310,8 @@ export async function readAudioFileBinary(
 	}
 }
 
-/** Default metadata probe header chunk size: 256KB */
-export const METADATA_HEADER_CHUNK_SIZE = 256 * 1024;
+/** Default metadata probe header chunk size: 512KB for desktop/mobile retina artwork */
+export const METADATA_HEADER_CHUNK_SIZE = 512 * 1024;
 
 /**
  * Optimized header binary read for large audio files:

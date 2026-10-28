@@ -16,6 +16,7 @@ describe("E2E 1: Plugin Lifecycle & View Activation", () => {
 		// Check registered commands
 		expect(plugin.commands.some((c) => c.id === "open-player")).toBe(true);
 		expect(plugin.commands.some((c) => c.id === "open-settings")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "open-equalizer")).toBe(true);
 
 		// Check ribbon icon
 		expect(plugin.ribbonIcons.some((r) => r.icon === "lucide-music")).toBe(true);
@@ -31,7 +32,26 @@ describe("E2E 1: Plugin Lifecycle & View Activation", () => {
 		const leaves = app.workspace.getLeavesOfType(VIEW_TYPE_MUSIC_PLAYER);
 		expect(leaves).toHaveLength(1);
 
-		// 3. Trigger onunload
+		// 3. Test open-equalizer command callback
+		const eqCmd = plugin.commands.find((c) => c.id === "open-equalizer");
+		expect(eqCmd).toBeDefined();
+		await eqCmd?.callback();
+
+		// 4. Test saveSettings synchronizes live view services
+		const view = plugin.getView();
+		expect(view).toBeDefined();
+		if (view) {
+			plugin.settings.crossfadeDuration = 5;
+			plugin.settings.eqEnabled = true;
+			plugin.settings.eqPreset = "Bass Boost";
+			await plugin.saveSettings();
+
+			expect(view.crossfadeService.getDuration()).toBe(5);
+			expect(view.equalizerService.isEnabled()).toBe(true);
+			expect(view.equalizerService.getState().preset).toBe("Bass Boost");
+		}
+
+		// 5. Trigger onunload
 		plugin.onunload();
 	});
 });

@@ -9,11 +9,13 @@
  */
 
 import React from "react";
+import { Notice } from "obsidian";
 import "./LyricsExtendedFull.css";
 import type { ExtendedLyricLine } from "@/utils/lyrics/extendedParser";
 import { linearFillProgress } from "@/utils/lyrics/charFillProgress";
 import { buildKaraokeUnits } from "@/utils/lyrics/karaokeUnits";
 import { t } from "@/utils/i18n/i18n";
+import { generateLyricMarkdownLink } from "@/utils/protocol/uri";
 
 /**
  * Props interface for LyricsExtendedFull component
@@ -35,6 +37,10 @@ export interface LyricsExtendedFullProps {
 	scrollRef: React.RefObject<HTMLDivElement>;
 	/** Array of line refs for scroll targeting */
 	lineRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
+	/** Current playing track path */
+	currentPath?: string | null;
+	/** Current track title */
+	trackTitle?: string;
 }
 
 /**
@@ -49,9 +55,11 @@ interface LineProps {
 	playingIndex: number;
 	onSeek: (time: number) => void;
 	lineRef: (el: HTMLDivElement | null) => void;
+	currentPath?: string | null;
+	trackTitle?: string;
 }
 
-const LineComponent = React.memo(({ line, index, currentTime, isActive, isPlaying, playingIndex, onSeek, lineRef }: LineProps) => {
+const LineComponent = React.memo(({ line, index, currentTime, isActive, isPlaying, playingIndex, onSeek, lineRef, currentPath, trackTitle }: LineProps) => {
 	const unitsData = React.useMemo(() => buildKaraokeUnits(line.chars, line), [line]);
 
 	// Calculate progress for each character, only when current line is active
@@ -104,6 +112,27 @@ const LineComponent = React.memo(({ line, index, currentTime, isActive, isPlayin
 					);
 				})}
 			</div>
+			{currentPath && Number.isFinite(line.time) && (
+				<button
+					type="button"
+					className="lyrics-copy-btn"
+					title={t("playback.copyTimestampLink")}
+					aria-label={t("playback.copyTimestampLink")}
+					onClick={(e) => {
+						e.stopPropagation();
+						const lineText = line.chars ? line.chars.map((c) => c.char).join("") : "";
+						const link = generateLyricMarkdownLink(currentPath, line.time, lineText, trackTitle);
+						navigator.clipboard.writeText(link).then(() => {
+							new Notice(t("playback.copiedTimestampLink"));
+						}).catch(() => {});
+					}}
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
+						<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+						<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+					</svg>
+				</button>
+			)}
 		</div>
 	);
 }, (prevProps, nextProps) => {
@@ -113,6 +142,8 @@ const LineComponent = React.memo(({ line, index, currentTime, isActive, isPlayin
 	if (prevProps.isPlaying !== nextProps.isPlaying) return false;
 	if (prevProps.playingIndex !== nextProps.playingIndex) return false;
 	if (prevProps.currentTime !== nextProps.currentTime) return false;
+	if (prevProps.currentPath !== nextProps.currentPath) return false;
+	if (prevProps.trackTitle !== nextProps.trackTitle) return false;
 	return true;
 });
 
@@ -127,6 +158,8 @@ export function LyricsExtendedFull({
 	onSeek,
 	scrollRef,
 	lineRefs,
+	currentPath,
+	trackTitle,
 }: LyricsExtendedFullProps) {
 	// Place half-container-height padding at top and bottom so the first and last
 	// lines can be scrolled to the center (consistent with LyricsFull;
@@ -175,6 +208,8 @@ export function LyricsExtendedFull({
 					lineRef={(el) => {
 						lineRefs.current[index] = el;
 					}}
+					currentPath={currentPath}
+					trackTitle={trackTitle}
 				/>
 			))}
 			<div className="lyrics-spacer" style={{ height: halfHeight }} aria-hidden="true" />

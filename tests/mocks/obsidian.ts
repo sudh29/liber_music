@@ -108,6 +108,11 @@ export class MockElement {
 
 	dispatchEvent(event: any): boolean {
 		const type = typeof event === "string" ? event : event?.type;
+		if (typeof event === "object" && !event.target) {
+			try {
+				event.target = this;
+			} catch {}
+		}
 		const handlers = this.listeners.get(type);
 		if (handlers) {
 			for (const h of handlers) {
@@ -131,6 +136,36 @@ export class MockElement {
 
 	select(): void {
 		this.dispatchEvent({ type: "select" });
+	}
+
+	click(): void {
+		this.dispatchEvent(new Event("click"));
+	}
+
+	querySelector(selector: string): MockElement | null {
+		const all = this.querySelectorAll(selector);
+		return all.length > 0 ? (all[0] ?? null) : null;
+	}
+
+	querySelectorAll(selector: string): MockElement[] {
+		const results: MockElement[] = [];
+		const isClass = selector.startsWith(".");
+		const className = isClass ? selector.slice(1) : "";
+		const tag = selector.toUpperCase();
+
+		const traverse = (node: MockElement) => {
+			for (const child of node.children) {
+				if (isClass && child.hasClass(className)) {
+					results.push(child);
+				} else if (!isClass && child.tagName === tag) {
+					results.push(child);
+				}
+				traverse(child);
+			}
+		};
+
+		traverse(this);
+		return results;
 	}
 }
 
@@ -507,6 +542,8 @@ export class Plugin {
 	registerEvent(_ref: any): void {}
 	registerDomEvent(_el: any, _type: string, _cb: any): void {}
 	registerInterval(_id: any): void {}
+	registerMarkdownCodeBlockProcessor(_language: string, _handler: any): void {}
+	registerObsidianProtocolHandler(_action: string, _handler: any): void {}
 }
 
 export class PluginSettingTab {
@@ -539,6 +576,7 @@ export class Setting {
 		cb({
 			setValue: () => ({}),
 			onChange: () => ({}),
+			toggleEl: new MockElement("div"),
 		});
 		return this;
 	}
@@ -561,10 +599,12 @@ export class Setting {
 }
 
 export class ItemView {
+	app: App;
 	containerEl: MockElement = new MockElement("div", { cls: "view-container" });
 	contentEl: MockElement = new MockElement("div", { cls: "view-content" });
 
 	constructor(public leaf: any) {
+		this.app = leaf?.app;
 		this.containerEl.appendChild(this.contentEl);
 	}
 
@@ -628,10 +668,42 @@ export function setIcon(el: any, iconId: string): void {
 	}
 }
 
+export class Component {
+	load(): void {
+		void this.onload();
+	}
+	onload(): Promise<void> | void {}
+	unload(): void {
+		this.onunload();
+	}
+	onunload(): void {}
+	addChild<T extends Component>(child: T): T {
+		return child;
+	}
+	removeChild<T extends Component>(child: T): T {
+		return child;
+	}
+	register(cb: () => any): void {}
+	registerEvent(eventRef: any): void {}
+	registerDomEvent(el: any, type: string, callback: any): void {}
+	registerInterval(id: number): number {
+		return id;
+	}
+}
+
+export class MarkdownRenderChild extends Component {
+	containerEl: HTMLElement;
+	constructor(containerEl: HTMLElement) {
+		super();
+		this.containerEl = containerEl;
+	}
+}
+
 export const Platform = {
 	isDesktop: true,
 	isMobile: false,
 	isIosApp: false,
 	isAndroidApp: false,
 	isMacOS: false,
+	isSafari: false,
 };

@@ -47,6 +47,8 @@ export interface AlbumDiscProps {
 	nextCoverUrl?: string;
 	/** Last action ("next" or "prev") triggering switch animation */
 	lastAction?: "next" | "prev" | null;
+	/** Turntable body faceplate style */
+	turntableStyle?: 'obsidian' | 'walnut' | 'acrylic';
 }
 
 /**
@@ -56,7 +58,18 @@ export interface AlbumDiscProps {
  * 
  * @param props Component properties
  */
-export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTogglePlay, prevCoverUrl, nextCoverUrl, lastAction }: AlbumDiscProps) {
+export function AlbumDisc({
+	coverUrl,
+	trackKey,
+	isPlaying,
+	onPrev,
+	onNext,
+	onTogglePlay,
+	prevCoverUrl,
+	nextCoverUrl,
+	lastAction,
+	turntableStyle = 'obsidian',
+}: AlbumDiscProps) {
 	const containerRef = React.useRef<HTMLDivElement>(null);
 	const shadowLeftRef = React.useRef<HTMLDivElement>(null);
 	const shadowRightRef = React.useRef<HTMLDivElement>(null);
@@ -139,7 +152,7 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 		: {};
 
 	return (
-		<div className="album-container-wrapper">
+		<div className={`album-container-wrapper turntable-style-${turntableStyle} ${isPlaying ? "is-playing" : ""}`}>
 			{/* Ambient Backlight Glow (2026 Modern Aesthetic) */}
 			{displayCoverUrl ? (
 				<div
@@ -148,6 +161,9 @@ export function AlbumDisc({ coverUrl, trackKey, isPlaying, onPrev, onNext, onTog
 					aria-hidden="true"
 				/>
 			) : null}
+
+			{/* Reactive Groove Halo */}
+			<div className="disc-groove-halo" aria-hidden="true" />
 
 			{/* Fixed semi-transparent background */}
 			<div className="disc-shadow"></div>

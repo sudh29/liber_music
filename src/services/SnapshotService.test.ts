@@ -166,6 +166,48 @@ describe("SnapshotService", () => {
 			expect(trackInfo?.album).toBe("Titanic");
 			expect(trackInfo?.rating).toBe(5);
 		});
+
+		it("should include evaluated smart playlists and folder auto-synced playlists", () => {
+			const { service, plugin } = createService();
+			plugin.settings.smartPlaylists = {
+				"smart_1": {
+					id: "smart_1",
+					name: "Epic Songs",
+					matchType: "all",
+					rules: [{ id: "r1", field: "duration", operator: "greaterThan", value: 300 }],
+				},
+			};
+			plugin.settings.syncFolderPlaylists = true;
+			plugin.settings.musicFolder = "music";
+
+			const track1 = new TFile("music/Rock/song1.mp3");
+			const track2 = new TFile("music/Jazz/song2.mp3");
+
+			plugin.settings.trackIndex = {
+				"track-1": "music/Rock/song1.mp3",
+				"track-2": "music/Jazz/song2.mp3",
+			};
+			plugin.settings.tracks = {
+				"track-1": { title: "Bohemian Rhapsody", artist: "Queen", album: "Opera", duration: 354 },
+				"track-2": { title: "Short Song", artist: "Short", album: "Mini", duration: 120 },
+			};
+
+			const snapshot = service.getLibrarySnapshot([track1, track2], null, "all");
+
+			// Playlists should contain: smart playlist "Epic Songs", custom playlist "Rock", folder playlists "📁 Jazz", "📁 Rock"
+			const names = snapshot.playlists.map((p) => p.name);
+			expect(names).toContain("Epic Songs");
+			expect(names).toContain("📁 Rock");
+			expect(names).toContain("📁 Jazz");
+
+			const smartPl = snapshot.playlists.find((p) => p.name === "Epic Songs");
+			expect(smartPl?.isSmart).toBe(true);
+			expect(smartPl?.tracks).toHaveLength(1);
+			expect(smartPl?.tracks[0]?.title).toBe("Bohemian Rhapsody");
+
+			const folderPl = snapshot.playlists.find((p) => p.name === "📁 Rock");
+			expect(folderPl?.isFolder).toBe(true);
+		});
 	});
 });
 

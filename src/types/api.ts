@@ -5,6 +5,7 @@
  */
 
 import type { ReactTrackInfo } from "./library";
+import type { SmartPlaylistDefinition } from "./settings";
 
 /**
  * React API interface
@@ -12,8 +13,9 @@ import type { ReactTrackInfo } from "./library";
  * Exposes core player operations to React hooks:
  * - Playback control (by path, by category)
  * - Favorite management (toggle)
- * - Playlist management (add, remove, create, edit, delete)
+ * - Playlist management (add, remove, create, edit, delete, smart playlists)
  * - Audio parameters (volume, playback rate)
+ * - Metadata inspection and editing
  */
 export interface ReactApi {
 	/** 
@@ -109,5 +111,28 @@ export interface ReactApi {
 	 * @param rating - Rating (0-5)
 	 */
 	setRating: (path: string, rating: number) => Promise<void>;
+
+	/**
+	 * Opens in-app ID3/Vorbis metadata editor modal for a track
+	 * @param path - Music file path
+	 */
+	openMetadataEditor: (path: string) => void;
+
+	/**
+	 * Creates a new smart playlist via modal
+	 */
+	createSmartPlaylist: () => Promise<void>;
+
+	/**
+	 * Edits an existing smart playlist
+	 * @param id - Smart playlist ID
+	 */
+	editSmartPlaylist: (id: string) => Promise<void>;
+
+	/**
+	 * Deletes a smart playlist
+	 * @param id - Smart playlist ID
+	 */
+	deleteSmartPlaylist: (id: string) => Promise<void>;
 }
 

@@ -49,6 +49,7 @@
 	text-align: center;
 	transition: all 0.3s ease;
 	opacity: 0.5;
+	position: relative;
 }
 
 .music-player .lyrics-extended-line.is-active .lyrics-extended-text {

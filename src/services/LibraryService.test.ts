@@ -236,6 +236,58 @@ describe("LibraryService", () => {
 			expect(stateService.getState().currentList?.tracks).toHaveLength(1);
 		});
 
+		it("should sync smart playlists and folder playlists in refreshMusicList", () => {
+			const smartDef = {
+				id: "s1",
+				name: "Queen Only",
+				matchType: "all" as const,
+				rules: [{ id: "r1", field: "artist" as const, operator: "equals" as const, value: "Queen" }],
+				sortBy: "title" as const,
+				sortOrder: "asc" as const,
+			};
+
+			const { service, stateService } = createService({
+				settings: {
+					musicFolder: "music",
+					tracks: {
+						"id-1": { title: "Song 1", artist: "Queen", album: "Opera", path: "music/Rock/song1.mp3" },
+						"id-2": { title: "Song 2", artist: "Queen", album: "Opera", path: "music/Rock/song2.mp3" },
+						"id-3": { title: "Song 3", artist: "Bowie", album: "Heroes", path: "music/Jazz/song3.mp3" },
+					},
+					trackIndex: {
+						"id-1": "music/Rock/song1.mp3",
+						"id-2": "music/Rock/song2.mp3",
+						"id-3": "music/Jazz/song3.mp3",
+					},
+					favorites: [],
+					playlists: {},
+					artists: {},
+					albums: {},
+					smartPlaylists: {
+						s1: smartDef,
+					},
+					syncFolderPlaylists: true,
+					folderPlaylistDepth: 1,
+				},
+			});
+
+			const file1 = createMockTFile("music/Rock/song1.mp3");
+			const file2 = createMockTFile("music/Rock/song2.mp3");
+			const file3 = createMockTFile("music/Jazz/song3.mp3");
+
+			vi.spyOn(service, "getAllMusicFiles").mockReturnValue([file1, file2, file3]);
+
+			// 1. Sync smart playlist
+			stateService.setCurrentList({ type: "playlist", name: "Queen Only", tracks: [] });
+			service.refreshMusicList();
+			expect(stateService.getState().currentList?.tracks).toHaveLength(2);
+
+			// 2. Sync folder playlist
+			stateService.setCurrentList({ type: "playlist", name: "📁 Rock", tracks: [] });
+			service.refreshMusicList();
+			expect(stateService.getState().currentList?.tracks).toHaveLength(2);
+		});
+
 		it("should clear playback state when current track is deleted from library", () => {
 			const { service, stateService } = createService();
 			const deletedTrack = createMockTFile("music/deleted.mp3");
@@ -463,6 +515,169 @@ describe("LibraryService", () => {
 			expect(plugin.saveSettings).toHaveBeenCalled();
 			expect(stateService.getState().currentLyrics[0].text).toBe("Is this the real life?");
 			expect(onUpdated).toHaveBeenCalled();
+		});
+
+		it("should handle error in updateTrackMetadata gracefully", async () => {
+			const { service, app } = createService();
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockImplementation(() => {
+				throw new Error("Vault error");
+			});
+
+			await expect(service.updateTrackMetadata("music/song1.mp3")).resolves.toBeUndefined();
+		});
+
+		it("should handle error in removeTrackFromLibrary gracefully", async () => {
+			const { service, plugin } = createService();
+			vi.spyOn(plugin, "saveSettings").mockRejectedValue(new Error("Save failed"));
+
+			await expect(service.removeTrackFromLibrary("music/song1.mp3")).resolves.toBeUndefined();
+		});
+
+		it("should log and rethrow error in renameTrackInLibrary", async () => {
+			const { service, app, plugin } = createService();
+			const file = createMockTFile("new.mp3");
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(file);
+			vi.spyOn(plugin, "saveSettings").mockRejectedValue(new Error("Rename persist failed"));
+
+			await expect(service.renameTrackInLibrary("old.mp3", "new.mp3")).rejects.toThrow("Rename persist failed");
+		});
+
+		it("should update track ID references across favorites and playlists", () => {
+			const { service, plugin } = createService();
+			plugin.settings.favorites = ["old-id", "other-id"];
+			plugin.settings.playlists = {
+				Rock: ["old-id", "another-id"],
+			};
+
+			(service as any).updateTrackIdReferences("old-id", "new-migrated-id");
+
+			expect(plugin.settings.favorites).toContain("new-migrated-id");
+			expect(plugin.settings.favorites).not.toContain("old-id");
+			expect(plugin.settings.playlists["Rock"]).toContain("new-migrated-id");
+			expect(plugin.settings.playlists["Rock"]).not.toContain("old-id");
+		});
+
+		it("should fall back to companion .lrc file in updateTrackMetadata when embedded lyrics are empty", async () => {
+			const { service, app, plugin } = createService();
+			const file = createMockTFile("music/ballad.mp3");
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(file);
+
+			const metadataModule = await import("@/utils/audio/metadata");
+			vi.spyOn(metadataModule, "readAudioFileBinary").mockResolvedValue(new ArrayBuffer(10));
+			vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
+				title: "Ballad",
+				artist: "Singer",
+				lyricsText: "", // empty embedded lyrics
+			});
+			vi.spyOn(metadataModule, "readCompanionLrc").mockResolvedValue("[00:02.00]Companion lyric line");
+
+			await service.updateTrackMetadata("music/ballad.mp3");
+
+			const trackId = Object.keys(plugin.settings.tracks).find((k) =>
+				plugin.settings.tracks[k].title === "Ballad"
+			);
+			expect(trackId).toBeDefined();
+			expect(plugin.settings.tracks[trackId!].lyrics).toBe("[00:02.00]Companion lyric line");
+		});
+
+		it("should initialize trackIndex if undefined when renaming a track", async () => {
+			const { service, app, plugin } = createService();
+			const newFile = createMockTFile("music/new_track.mp3");
+			vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(newFile);
+
+			delete (plugin.settings as any).trackIndex;
+
+			await service.renameTrackInLibrary("music/old_track.mp3", "music/new_track.mp3");
+			expect(plugin.settings.trackIndex).toBeDefined();
+		});
+
+		it("should catch and log error if refreshMusicList throws during handleLibraryUpdated", async () => {
+			const { service } = createService();
+			const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+			vi.spyOn(service, "refreshMusicList").mockImplementation(() => {
+				throw new Error("Disk refresh error");
+			});
+
+			await service.handleLibraryUpdated(new Set());
+			expect(errSpy).toHaveBeenCalledWith(
+				"Error handling library update refresh:",
+				expect.any(Error)
+			);
+			errSpy.mockRestore();
+		});
+
+		it("should detect library inconsistency when stored track path is not present in actual vault audio files", async () => {
+			const { service, app } = createService({
+				settings: {
+					tracks: {
+						"id-1": { path: "music/song1.mp3" },
+					},
+					trackIndex: {
+						"id-1": "music/song1.mp3",
+					},
+				},
+			});
+
+			// Actual files in vault contain song_other.mp3 (same count = 1, but different path)
+			const mockFile = createMockTFile("music/song_other.mp3");
+			vi.spyOn(app.vault, "getFiles").mockReturnValue([mockFile]);
+
+			const isInconsistent = await service.checkLibraryConsistency();
+			expect(isInconsistent).toBe(true);
+		});
+
+		it("should rebuild all music library data via updateMusicLibrary", async () => {
+			const { service, app, plugin } = createService();
+			const updaterModule = await import("@/utils/library/updater");
+			vi.spyOn(updaterModule, "rebuildAllData").mockResolvedValue(42);
+
+			const count = await service.rebuildAllData();
+			expect(count).toBe(42);
+			expect(updaterModule.rebuildAllData).toHaveBeenCalledWith(app, plugin);
+		});
+
+		it("should throw error if refreshCurrentTrackDisplay or handleLibraryUpdated is called without required services", async () => {
+			const { service } = createService();
+
+			(service as any).lyricsService = null;
+			await expect(service.refreshCurrentTrackDisplay()).rejects.toThrow(
+				"refreshCurrentTrackDisplay requires StateService and LyricsService instances"
+			);
+
+			(service as any).stateService = null;
+			await expect(service.handleLibraryUpdated(new Set())).rejects.toThrow(
+				"handleLibraryUpdated requires StateService instance"
+			);
+		});
+
+		it("should detect inconsistency when trackId fails to resolve to a path", async () => {
+			const { service, app } = createService({
+				settings: {
+					tracks: {
+						"ghost-id": { title: "Ghost" },
+					},
+					trackIndex: {},
+				},
+			});
+
+			vi.spyOn(app.vault, "getFiles").mockReturnValue([createMockTFile("music/real.mp3")]);
+			const inconsistent = await service.checkLibraryConsistency();
+			expect(inconsistent).toBe(true);
+		});
+
+		it("should handle missing playlist and unknown list type during syncCurrentListAfterRefresh", () => {
+			const { service, stateService } = createService();
+
+			// 1. Missing playlist: type = "playlist", but name not in playlists
+			stateService.setCurrentList({ type: "playlist", name: "NonExistentPlaylist", tracks: [] });
+			service.syncCurrentListAfterRefresh();
+			expect(stateService.getState().currentList?.tracks).toEqual([]);
+
+			// 2. Unknown list type fallback
+			stateService.setCurrentList({ type: "custom-type", name: "Custom", tracks: [] });
+			service.syncCurrentListAfterRefresh();
+			expect(stateService.getState().currentList?.type).toBe("custom-type");
 		});
 	});
 });

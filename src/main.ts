@@ -12,7 +12,7 @@
 import { initBufferPolyfill } from "./utils/polyfills/buffer";
 initBufferPolyfill();
 
-import { Plugin } from 'obsidian';
+import { Notice, Plugin } from 'obsidian';
 import { MusicPlayerView, VIEW_TYPE_MUSIC_PLAYER } from './views/MusicPlayerView';
 import { generateArtistsAndAlbums } from './utils/data/transform';
 import { getTrackPath } from './utils/track/id';
@@ -20,6 +20,13 @@ import { MusicPlayerSettingTab } from './settings/SettingTab';
 import type { MusicPlayerSettings } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { t } from './utils/i18n/i18n';
+import { MusicCodeblockRenderChild } from './components/codeblock/MusicCodeblockRenderChild';
+import { EqualizerModal } from './components/modal/EqualizerModal';
+import { MetadataEditorModal } from './components/modal/MetadataEditorModal';
+import { SmartPlaylistModal } from './components/modal/SmartPlaylistModal';
+import { parseObsidianMusicProtocol } from './utils/protocol/uri';
+import { resolveVaultAudioFile } from './utils/codeblock/resolver';
+import { codeblockCoordinator } from './utils/codeblock/coordinator';
 
 /**
  * Playback modes:
@@ -73,8 +80,73 @@ export default class MusicPlayerPlugin extends Plugin {
 			}
 		});
 
+		// Add command: open 10-band equalizer
+		this.addCommand({
+			id: 'open-equalizer',
+			name: t('commands.openEqualizer') || 'Open 10-Band Equalizer',
+			callback: async () => {
+				await this.activateView();
+				const view = this.getView();
+				if (view) {
+					new EqualizerModal(this.app, this, view.equalizerService).open();
+				}
+			}
+		});
+
+		// Add command: edit metadata of current track
+		this.addCommand({
+			id: 'edit-track-metadata',
+			name: t('commands.editMetadata') || 'Edit Track Metadata',
+			callback: async () => {
+				await this.activateView();
+				const view = this.getView();
+				if (view && view.currentTrack) {
+					new MetadataEditorModal(this.app, this, view.currentTrack.path, {
+						onSave: async () => {
+							await view.refreshMusicList();
+						},
+					}).open();
+				} else {
+					new Notice(t('notice.noTrackPlaying') || 'No track is currently playing.');
+				}
+			}
+		});
+
+		// Add command: create smart playlist
+		this.addCommand({
+			id: 'create-smart-playlist',
+			name: t('commands.createSmartPlaylist') || 'Create Smart Playlist',
+			callback: async () => {
+				await this.activateView();
+				const view = this.getView();
+				new SmartPlaylistModal(this.app, this, {
+					onSave: async () => {
+						if (view) {
+							await view.refreshMusicList();
+						}
+					},
+				}).open();
+			}
+		});
+
 		// Add settings tab
 		this.addSettingTab(new MusicPlayerSettingTab(this.app, this));
+
+		// Register markdown codeblock processor: ```music
+		this.registerMarkdownCodeBlockProcessor('music', (source, el, ctx) => {
+			const child = new MusicCodeblockRenderChild(el, this, source);
+			ctx.addChild(child);
+		});
+
+		// Register obsidian protocol handler: obsidian://music-player?track=...&t=...
+		this.registerObsidianProtocolHandler('music-player', (params) => {
+			void this.handleProtocolAction(params);
+		});
+
+		// Coordinate single-source playback between in-note codeblocks and sidebar player
+		codeblockCoordinator.setGlobalPauseCallback(() => {
+			this.pauseActivePlayback();
+		});
 	}
 
 	/**
@@ -137,6 +209,20 @@ export default class MusicPlayerPlugin extends Plugin {
 	 */
 	async saveSettings() {
 		await this.saveData(this.settings);
+		const view = this.getView();
+		if (view) {
+			if (view.crossfadeService && this.settings.crossfadeDuration !== undefined) {
+				view.crossfadeService.setDuration(this.settings.crossfadeDuration);
+			}
+			if (view.equalizerService) {
+				if (this.settings.eqEnabled !== undefined && view.equalizerService.isEnabled() !== this.settings.eqEnabled) {
+					view.equalizerService.setEnabled(this.settings.eqEnabled);
+				}
+				if (this.settings.eqPreset && view.equalizerService.getState().preset !== this.settings.eqPreset) {
+					view.equalizerService.setPreset(this.settings.eqPreset);
+				}
+			}
+		}
 	}
 
 	/**
@@ -184,6 +270,63 @@ export default class MusicPlayerPlugin extends Plugin {
 
 		if (typeof setting.openTabById === "function") {
 			await setting.openTabById(this.manifest.id);
+		}
+	}
+
+	/**
+	 * Gets the active MusicPlayerView instance from workspace leaves, if open.
+	 */
+	getView(): MusicPlayerView | null {
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MUSIC_PLAYER);
+		const firstLeaf = leaves[0];
+		if (firstLeaf && firstLeaf.view instanceof MusicPlayerView) {
+			return firstLeaf.view;
+		}
+		return null;
+	}
+
+	/**
+	 * Pauses active playback in the sidebar player view.
+	 */
+	pauseActivePlayback(): void {
+		const view = this.getView();
+		if (view && view.isPlaying) {
+			void view.playbackService.togglePlay();
+		}
+	}
+
+	/**
+	 * Handles obsidian://music-player protocol deep links
+	 */
+	async handleProtocolAction(params: Record<string, string>): Promise<void> {
+		const payload = parseObsidianMusicProtocol(params);
+
+		// Activate/reveal the sidebar player view
+		await this.activateView();
+
+		if (!payload.track) {
+			return;
+		}
+
+		const file = resolveVaultAudioFile(this.app, payload.track, this.settings.trackIndex);
+		if (!file) {
+			new Notice(t('notice.trackMissing'));
+			return;
+		}
+
+		const view = this.getView();
+		if (!view) {
+			return;
+		}
+
+		await view.playbackService.playByPath(file.path, false, false);
+
+		if (payload.time !== undefined && payload.time > 0) {
+			view.playbackService.seekToTime(payload.time);
+		}
+
+		if (!payload.autoplay && view.isPlaying) {
+			await view.playbackService.togglePlay();
 		}
 	}
 }

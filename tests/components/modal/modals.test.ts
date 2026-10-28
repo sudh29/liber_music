@@ -13,6 +13,10 @@ import type MusicPlayerPlugin from "@/main";
 describe("Modals", () => {
 	const app = new App();
 
+	beforeEach(() => {
+		vi.useRealTimers();
+	});
+
 	describe("TextInputModal", () => {
 		it("should prompt user and resolve with entered value on Enter key", async () => {
 			const modal = new TextInputModal(app, "Enter playlist name", "Default Value");
@@ -98,16 +102,18 @@ describe("Modals", () => {
 		});
 
 		it("should resolve with null if closed without choosing", async () => {
+			vi.useFakeTimers();
 			const modal = new PlaylistPickerModal(app, ["Rock"]);
 			const promptPromise = modal.prompt();
 
 			modal.close();
 
 			// onClose uses setTimeout(..., 0)
-			await new Promise((r) => setTimeout(r, 10));
+			vi.advanceTimersByTime(50);
 
 			const result = await promptPromise;
 			expect(result).toBeNull();
+			vi.useRealTimers();
 		});
 	});
 

@@ -18,6 +18,9 @@ export { PlaylistPickerModal } from "./modal/PlaylistPickerModal";
 export { QueueModal } from "./modal/QueueModal";
 export { TrackSearchModal } from "./modal/TrackSearchModal";
 export { ConfirmModal } from "./modal/ConfirmModal";
+export { EqualizerModal } from "./modal/EqualizerModal";
+export { MetadataEditorModal } from "./modal/MetadataEditorModal";
+export { SmartPlaylistModal } from "./modal/SmartPlaylistModal";
 
 // Player Components
 export { AlbumDisc } from "./player/AlbumDisc";
@@ -30,6 +33,7 @@ export { LyricsFull } from "./player/LyricsFull";
 export { LyricsTriplet } from "./player/LyricsTriplet";
 export { LyricsExtendedFull } from "./player/LyricsExtendedFull";
 export { LyricsExtendedTriplet } from "./player/LyricsExtendedTriplet";
+export { AudioVisualizer } from "./player/AudioVisualizer";
 
 // Shared Components
 export { IconButton } from "./shared/IconButton";

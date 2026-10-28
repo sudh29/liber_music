@@ -177,5 +177,34 @@ describe("ListService", () => {
 			expect(result.list?.type).toBe("all");
 			expect(result.listId).toBe("all");
 		});
+
+		it("should fall back to all tracks when track is not in any playlist or favorites", () => {
+			const { listService } = createService({
+				playlists: {},
+				favorites: [],
+			});
+			const trackList = [new TFile("unrelated.mp3")];
+			const result = listService.getCurrentPlaylistForTrack(trackList[0]!, null, trackList, []);
+			expect(result.list).toEqual(trackList);
+			const listId = listService.calculateCurrentListId(trackList[0]!, null, trackList, []);
+			expect(listId).toBe("all");
+		});
+
+		it("should return null list and listId when sectionId is unrecognized in setCurrentListContext", () => {
+			const { listService } = createService();
+			const result = listService.setCurrentListContext("invalid-section", null, [], []);
+			expect(result).toEqual({ list: null, listId: null });
+		});
+
+		it("should handle empty-named playlist gracefully", () => {
+			const track = new TFile("song.mp3");
+			const { listService } = createService({
+				playlists: {
+					"": ["song.mp3"],
+				},
+			});
+			const result = listService.getCurrentPlaylistForTrack(track, null, [track], []);
+			expect(result.list).toEqual([track]);
+		});
 	});
 });

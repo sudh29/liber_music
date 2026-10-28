@@ -46,6 +46,45 @@
 	width: 100%;
 	padding: 8px 0;
 	text-align: center;
+	position: relative;
+}
+
+/* Copy timestamp citation link button */
+.music-player .lyrics-copy-btn {
+	position: absolute;
+	right: 6px;
+	opacity: 0;
+	pointer-events: none;
+	background: transparent;
+	border: none;
+	color: var(--text-muted);
+	padding: 4px;
+	border-radius: 4px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: opacity 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.music-player .lyrics-line:hover .lyrics-copy-btn {
+	opacity: 0.7;
+	pointer-events: auto;
+}
+
+.music-player .lyrics-copy-btn:hover {
+	opacity: 1;
+	color: var(--interactive-accent);
+	transform: scale(1.15);
+}
+
+@media (pointer: coarse) {
+	.music-player .lyrics-copy-btn {
+		opacity: 0.45;
+		pointer-events: auto;
+		min-width: 32px;
+		min-height: 32px;
+	}
 }
 
 /* Top/bottom spacer padding: height equals half viewport height, ensuring first and last lines can be centered.

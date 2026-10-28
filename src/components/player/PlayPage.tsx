@@ -18,10 +18,13 @@ import { TrackHeader } from "@/components/player/TrackHeader";
 import { ProgressBar } from "@/components/player/ProgressBar";
 import { PlaybackControls } from "@/components/player/PlaybackControls";
 import { TrackActions } from "@/components/player/TrackActions";
+import { AudioVisualizer } from "@/components/player/AudioVisualizer";
+import { applyPaletteTheme, extractPaletteFromImageUrl } from "@/utils/ui/palette";
 import { useLyricsAutoScroll } from "@/hooks/useLyricsAutoScroll";
 import type { PlayMode } from "@/main";
 import type { LyricLine } from "@/utils/lyrics/parser";
 import type { ExtendedLyricLine } from "@/utils/lyrics/extendedParser";
+import type { EqualizerService } from "@/services/EqualizerService";
 
 export type PlayPageViewMode = "disc" | "lyrics";
 
@@ -88,6 +91,21 @@ export interface PlayPageProps {
 	onToggleFavorite: (path: string, sectionId?: string) => void;
 	onVolumeChange: (volume: number) => void;
 	onPlaybackRateChange: (rate: number) => void;
+	onOpenEqualizer?: () => void;
+	/** Turntable body faceplate style */
+	turntableStyle?: 'obsidian' | 'walnut' | 'acrylic';
+	/** Whether real-time audio spectrum visualizer is enabled */
+	showVisualizer?: boolean;
+	/** Whether dynamic album art accent theming is enabled */
+	dynamicAlbumTheme?: boolean;
+	/** Equalizer service instance for frequency data */
+	equalizerService?: EqualizerService;
+	/** Callback function to toggle audio visualizer */
+	onToggleVisualizer?: () => void;
+	/** Callback function to cycle turntable style */
+	onToggleTurntableStyle?: () => void;
+	/** Callback function to open metadata editor */
+	onOpenMetadataEditor?: () => void;
 }
 
 export function PlayPage({
@@ -137,6 +155,14 @@ export function PlayPage({
 	onToggleFavorite,
 	onVolumeChange,
 	onPlaybackRateChange,
+	onOpenEqualizer,
+	turntableStyle = "obsidian",
+	showVisualizer = true,
+	dynamicAlbumTheme = true,
+	equalizerService,
+	onToggleVisualizer,
+	onToggleTurntableStyle,
+	onOpenMetadataEditor,
 }: PlayPageProps) {
 	// Determine whether to use extended lyrics
 	const useExtendedLyrics = viewMode === "disc" 
@@ -186,10 +212,38 @@ export function PlayPage({
 		[duration, onSeek]
 	);
 
+	const rootRef = React.useRef<HTMLDivElement>(null);
+
+	React.useEffect(() => {
+		let isCancelled = false;
+		if (!dynamicAlbumTheme) {
+			applyPaletteTheme(rootRef.current, null, false);
+			return;
+		}
+
+		void extractPaletteFromImageUrl(coverUrl).then((theme) => {
+			if (!isCancelled && rootRef.current) {
+				applyPaletteTheme(rootRef.current, theme, true);
+			}
+		});
+
+		return () => {
+			isCancelled = true;
+		};
+	}, [coverUrl, dynamicAlbumTheme]);
+
 	return (
-		<div className={`play-page-wrapper play-page-${viewMode}`}>
+		<div ref={rootRef} className={`play-page-wrapper play-page-${viewMode}`}>
 			<TrackHeader title={title} artist={artist} />
-			
+
+			{showVisualizer && (
+				<AudioVisualizer
+					equalizerService={equalizerService}
+					isPlaying={isPlaying}
+					onToggleVisualizer={onToggleVisualizer}
+				/>
+			)}
+
 			{/* Disc mode: rendered simultaneously, display toggled via CSS */}
 			<div 
 				className={`disc-and-lyrics-triplet-wrapper ${viewMode === "disc" ? "visible" : "hidden"}`} 
@@ -217,6 +271,7 @@ export function PlayPage({
 							prevCoverUrl={prevCoverUrl}
 							nextCoverUrl={nextCoverUrl}
 							lastAction={lastAction}
+							turntableStyle={turntableStyle}
 						/>
 					)}
 				</div>
@@ -251,6 +306,8 @@ export function PlayPage({
 						onSeek={handleSeekToTime}
 						scrollRef={scrollRef}
 						lineRefs={lineRefs}
+						currentPath={currentPath}
+						trackTitle={title}
 					/>
 				) : (
 					<LyricsFull
@@ -261,6 +318,8 @@ export function PlayPage({
 						onSeek={handleSeekToTime}
 						scrollRef={scrollRef}
 						lineRefs={lineRefs}
+						currentPath={currentPath}
+						trackTitle={title}
 					/>
 				)}
 			</div>
@@ -279,6 +338,12 @@ export function PlayPage({
 				onPlaybackRateChange={onPlaybackRateChange}
 				onToggleArtworkDisplayMode={onToggleArtworkDisplayMode}
 				onRate={onRate}
+				onOpenEqualizer={onOpenEqualizer}
+				turntableStyle={turntableStyle}
+				showVisualizer={showVisualizer}
+				onToggleVisualizer={onToggleVisualizer}
+				onToggleTurntableStyle={onToggleTurntableStyle}
+				onOpenMetadataEditor={onOpenMetadataEditor}
 			/>
 			<ProgressBar
 				current={currentTime}

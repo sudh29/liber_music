@@ -77,4 +77,126 @@ describe("library/updater utilities", () => {
 
 		vi.restoreAllMocks();
 	});
+
+	it("should clean stale trackIndex entries if any are present before cleanup", async () => {
+		const { app, plugin } = createPlugin();
+		app.vault.createFile("music/song.mp3", new ArrayBuffer(50));
+		plugin.settings.trackIndex = {
+			"stale-id": "music/deleted.mp3",
+		};
+
+		vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
+			title: "Song",
+			artist: "Artist",
+		});
+
+		const count = await rebuildAllData(app, plugin);
+		expect(count).toBe(1);
+		expect(plugin.settings.trackIndex["stale-id"]).toBeUndefined();
+		vi.restoreAllMocks();
+	});
+
+	it("should fall back to full binary read when header binary yields no metadata, and handle batch yielding and errors", async () => {
+		const { app, plugin } = createPlugin();
+
+		// Create 4 files to trigger processed % 4 === 0 event-loop yield
+		for (let i = 1; i <= 4; i++) {
+			app.vault.createFile(`music/track${i}.mp3`, new ArrayBuffer(50));
+		}
+
+		// Mock readAudioFileHeaderBinary to return null for track1, prompting full read
+		const headerSpy = vi.spyOn(metadataModule, "readAudioFileHeaderBinary").mockImplementation(async (_app, file) => {
+			if (file.path === "music/track1.mp3") return null;
+			return new ArrayBuffer(10);
+		});
+
+		const fullReadSpy = vi.spyOn(metadataModule, "readAudioFileBinary").mockResolvedValue(new ArrayBuffer(100));
+
+		vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockImplementation(async (buffer) => {
+			if (buffer.byteLength === 100) {
+				return { title: "From Full Binary", artist: "Artist 1" };
+			}
+			return { title: "From Header", artist: "Header Artist" };
+		});
+
+		const count = await rebuildAllData(app, plugin);
+		expect(count).toBe(4);
+		expect(fullReadSpy).toHaveBeenCalled();
+
+		headerSpy.mockRestore();
+		fullReadSpy.mockRestore();
+		vi.restoreAllMocks();
+	});
+
+	it("should catch inner file processing errors and continue processing remaining files", async () => {
+		const { app, plugin } = createPlugin();
+		app.vault.createFile("music/fail.mp3", new ArrayBuffer(50));
+		app.vault.createFile("music/ok.mp3", new ArrayBuffer(50));
+
+		vi.spyOn(metadataModule, "readAudioFileHeaderBinary").mockImplementation(async (_app, file) => {
+			if (file.path === "music/fail.mp3") {
+				throw new Error("File corrupt");
+			}
+			return new ArrayBuffer(10);
+		});
+
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		const count = await rebuildAllData(app, plugin);
+		expect(count).toBe(1);
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Error processing file music/fail.mp3:"),
+			expect.any(Error)
+		);
+		errorSpy.mockRestore();
+		vi.restoreAllMocks();
+	});
+
+	it("should catch and rethrow errors during rebuildAllData and show notice", async () => {
+		const { app, plugin } = createPlugin();
+		app.vault.createFile("music/corrupt.mp3", new ArrayBuffer(50));
+
+		plugin.saveSettings = vi.fn().mockRejectedValue(new Error("Disk write fault"));
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await expect(rebuildAllData(app, plugin)).rejects.toThrow("Disk write fault");
+		expect(errorSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Error rebuilding music library:"),
+			expect.any(Error)
+		);
+		errorSpy.mockRestore();
+		vi.restoreAllMocks();
+	});
+
+	it("should incrementally reuse cached track info when mtime and size match without re-reading", async () => {
+		const { app, plugin } = createPlugin();
+		const file = app.vault.createFile("music/track.mp3", new ArrayBuffer(100));
+		// Provide mock stat
+		(file as any).stat = { mtime: 1700000000, size: 100 };
+
+		const metaSpy = vi.spyOn(metadataModule, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
+			title: "Cached Song",
+			artist: "Cached Artist",
+		});
+
+		// Pass 1: Cold scan
+		const count1 = await rebuildAllData(app, plugin);
+		expect(count1).toBe(1);
+		expect(metaSpy).toHaveBeenCalledTimes(1);
+
+		const trackKeys = Object.keys(plugin.settings.tracks);
+		const trackId = trackKeys[0]!;
+		expect(plugin.settings.tracks[trackId]?.mtime).toBe(1700000000);
+		expect(plugin.settings.tracks[trackId]?.size).toBe(100);
+
+		// Pass 2: Incremental rebuild with identical stat
+		metaSpy.mockClear();
+		const count2 = await rebuildAllData(app, plugin);
+		expect(count2).toBe(1);
+		// Zero binary parses!
+		expect(metaSpy).not.toHaveBeenCalled();
+		expect(plugin.settings.tracks[trackId]?.title).toBe("Cached Song");
+
+		vi.restoreAllMocks();
+	});
 });
+

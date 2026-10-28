@@ -29,6 +29,10 @@ export interface TrackInfo {
 	replayGainDb?: number;
 	/** User star rating (0 to 5) */
 	rating?: number;
+	/** File modification timestamp (mtime) in ms for incremental scanning */
+	mtime?: number;
+	/** File size in bytes for incremental scanning */
+	size?: number;
 }
 
 /**
@@ -73,6 +77,91 @@ export interface MusicPlayerSettings {
 	artworkDisplayMode: 'vinyl' | 'card';
 	/** Track ID to star rating mapping (0 to 5) */
 	ratings?: Record<string, number>;
+	/** Whether to prevent display sleep via Screen Wake Lock while audio is playing */
+	keepScreenAwake?: boolean;
+	/** Whether to record finished listening history to Daily Notes */
+	dailyNotesScrobbler?: boolean;
+	/** Daily note section/heading to append tracks under (default: "## 🎧 Music Log") */
+	dailyNotesHeading?: string;
+	/** Crossfade duration in seconds (0 = gapless playback without crossfade, 1-10s = crossfade) */
+	crossfadeDuration?: number;
+	/** Whether the 10-band Web Audio DSP Equalizer is enabled */
+	eqEnabled?: boolean;
+	/** Active equalizer preset name ('Flat', 'Bass Boost', etc.) */
+	eqPreset?: string;
+	/** 10-band equalizer gains in dB (-12dB to +12dB) */
+	eqBands?: number[];
+	/** Equalizer preamp gain in dB (-12dB to +12dB) */
+	preampGainDb?: number;
+	/** Turntable body faceplate style */
+	turntableStyle?: 'obsidian' | 'walnut' | 'acrylic';
+	/** Whether dynamic album art accent color palette extraction is enabled */
+	dynamicAlbumTheme?: boolean;
+	/** Whether real-time audio spectrum groove visualizer is enabled */
+	showVisualizer?: boolean;
+	/** Map of smart playlist ID to SmartPlaylistDefinition */
+	smartPlaylists?: Record<string, SmartPlaylistDefinition>;
+	/** Whether to automatically mirror music folders as native playlists */
+	syncFolderPlaylists?: boolean;
+	/** Folder nesting depth when generating folder playlists (default: 1) */
+	folderPlaylistDepth?: number;
+	/** Whether to use WebAssembly Vorbis decoder for OGG/OPUS playback on unsupported platforms (iOS/iPadOS/Safari) */
+	enableWasmVorbisDecoder?: boolean;
+}
+
+/**
+ * Smart playlist rule target field
+ */
+export type SmartRuleField = 'title' | 'artist' | 'album' | 'genre' | 'year' | 'rating' | 'path' | 'duration';
+
+/**
+ * Smart playlist rule comparison operator
+ */
+export type SmartRuleOperator =
+	| 'equals'
+	| 'notEquals'
+	| 'contains'
+	| 'notContains'
+	| 'greaterThan'
+	| 'lessThan'
+	| 'between';
+
+/**
+ * Individual condition rule within a smart playlist
+ */
+export interface SmartPlaylistRule {
+	/** Unique rule ID */
+	id: string;
+	/** Field being evaluated */
+	field: SmartRuleField;
+	/** Operator applied to field */
+	operator: SmartRuleOperator;
+	/** Comparison value */
+	value: string | number;
+	/** Upper bound value for 'between' operator */
+	secondValue?: number;
+}
+
+/**
+ * Smart playlist configuration and query definition
+ */
+export interface SmartPlaylistDefinition {
+	/** Unique smart playlist ID */
+	id: string;
+	/** Playlist display name */
+	name: string;
+	/** Conjunction mode: match all rules (AND) or any rule (OR) */
+	matchType: 'all' | 'any';
+	/** List of filter rules */
+	rules: SmartPlaylistRule[];
+	/** Sort field (optional) */
+	sortBy?: SmartRuleField;
+	/** Sort direction (default: 'asc') */
+	sortOrder?: 'asc' | 'desc';
+	/** Max tracks to include (optional) */
+	limit?: number;
+	/** Icon name override (optional) */
+	icon?: string;
 }
 
 /**
@@ -93,4 +182,19 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	isShuffle: false,          // Default: sequential playback
 	artworkDisplayMode: 'vinyl', // Default: classic vinyl mode
 	ratings: {},               // Default: no ratings
+	keepScreenAwake: false,     // Default: do not keep screen awake
+	dailyNotesScrobbler: false, // Default: do not record to Daily Notes
+	dailyNotesHeading: '## 🎧 Music Log', // Default heading in Daily Notes
+	crossfadeDuration: 0,      // Default: gapless playback (0s)
+	eqEnabled: false,          // Default: EQ disabled / bypassed
+	eqPreset: 'Flat',          // Default preset
+	eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // Default 10 flat bands
+	preampGainDb: 0,           // Default 0 dB preamp
+	turntableStyle: 'obsidian', // Default: stealth dark matte aluminum
+	dynamicAlbumTheme: true,   // Default: dynamic album art theming enabled
+	showVisualizer: true,      // Default: real-time spectrum visualizer enabled
+	smartPlaylists: {},        // Default: no smart playlists
+	syncFolderPlaylists: false, // Default: folder auto-sync disabled
+	folderPlaylistDepth: 1,    // Default: depth 1
+	enableWasmVorbisDecoder: true, // Default: WASM Vorbis fallback enabled
 };

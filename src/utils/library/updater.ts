@@ -56,8 +56,9 @@ export async function rebuildAllData(
 			return 0;
 		}
 
-		// 3. Initialize state structures
+		// 3. Initialize state structures while retaining cached tracks for incremental scanning
 		plugin.settings.musicFolder = plugin.settings.musicFolder || '';
+		const existingTracks = { ...plugin.settings.tracks };
 		plugin.settings.trackIndex = {};
 		plugin.settings.tracks = {};
 		plugin.settings.favorites = plugin.settings.favorites || [];
@@ -68,7 +69,7 @@ export async function rebuildAllData(
 		let processed = 0;
 		const total = filteredFiles.length;
 		
-		// 4. Process each audio file
+		// 4. Process each audio file (incremental scan)
 		for (const file of filteredFiles) {
 			try {
 				notice.setMessage(
@@ -78,8 +79,29 @@ export async function rebuildAllData(
 						total,
 					})
 				);
+
+				const { getOrCreateTrackId } = await import("@/utils/track/id");
+				const trackId = getOrCreateTrackId(file.path, plugin.settings);
+
+				const mtime = file.stat?.mtime;
+				const size = file.stat?.size;
+				const cached = existingTracks[trackId];
+
+				// Incremental cache hit: if mtime and size are identical, reuse parsed metadata with 0 disk I/O
+				const isCacheHit =
+					Boolean(cached) &&
+					mtime !== undefined &&
+					size !== undefined &&
+					cached?.mtime === mtime &&
+					cached?.size === size;
+
+				if (isCacheHit && cached) {
+					plugin.settings.tracks[trackId] = cached;
+					processed++;
+					continue;
+				}
 				
-				// Read 256KB header slice first to conserve memory on mobile and lossless files
+				// Cache miss: Read 256KB header slice first to conserve memory on mobile and lossless files
 				let binary = await readAudioFileHeaderBinary(app, file);
 				let audioMetadata = binary ? await getEmbeddedAudioMetadataFromBuffer(binary) : null;
 
@@ -99,9 +121,6 @@ export async function rebuildAllData(
 				const artist = audioMetadata?.artist?.trim() || parsed.artist || '';
 				const album = audioMetadata?.album?.trim() || parsed.album || '';
 				const year = audioMetadata?.year || parsed.year;
-
-				const { getOrCreateTrackId } = await import("@/utils/track/id");
-				const trackId = getOrCreateTrackId(file.path, plugin.settings);
 
 				// Embedded lyrics take priority; fallback to companion .lrc file in same directory
 				let lyrics = audioMetadata?.lyricsText || '';
@@ -123,6 +142,9 @@ export async function rebuildAllData(
 					track: audioMetadata?.track,
 					duration: audioMetadata?.duration,
 					replayGainDb: audioMetadata?.replayGainDb,
+					rating: cached?.rating,
+					mtime,
+					size,
 				};
 
 				processed++;
@@ -130,6 +152,11 @@ export async function rebuildAllData(
 				
 				if (processed % 5 === 0 || processed === total) {
 					notice.setMessage(tWithParams("notice.progressTracks", { current: processed, total }));
+				}
+
+				// Yield to event loop periodically to allow mobile browser GC to reclaim ArrayBuffers
+				if (processed % 4 === 0) {
+					await new Promise((resolve) => setTimeout(resolve, 0));
 				}
 			} catch (error) {
 				console.error(`Error processing file ${file.path}:`, error);

@@ -178,4 +178,45 @@ export class PlaylistService {
 
 		return false;
 	}
+
+	/**
+	 * Gets smart playlists mapping table.
+	 */
+	getSmartPlaylists(): Record<string, import("@/types").SmartPlaylistDefinition> {
+		return this.plugin.settings.smartPlaylists || {};
+	}
+
+	/**
+	 * Saves or updates a smart playlist definition.
+	 */
+	async saveSmartPlaylist(definition: import("@/types").SmartPlaylistDefinition): Promise<void> {
+		if (!this.plugin.settings.smartPlaylists) {
+			this.plugin.settings.smartPlaylists = {};
+		}
+		this.plugin.settings.smartPlaylists[definition.id] = definition;
+		await this.plugin.saveSettings();
+	}
+
+	/**
+	 * Deletes a smart playlist by ID.
+	 */
+	async deleteSmartPlaylist(id: string): Promise<boolean> {
+		if (!this.plugin.settings.smartPlaylists || !this.plugin.settings.smartPlaylists[id]) {
+			return false;
+		}
+
+		const modal = new ConfirmModal(
+			this.app,
+			t("playlist.deleteTitle"),
+			tWithParams("playlist.deleteMessage", { name: this.plugin.settings.smartPlaylists[id]?.name || id }),
+			t("common.ok"),
+			t("common.cancel")
+		);
+		const confirmed = await modal.prompt();
+		if (!confirmed) return false;
+
+		delete this.plugin.settings.smartPlaylists[id];
+		await this.plugin.saveSettings();
+		return true;
+	}
 }

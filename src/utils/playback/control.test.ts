@@ -43,6 +43,24 @@ describe("playback/control utilities", () => {
 			const singleList = [mockFiles[0]!];
 			expect(getPreviousIndex(0, singleList, "normal")).toBe(0);
 		});
+
+		it("should use shuffleManager in getPreviousIndex when shuffle is active", () => {
+			const manager = new ShuffleManager();
+			manager.initialize(mockFiles.length, 0);
+			// Advance to next track so previous track exists in history
+			const nextIdx = manager.getNextTrack();
+			expect(nextIdx).not.toBeNull();
+
+			const prev = getPreviousIndex(nextIdx!, mockFiles, "normal", true, manager);
+			expect(prev).toBe(0); // returned to previous track
+		});
+
+		it("should auto-initialize uninitialized shuffleManager in getPreviousIndex", () => {
+			const manager = new ShuffleManager(); // totalCount is 0
+			const prev = getPreviousIndex(0, mockFiles, "normal", true, manager);
+			expect(manager.getTotalCount()).toBe(mockFiles.length);
+			expect(prev).toBe(2); // previous track fallback
+		});
 	});
 
 	describe("getNextIndex", () => {
@@ -149,6 +167,46 @@ describe("playback/control utilities", () => {
 				shouldRepeat: false,
 				shouldStop: true,
 			});
+		});
+
+		it("should handle shuffleManager in handleTrackEnd when deck has remaining tracks", () => {
+			const manager = new ShuffleManager();
+			manager.initialize(mockFiles.length, 0);
+			// 2 tracks remaining
+			const res = handleTrackEnd("normal", 0, mockFiles, true, manager);
+			expect(res).toEqual({ shouldPlayNext: true, shouldRepeat: false, shouldStop: false });
+		});
+
+		it("should auto-initialize uninitialized shuffleManager in handleTrackEnd", () => {
+			const manager = new ShuffleManager(); // totalCount is 0
+			const res = handleTrackEnd("normal", 0, mockFiles, true, manager);
+			expect(manager.getTotalCount()).toBe(mockFiles.length);
+			expect(res).toEqual({ shouldPlayNext: true, shouldRepeat: false, shouldStop: false });
+		});
+
+		it("should handle shuffleManager in handleTrackEnd when deck is exhausted in repeat-all mode", () => {
+			const manager = new ShuffleManager();
+			manager.initialize(mockFiles.length, 0);
+			while (manager.getRemainingCount() > 0) {
+				manager.getNextTrack();
+			}
+			const res = handleTrackEnd("repeat-all", 2, mockFiles, true, manager);
+			expect(res).toEqual({ shouldPlayNext: true, shouldRepeat: false, shouldStop: false });
+		});
+
+		it("should handle shuffleManager in handleTrackEnd when deck is exhausted in normal mode (should stop)", () => {
+			const manager = new ShuffleManager();
+			manager.initialize(mockFiles.length, 0);
+			while (manager.getRemainingCount() > 0) {
+				manager.getNextTrack();
+			}
+			const res = handleTrackEnd("normal", 2, mockFiles, true, manager);
+			expect(res).toEqual({ shouldPlayNext: false, shouldRepeat: false, shouldStop: true });
+		});
+
+		it("should return shouldStop for unhandled playback modes", () => {
+			const res = handleTrackEnd("custom" as any, 0, mockFiles, false);
+			expect(res).toEqual({ shouldPlayNext: false, shouldRepeat: false, shouldStop: true });
 		});
 	});
 

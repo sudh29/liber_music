@@ -19,6 +19,8 @@ import type { LibraryService } from "./LibraryService";
 import { sortTracksByTrack } from "@/utils/data/sort";
 import { getOrCreateTrackId, getTrackPath } from "@/utils/track/id";
 import { parseTrackFilename } from "@/utils/audio/filenameParser";
+import { evaluateSmartPlaylist } from "@/utils/library/smartPlaylist";
+import { generateFolderPlaylists } from "@/utils/library/folderSync";
 import { t } from "@/utils/i18n/i18n";
 
 /**
@@ -228,6 +230,9 @@ export class SnapshotService {
 			isShuffle: this.plugin.settings.isShuffle ?? false,
 			rating: track?.rating ?? (trackId ? this.plugin.settings.ratings?.[trackId] : 0) ?? 0,
 			artworkDisplayMode: this.plugin.settings.artworkDisplayMode ?? 'vinyl',
+			turntableStyle: this.plugin.settings.turntableStyle ?? 'obsidian',
+			dynamicAlbumTheme: this.plugin.settings.dynamicAlbumTheme ?? true,
+			showVisualizer: this.plugin.settings.showVisualizer ?? true,
 		};
 	}
 
@@ -258,6 +263,7 @@ export class SnapshotService {
 			}
 
 			const title = meta?.title?.trim() || parsed.title || file.name;
+			const genreStr = Array.isArray(meta?.genre) ? meta?.genre[0] : meta?.genre;
 
 			return {
 				path: file.path,
@@ -267,6 +273,9 @@ export class SnapshotService {
 				coverUrl: this.resolveTrackCoverUrl(file),
 				duration: meta?.duration,
 				rating: meta?.rating ?? this.plugin.settings.ratings?.[trackId] ?? this.plugin.settings.ratings?.[file.path] ?? 0,
+				year: meta?.year ?? parsed.year,
+				genre: genreStr,
+				track: meta?.track,
 			};
 		};
 
@@ -285,7 +294,7 @@ export class SnapshotService {
 			})
 			.map(mapToTrack);
 
-		const playlistsData = Object.entries(this.plugin.settings.playlists || {}).map(([name, trackIds]) => {
+		const customPlaylistsData = Object.entries(this.plugin.settings.playlists || {}).map(([name, trackIds]) => {
 			const playlistFiles = trackIds
 				.map(id => {
 					const path = getTrackPath(id, this.plugin.settings);
@@ -297,8 +306,51 @@ export class SnapshotService {
 				name,
 				tracks: sortedTracks.map(mapToTrack),
 			};
+		}).sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+		// Evaluate Smart Playlists
+		const smartPlaylistsMap = this.plugin.settings.smartPlaylists || {};
+		const trackItemsForSmart = validTrackList.map((file) => {
+			const trackId = pathToIdMap.get(file.path) || file.path;
+			const meta = this.plugin.settings.tracks[trackId] || { title: file.basename, artist: "", album: "" };
+			return { id: trackId, path: file.path, info: meta };
 		});
-		const playlists = playlistsData.sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+		const smartPlaylistsData = Object.values(smartPlaylistsMap).map((def) => {
+			const matchedIds = evaluateSmartPlaylist(def, trackItemsForSmart);
+			const idToFileMap = new Map(validTrackList.map((f) => [pathToIdMap.get(f.path) || f.path, f]));
+			const matchedFiles = matchedIds
+				.map((id) => idToFileMap.get(id))
+				.filter((file): file is TFile => file != null);
+
+			return {
+				name: def.name,
+				tracks: matchedFiles.map(mapToTrack),
+				isSmart: true,
+				smartDefinition: def,
+			};
+		}).sort((a, b) => a.name.localeCompare(b.name, "en"));
+
+		// Dynamic Folder Playlists
+		let folderPlaylistsData: Array<{ name: string; tracks: ReactTrackInfo[]; isFolder?: boolean }> = [];
+		if (this.plugin.settings.syncFolderPlaylists) {
+			const folderResults = generateFolderPlaylists(
+				validTrackList,
+				this.plugin.settings.musicFolder || "",
+				this.plugin.settings.folderPlaylistDepth ?? 1
+			);
+			folderPlaylistsData = folderResults.map((fp) => {
+				const sortedFiles = sortTracksByTrack(fp.files, this.plugin.settings);
+				return {
+					name: fp.name,
+					tracks: sortedFiles.map(mapToTrack),
+					isFolder: true,
+				};
+			});
+		}
+
+		// Combined playlists list: Smart playlists first, Custom playlists second, Folder playlists third
+		const playlists = [...smartPlaylistsData, ...customPlaylistsData, ...folderPlaylistsData];
 
 		const artistsData = this.libraryService.getArtists(validTrackList);
 		const artists = artistsData.map(({ name, tracks }) => ({

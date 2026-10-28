@@ -41,8 +41,8 @@ describe("metadata audio utilities", () => {
 		vi.clearAllMocks();
 	});
 
-	it("should define METADATA_HEADER_CHUNK_SIZE as 256KB", () => {
-		expect(METADATA_HEADER_CHUNK_SIZE).toBe(256 * 1024);
+	it("should define METADATA_HEADER_CHUNK_SIZE as 512KB", () => {
+		expect(METADATA_HEADER_CHUNK_SIZE).toBe(512 * 1024);
 	});
 
 	describe("readAudioFileBinary", () => {
@@ -89,6 +89,29 @@ describe("metadata audio utilities", () => {
 
 			const result = await readAudioFileBinary(app, file);
 			expect(result).toBeNull();
+		});
+
+		it("should catch unexpected error and log error in outer catch block", async () => {
+			const app = new App();
+			let accessCount = 0;
+			const corruptFile = {
+				get path(): string {
+					accessCount++;
+					if (accessCount <= 2) {
+						throw new Error("Vault filesystem engine crash");
+					}
+					return "music/test.mp3";
+				},
+			} as any;
+
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const result = await readAudioFileBinary(app, corruptFile);
+			expect(result).toBeNull();
+			expect(errorSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Error reading audio file"),
+				expect.any(Error)
+			);
+			errorSpy.mockRestore();
 		});
 	});
 
@@ -230,6 +253,75 @@ describe("metadata audio utilities", () => {
 			expect(metadata?.lyricsText).toContain("[00:01.00]Timestamped line 1");
 		});
 
+		it("should group multiple chunks under the same format and tag ID and handle slash rejoining", async () => {
+			const buffer = new ArrayBuffer(100);
+
+			mockParseBuffer.mockResolvedValue({
+				format: {},
+				common: {},
+				native: {
+					"ID3v2.3": [
+						{
+							id: "TXXX:UNSYNCED_LYRICS",
+							value: "First verse chunk",
+						},
+						{
+							id: "TXXX:UNSYNCED_LYRICS",
+							value: "second verse chunk",
+						},
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const metadata = await getEmbeddedAudioMetadataFromBuffer(buffer);
+			expect(metadata?.lyricsText).toBe("First verse chunk/second verse chunk");
+		});
+
+		it("should match lyrics tags by description when id is not an explicit lyrics id", async () => {
+			const buffer = new ArrayBuffer(100);
+
+			mockParseBuffer.mockResolvedValue({
+				format: {},
+				common: {},
+				native: {
+					"ID3v2.3": [
+						// Non-matching tag (COMM) with non-matching description object
+						{
+							id: "COMM",
+							value: { description: "comment", text: "just a comment" },
+						},
+						// Tag with invalid description types to test descriptionFromUnknown
+						{
+							id: "OTHER",
+							value: { description: 123, text: "invalid desc" },
+						},
+						{
+							id: "OTHER2",
+							value: "plain string no desc",
+						},
+						// Empty text tag that should be skipped
+						{
+							id: "USLT",
+							value: "   ",
+						},
+						// Matching by description
+						{
+							id: "TXXX",
+							value: {
+								description: "SubRip Lyrics",
+								text: "[00:03.50]Synchronized via description",
+							},
+						},
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const metadata = await getEmbeddedAudioMetadataFromBuffer(buffer);
+			expect(metadata?.lyricsText).toBe("[00:03.50]Synchronized via description");
+		});
+
 		it("should fall back to common.lyrics if native lyrics tags are absent", async () => {
 			const buffer = new ArrayBuffer(100);
 
@@ -239,6 +331,10 @@ describe("metadata audio utilities", () => {
 					lyrics: [
 						{ text: "Common lyrics line 1" },
 						"Common lyrics line 2",
+						null,
+						123,
+						{ text: 456 },
+						{ other: "no-text" },
 					],
 				},
 				native: {},
@@ -307,6 +403,71 @@ describe("metadata audio utilities", () => {
 
 			const cover = await getEmbeddedCoverFromFile(app, file);
 			expect(cover).toBeUndefined();
+		});
+
+		it("should catch unexpected error and log error in getEmbeddedCoverFromFile outer catch block", async () => {
+			const app = new App();
+			const corruptFile = {
+				path: "music/crash.mp3",
+				get extension(): string {
+					throw new Error("Extension getter failure");
+				},
+			} as any;
+
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+			const cover = await getEmbeddedCoverFromFile(app, corruptFile);
+			expect(cover).toBeUndefined();
+			expect(errorSpy).toHaveBeenCalledWith(
+				expect.stringContaining("Error getting embedded cover"),
+				expect.any(Error)
+			);
+			errorSpy.mockRestore();
+		});
+
+		it("should extract lyrics when tag value is an array of strings or object with array of strings", async () => {
+			mockParseBuffer.mockResolvedValueOnce({
+				format: { duration: 180 },
+				common: {
+					title: "Multi-chunk lyrics",
+				},
+				native: {
+					"Vorbis": [
+						{ id: "LYRICS", value: ["Line 1", "Line 2", "Line 3"] },
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const meta = await getEmbeddedAudioMetadataFromBuffer(new ArrayBuffer(50), "ogg");
+			expect(meta.lyricsText).toBe("Line 1\nLine 2\nLine 3");
+
+			mockParseBuffer.mockResolvedValueOnce({
+				format: { duration: 180 },
+				common: {},
+				native: {
+					"ID3v2.3": [
+						{ id: "USLT", value: { text: ["Verse 1", "Verse 2"] } },
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const meta2 = await getEmbeddedAudioMetadataFromBuffer(new ArrayBuffer(50), "mp3");
+			expect(meta2.lyricsText).toBe("Verse 1\nVerse 2");
+
+			mockParseBuffer.mockResolvedValueOnce({
+				format: { duration: 180 },
+				common: {},
+				native: {
+					"Vorbis": [
+						{ id: "LYRICS", value: 123456 }, // number is unextractable
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const meta3 = await getEmbeddedAudioMetadataFromBuffer(new ArrayBuffer(50), "ogg");
+			expect(meta3.lyricsText).toBeUndefined();
 		});
 	});
 });

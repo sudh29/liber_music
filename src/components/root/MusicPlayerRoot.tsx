@@ -14,7 +14,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Platform, TFile } from "obsidian";
 import "./MusicPlayerRoot.css";
-import { ConfirmModal, LibraryPage, NavigationBar, PlayPage } from "@/components";
+import { ConfirmModal, EqualizerModal, LibraryPage, NavigationBar, PlayPage } from "@/components";
 import { t } from "@/utils/i18n/i18n";
 import {
 	useLibraryManagement,
@@ -34,13 +34,13 @@ export interface MusicPlayerRootProps {
 }
 
 export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
-	// Manage state with hooks
-	const { playback } = usePlaybackState(view);
-	const { library, refreshSnapshot } = useLibraryState(view);
-
 	// Navigation state management
 	const navigation = useNavigation();
 	const pageState = usePageState();
+
+	// Manage state with hooks (tab-aware playback state throttling)
+	const { playback } = usePlaybackState(view, { activeTab: navigation.tab });
+	const { library, refreshSnapshot } = useLibraryState(view);
 
 	// Encapsulate business logic with hooks
 	const playbackControl = usePlaybackControl(view);
@@ -252,6 +252,29 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 						onToggleFavorite={(path, sectionId) => { void libraryManagement.toggleFavorite(path, sectionId); }}
 						onVolumeChange={(volume) => { void handleVolumeChange(volume); }}
 						onPlaybackRateChange={(rate) => { void handlePlaybackRateChange(rate); }}
+						onOpenEqualizer={() => {
+							new EqualizerModal(view.app, view.plugin, view.equalizerService).open();
+						}}
+						turntableStyle={playback.turntableStyle}
+						showVisualizer={playback.showVisualizer}
+						dynamicAlbumTheme={playback.dynamicAlbumTheme}
+						equalizerService={view.equalizerService}
+						onToggleVisualizer={() => {
+							view.plugin.settings.showVisualizer = !playback.showVisualizer;
+							void view.plugin.saveSettings();
+						}}
+						onToggleTurntableStyle={() => {
+							const styles: Array<"obsidian" | "walnut" | "acrylic"> = ["obsidian", "walnut", "acrylic"];
+							const currentIdx = styles.indexOf(playback.turntableStyle ?? "obsidian");
+							const nextStyle = styles[(currentIdx + 1) % styles.length]!;
+							view.plugin.settings.turntableStyle = nextStyle;
+							void view.plugin.saveSettings();
+						}}
+						onOpenMetadataEditor={() => {
+							if (playback.currentPath) {
+								api.openMetadataEditor(playback.currentPath);
+							}
+						}}
 					/>
 			) : null}
 
@@ -266,6 +289,10 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 					onAddToPlaylist={(path, sectionId) => { void libraryManagement.addToPlaylist(path, sectionId); }}
 					onRemoveFromPlaylist={(path, playlistName) => { void libraryManagement.removeFromPlaylist(path, playlistName); }}
 					onCreatePlaylist={() => { void libraryManagement.createPlaylist(); }}
+					onCreateSmartPlaylist={() => { void api.createSmartPlaylist(); }}
+					onEditSmartPlaylist={(id) => { void api.editSmartPlaylist(id); }}
+					onDeleteSmartPlaylist={(id) => { void api.deleteSmartPlaylist(id); }}
+					onOpenMetadataEditor={(path) => { api.openMetadataEditor(path); }}
 					onPlayCategory={(categoryType, categoryName, tracks) => { void libraryManagement.playCategory(categoryType, categoryName, tracks); }}
 					onEditPlaylist={(playlistName) => { return libraryManagement.editPlaylistName(playlistName); }}
 					onDeletePlaylist={(playlistName) => { return libraryManagement.deletePlaylist(playlistName); }}

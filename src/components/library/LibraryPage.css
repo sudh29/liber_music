@@ -401,3 +401,18 @@
 .music-player .add-playlist-icon:hover {
 	color: var(--interactive-accent);
 }
+
+.music-player .playlist-add-buttons {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	width: 100%;
+	margin: 8px 0;
+}
+
+.music-player .playlist-badge-icon {
+	margin-right: 4px;
+	font-size: 13px;
+	vertical-align: middle;
+}

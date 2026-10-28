@@ -8,8 +8,10 @@
  * - Managing volume and playback rate
  */
 
-import { App } from "obsidian";
-import { TFile } from "obsidian";
+import { App, TFile } from "obsidian";
+import { EqualizerService } from "./EqualizerService";
+import { shouldTranscodeVorbis, transcodeOggVorbisToWavBlob } from "@/utils/audio/vorbisDecoder";
+import type MusicPlayerPlugin from "@/main";
 
 /**
  * Audio event handlers interface
@@ -23,6 +25,8 @@ export interface AudioEventHandlers {
 	onLoadedMetadata: () => void;
 	/** Callback when playback ends */
 	onEnded: () => void;
+	/** Callback when audio error occurs */
+	onError?: (error: MediaError | null, event: Event) => void;
 }
 
 /**
@@ -61,17 +65,52 @@ export class AudioService {
 	};
 
 	/**
+	 * Callback when audio element encounters a decoding or network error.
+	 */
+	private readonly onAudioError = (event: Event): void => {
+		const el = this.audioElement;
+		const h = this.currentHandlers;
+		if (!el || !h) return;
+		h.onError?.(el.error ?? null, event);
+	};
+
+	/**
 	 * Creates an audio service instance.
 	 * 
 	 * @param app - Obsidian App instance
+	 * @param equalizerService - Optional equalizer service
+	 * @param plugin - Optional plugin reference for accessing settings
 	 */
-	constructor(private app: App) {}
+	constructor(
+		private app: App,
+		private equalizerService?: EqualizerService,
+		private plugin?: MusicPlayerPlugin
+	) {}
+
+	/**
+	 * Sets the plugin reference.
+	 */
+	setPlugin(plugin: MusicPlayerPlugin): void {
+		this.plugin = plugin;
+	}
+
+	/**
+	 * Sets the equalizer service and connects active audio element if available.
+	 */
+	setEqualizerService(eqService: EqualizerService): void {
+		this.equalizerService = eqService;
+		if (this.audioElement) {
+			this.equalizerService.attachAudioElement(this.audioElement);
+		}
+	}
 
 	/**
 	 * Creates and initializes the audio element.
 	 * 
 	 * Cleans up any existing audio element first. Binds all event listeners to the new element.
 	 * Uses Blob URL for playback so vault files are not locked, allowing them to be renamed or deleted.
+	 * If the track is an Ogg Vorbis file on an unsupported platform (e.g. iOS/iPadOS/Safari),
+	 * it is automatically decoded via WebAssembly and transcoded to a 16-bit PCM WAV Blob.
 	 * 
 	 * @param trackFile - Audio file to play
 	 * @param volume - Initial volume (0-1)
@@ -92,7 +131,20 @@ export class AudioService {
 		// Prevents file lock so file can be safely renamed or removed
 		try {
 			const binary = await this.app.vault.readBinary(trackFile);
-			const blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
+			let blob: Blob;
+
+			const wasmEnabled = this.plugin?.settings.enableWasmVorbisDecoder ?? true;
+			if (wasmEnabled && shouldTranscodeVorbis(trackFile.extension)) {
+				try {
+					blob = await transcodeOggVorbisToWavBlob(binary);
+				} catch (decodeErr) {
+					console.warn(`WASM Vorbis decoding failed for ${trackFile.path}, falling back to native:`, decodeErr);
+					blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
+				}
+			} else {
+				blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
+			}
+
 			const blobUrl = URL.createObjectURL(blob);
 			this.currentBlobUrl = blobUrl;
 
@@ -109,6 +161,12 @@ export class AudioService {
 			this.audioElement.addEventListener("loadedmetadata", handlers.onLoadedMetadata);
 			this.audioElement.addEventListener("ended", handlers.onEnded);
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
+			this.audioElement.addEventListener("error", this.onAudioError);
+
+			// Connect to Web Audio equalizer graph if enabled
+			if (this.equalizerService) {
+				this.equalizerService.attachAudioElement(this.audioElement);
+			}
 
 			return this.audioElement;
 		} catch (error) {
@@ -125,6 +183,11 @@ export class AudioService {
 			this.audioElement.addEventListener("loadedmetadata", handlers.onLoadedMetadata);
 			this.audioElement.addEventListener("ended", handlers.onEnded);
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
+			this.audioElement.addEventListener("error", this.onAudioError);
+
+			if (this.equalizerService) {
+				this.equalizerService.attachAudioElement(this.audioElement);
+			}
 
 			return this.audioElement;
 		}
@@ -193,6 +256,7 @@ export class AudioService {
 				this.audioElement.removeEventListener("loadedmetadata", this.currentHandlers.onLoadedMetadata);
 				this.audioElement.removeEventListener("ended", this.currentHandlers.onEnded);
 				this.audioElement.removeEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
+				this.audioElement.removeEventListener("error", this.onAudioError);
 			}
 
 			this.audioElement = null;
@@ -224,6 +288,7 @@ export class AudioService {
 		}
 		
 		try {
+			await this.equalizerService?.resumeContext();
 			await this.audioElement.play();
 		} catch (error) {
 			// AbortError when pause() interrupts play() during track changes is normal

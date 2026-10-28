@@ -154,4 +154,54 @@ describe("PlaylistService", () => {
 			expect(await service.removeFromPlaylist("t1", "NonExistent")).toBe(false);
 		});
 	});
+
+	describe("smartPlaylists", () => {
+		it("should get, save, and delete smart playlists", async () => {
+			const { service, plugin } = createService();
+			expect(service.getSmartPlaylists()).toEqual({});
+
+			const smartDef = {
+				id: "sp1",
+				name: "Best Tracks",
+				matchType: "all" as const,
+				rules: [{ id: "r1", field: "rating" as const, operator: "greaterThan" as const, value: 4 }],
+			};
+
+			await service.saveSmartPlaylist(smartDef);
+			expect(plugin.settings.smartPlaylists["sp1"]).toEqual(smartDef);
+			expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+
+			// Delete - user confirms
+			vi.spyOn(ConfirmModal.prototype, "prompt").mockResolvedValue(true);
+			const deleted = await service.deleteSmartPlaylist("sp1");
+			expect(deleted).toBe(true);
+			expect(plugin.settings.smartPlaylists["sp1"]).toBeUndefined();
+
+			// Delete non-existent
+			expect(await service.deleteSmartPlaylist("non_existent")).toBe(false);
+		});
+	});
+
+	describe("renamePlaylist & addToPlaylist edge branches", () => {
+		it("should return false if old playlist is deleted while prompt is open in editPlaylistName", async () => {
+			const { service, plugin } = createService({ Rock: ["t1"] });
+			vi.spyOn(TextInputModal.prototype, "prompt").mockImplementation(async () => {
+				delete plugin.settings.playlists["Rock"];
+				return "Classic Rock";
+			});
+
+			const result = await service.editPlaylistName("Rock");
+			expect(result).toBe(false);
+		});
+
+		it("should initialize empty array when adding to a newly created playlist name in addToPlaylist", async () => {
+			const { service, plugin } = createService();
+			vi.spyOn(PlaylistPickerModal.prototype, "prompt").mockResolvedValue("NewCustomList");
+
+			const success = await service.addToPlaylist("track-id-99");
+			expect(success).toBe(true);
+			expect(plugin.settings.playlists["NewCustomList"]).toEqual(["track-id-99"]);
+			expect(plugin.saveSettings).toHaveBeenCalled();
+		});
+	});
 });

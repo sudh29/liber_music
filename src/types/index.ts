@@ -9,11 +9,18 @@
  */
 
 // Settings types
-export type { MusicPlayerSettings, TrackInfo } from './settings';
+export type {
+	MusicPlayerSettings,
+	TrackInfo,
+	SmartRuleField,
+	SmartRuleOperator,
+	SmartPlaylistRule,
+	SmartPlaylistDefinition,
+} from './settings';
 export { DEFAULT_SETTINGS } from './settings';
 export type { PlayMode } from '../main';
 
 // React component types
 export type { ReactPlaybackSnapshot } from './playback';
-export type { ReactTrackInfo, ReactLibrarySnapshot } from './library';
+export type { ReactTrackInfo, ReactPlaylistGroup, ReactLibrarySnapshot } from './library';
 export type { ReactApi } from './api';

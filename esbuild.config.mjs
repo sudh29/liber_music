@@ -41,35 +41,52 @@ function collectCssFiles(dir) {
 }
 
 /**
- * Converts vinyl UI PNGs under src/assets into data URLs and injects CSS into styles.css (not main.js).
+ * Converts vinyl UI assets (WebP/PNG) under src/assets into data URLs and injects CSS into styles.css (not main.js).
  */
 function buildVinylEmbeddedCssFragment() {
-	const discPath = path.join(process.cwd(), "src", "assets", "disc.png");
-	const needlePath = path.join(process.cwd(), "src", "assets", "needle.png");
+	const assetsDir = path.join(process.cwd(), "src", "assets");
+	const discWebp = path.join(assetsDir, "disc.webp");
+	const discPng = path.join(assetsDir, "disc.png");
+	const needleWebp = path.join(assetsDir, "needle.webp");
+	const needlePng = path.join(assetsDir, "needle.png");
+
 	const rules = [];
-	if (fs.existsSync(discPath)) {
-		const b64 = fs.readFileSync(discPath).toString("base64");
+
+	if (fs.existsSync(discWebp)) {
+		const b64 = fs.readFileSync(discWebp).toString("base64");
+		rules.push(
+			`.music-player .disc-background.disc-background-embedded{background-image:url("data:image/webp;base64,${b64}")}`,
+		);
+	} else if (fs.existsSync(discPng)) {
+		const b64 = fs.readFileSync(discPng).toString("base64");
 		rules.push(
 			`.music-player .disc-background.disc-background-embedded{background-image:url("data:image/png;base64,${b64}")}`,
 		);
 	} else {
-		console.warn(`⚠ Missing ${discPath}, vinyl disc image will not render`);
+		console.warn(`⚠ Missing disc image (disc.webp or disc.png), vinyl disc image will not render`);
 	}
-	if (fs.existsSync(needlePath)) {
-		const b64 = fs.readFileSync(needlePath).toString("base64");
+
+	if (fs.existsSync(needleWebp)) {
+		const b64 = fs.readFileSync(needleWebp).toString("base64");
+		rules.push(
+			`.music-player .needle-image.needle-image-embedded{background-image:url("data:image/webp;base64,${b64}")}`,
+		);
+	} else if (fs.existsSync(needlePng)) {
+		const b64 = fs.readFileSync(needlePng).toString("base64");
 		rules.push(
 			`.music-player .needle-image.needle-image-embedded{background-image:url("data:image/png;base64,${b64}")}`,
 		);
 	} else {
-		console.warn(`⚠ Missing ${needlePath}, vinyl needle image will not render`);
+		console.warn(`⚠ Missing needle image (needle.webp or needle.png), vinyl needle image will not render`);
 	}
+
 	return `/* vinyl assets: inlined from src/assets at build */\n${rules.join("\n")}\n`;
 }
 
-/** Removes obsolete PNG assets from dist after inlining into styles.css. */
+/** Removes obsolete PNG/WebP assets from dist after inlining into styles.css. */
 function removeStaleVinylPngFromDist() {
 	const dir = path.join(process.cwd(), outDir);
-	for (const name of ["disc.png", "needle.png"]) {
+	for (const name of ["disc.png", "needle.png", "disc.webp", "needle.webp"]) {
 		const p = path.join(dir, name);
 		try {
 			if (fs.existsSync(p)) fs.unlinkSync(p);

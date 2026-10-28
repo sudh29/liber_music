@@ -11,18 +11,23 @@
  * - Restoring last played track (restoreLastPlayedTrack)
  */
 
-import { TFile } from "obsidian";
+import { Notice, Platform, TFile } from "obsidian";
 import { StateService } from "./StateService";
 import { AudioService } from "./AudioService";
 import { LyricsService } from "./LyricsService";
 import { type CurrentList, ListService } from "./ListService";
 import { SnapshotService } from "./SnapshotService";
+import { MediaSessionService } from "./MediaSessionService";
+import { WakeLockService } from "./WakeLockService";
+import { ScrobblerService } from "./ScrobblerService";
+import { EqualizerService } from "./EqualizerService";
+import { CrossfadeService } from "./CrossfadeService";
 import { findTrackIndexInGlobalList, getNextIndex, getPreviousIndex, handleTrackEnd } from "@/utils/playback/control";
 import { ShuffleManager } from "@/utils/playback/shuffle";
 import { ANIMATION_TIMINGS } from "@/constants/ui";
 import type MusicPlayerPlugin from "@/main";
 import type { PlayMode } from "@/main";
-import { t } from "@/utils/i18n/i18n";
+import { t, tWithParams } from "@/utils/i18n/i18n";
 import { applyReplayGainToVolume } from "@/utils/audio/metadata";
 import { getOrCreateTrackId } from "@/utils/track/id";
 
@@ -88,7 +93,12 @@ export class PlaybackService {
 		private lyricsService: LyricsService,
 		private listService: ListService,
 		private snapshotService: SnapshotService,
-		private callbacks: PlaybackCallbacks = {}
+		private callbacks: PlaybackCallbacks = {},
+		private mediaSessionService?: MediaSessionService,
+		private wakeLockService?: WakeLockService,
+		private scrobblerService?: ScrobblerService,
+		private equalizerService?: EqualizerService,
+		private crossfadeService?: CrossfadeService
 	) {}
 
 	/**
@@ -277,23 +287,62 @@ export class PlaybackService {
 		const effectiveVolume = applyReplayGainToVolume(userVolume, trackInfo?.replayGainDb);
 		const savedPlaybackRate = this.audioService.getAudioElement()?.playbackRate ?? state.playbackRate ?? 1.0;
 		
+		this.crossfadeService?.resetTrackState();
+
 		await this.audioService.createAudioElement(track, effectiveVolume, savedPlaybackRate, {
-			onTimeUpdate: this.callbacks.onProgressUpdate || (() => {}),
-			onLoadedMetadata: this.callbacks.onDurationUpdate || (() => {}),
-			onEnded: this.callbacks.onTrackEnd || (() => {}),
+			onTimeUpdate: () => {
+				this.callbacks.onProgressUpdate?.();
+				const el = this.audioService.getAudioElement();
+				if (el && Number.isFinite(el.duration) && el.duration > 0) {
+					this.mediaSessionService?.updatePositionState(el.duration, el.currentTime, el.playbackRate);
+					this.crossfadeService?.onTimeUpdate(el.currentTime, el.duration, el, effectiveVolume);
+				}
+			},
+			onLoadedMetadata: () => {
+				this.callbacks.onDurationUpdate?.();
+				const el = this.audioService.getAudioElement();
+				if (el && Number.isFinite(el.duration) && el.duration > 0) {
+					this.mediaSessionService?.updatePositionState(el.duration, el.currentTime, el.playbackRate);
+				}
+			},
+			onEnded: () => {
+				this.callbacks.onTrackEnd?.();
+			},
+			onError: (err) => {
+				this.handlePlaybackError(err, track);
+			},
 		});
 
 		const { lyrics, extendedLyrics } = await this.lyricsService.loadLyricsAsync(track.path);
 		this.stateService.setLyrics(lyrics, extendedLyrics);
+
+		// Sync OS media notification & lock-screen widgets
+		void this.snapshotService.getTrackCoverAsync(track).then((coverUrl) => {
+			if (requestId === this.playRequestId) {
+				this.mediaSessionService?.updateMetadata(track, trackInfo, coverUrl);
+			}
+		});
+
 		if (autoPlay) {
 			if (requestId !== this.playRequestId) {
 				return;
 			}
 
-			await this.audioService.play();
-			this.stateService.setIsPlaying(true);
+			try {
+				await this.audioService.play();
+				this.stateService.setIsPlaying(true);
+				this.mediaSessionService?.updatePlaybackState(true);
+				this.wakeLockService?.onPlaybackStateChange(true);
+			} catch (error) {
+				if (error instanceof DOMException && error.name === 'AbortError') {
+					return;
+				}
+				this.handlePlaybackError(null, track);
+			}
 		} else {
 			this.stateService.setIsPlaying(false);
+			this.mediaSessionService?.updatePlaybackState(false);
+			this.wakeLockService?.onPlaybackStateChange(false);
 		}
 	}
 
@@ -391,16 +440,30 @@ export class PlaybackService {
 		}
 		
 		if (state.isPlaying) {
+			this.crossfadeService?.cancelCrossfade();
 			this.audioService.pause();
 			this.stateService.setIsPlaying(false);
+			this.mediaSessionService?.updatePlaybackState(false);
+			this.wakeLockService?.onPlaybackStateChange(false);
 		} else {
 			const d = audioElement.duration;
 			const t = audioElement.currentTime;
 			if (Number.isFinite(d) && d > 0 && Number.isFinite(t) && (audioElement.ended || t >= d - 0.06)) {
 				audioElement.currentTime = 0;
 			}
-			await this.audioService.play();
-			this.stateService.setIsPlaying(true);
+			try {
+				await this.audioService.play();
+				this.stateService.setIsPlaying(true);
+				this.mediaSessionService?.updatePlaybackState(true);
+				this.wakeLockService?.onPlaybackStateChange(true);
+			} catch (error) {
+				if (error instanceof DOMException && error.name === 'AbortError') {
+					return;
+				}
+				if (state.currentTrack) {
+					this.handlePlaybackError(null, state.currentTrack);
+				}
+			}
 		}
 	}
 
@@ -413,6 +476,16 @@ export class PlaybackService {
 		this.lastHandleTrackEndAt = now;
 
 		const state = this.stateService.getState();
+
+		// Record finished listening session to Daily Notes and offline history
+		if (state.currentTrack) {
+			const trackPath = state.currentTrack.path;
+			const trackInfo = this.plugin.settings.tracks?.[trackPath];
+			const audioEl = this.audioService.getAudioElement();
+			const duration = audioEl?.duration;
+			void this.scrobblerService?.scrobbleTrack(state.currentTrack, trackInfo, duration, duration);
+		}
+
 		const { list } = this.listService.getCurrentPlaylistForTrack(
 			state.currentTrack,
 			state.currentList,
@@ -447,6 +520,8 @@ export class PlaybackService {
 			void this.playNext();
 		} else if (shouldStop) {
 			this.stateService.setIsPlaying(false);
+			this.mediaSessionService?.updatePlaybackState(false);
+			this.wakeLockService?.onPlaybackStateChange(false);
 		}
 	}
 
@@ -544,4 +619,72 @@ export class PlaybackService {
 			void this.callbacks.onLibraryUpdated();
 		}
 	}
+
+	/**
+	 * Seeks audio to specific time in seconds and syncs MediaSession.
+	 *
+	 * @param seconds Target time in seconds
+	 */
+	seekToTime(seconds: number): void {
+		this.crossfadeService?.cancelCrossfade();
+		const el = this.audioService.getAudioElement();
+		if (!el) return;
+		const d = el.duration;
+		if (!Number.isFinite(d) || d <= 0) return;
+		const target = Math.max(0, Math.min(seconds, d));
+		el.currentTime = target;
+		this.mediaSessionService?.updatePositionState(d, target, el.playbackRate);
+	}
+
+	/**
+	 * Gets the EqualizerService instance, if configured.
+	 */
+	getEqualizerService(): EqualizerService | undefined {
+		return this.equalizerService;
+	}
+
+	/**
+	 * Gets the CrossfadeService instance, if configured.
+	 */
+	getCrossfadeService(): CrossfadeService | undefined {
+		return this.crossfadeService;
+	}
+
+	/**
+	 * Sets the active crossfade duration in seconds.
+	 */
+	setCrossfadeDuration(seconds: number): void {
+		this.crossfadeService?.setDuration(seconds);
+	}
+
+	/**
+	 * Handles audio playback or decode failure gracefully.
+	 * 
+	 * Alerts user to iPadOS WebKit OGG incompatibility or decode failures and auto-advances.
+	 *
+	 * @param error MediaError object or null
+	 * @param track Audio file that failed
+	 */
+	private handlePlaybackError(error: MediaError | null, track: TFile): void {
+		console.error(`Playback failure on ${track.path}:`, error);
+		const ext = track.extension?.toLowerCase();
+		const isIosOrSafari = Platform.isIosApp || Platform.isSafari;
+
+		const wasmEnabled = this.plugin?.settings?.enableWasmVorbisDecoder ?? true;
+		if (ext === "ogg" && isIosOrSafari && !wasmEnabled) {
+			new Notice(t("notice.unsupportedFormatOggIos"), 6000);
+		} else {
+			new Notice(tWithParams("notice.playbackError", { name: track.basename }), 4000);
+		}
+
+		this.stateService.setIsPlaying(false);
+		this.mediaSessionService?.updatePlaybackState(false);
+		this.wakeLockService?.onPlaybackStateChange(false);
+
+		// Auto advance to next track after a brief moment
+		window.setTimeout(() => {
+			void this.playNext();
+		}, 800);
+	}
 }
+
