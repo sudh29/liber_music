@@ -1,7 +1,7 @@
 {
 	"id": "liber-music-player-plugin",
 	"name": "Liber Music Player Plugin",
-	"version": "1.6.0",
+	"version": "1.7.0",
 	"minAppVersion": "1.13.4",
 	"description": "Play local music files from the vault in the sidebar with Liber Music Player Plugin.",
 	"author": "Liber Primus",

@@ -1,11 +1,11 @@
 <div align="center">
     <h1>Liber Music Player Plugin for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.6.0-7f6df2?logo=obsidian" alt="Version 1.6.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-1.7.0-7f6df2?logo=obsidian" alt="Version 1.7.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-456%20passed-brightgreen" alt="Tests: 456 passed">
-        <img src="https://img.shields.io/badge/coverage-92.29%25-brightgreen" alt="Coverage: 92.29%">
+        <img src="https://img.shields.io/badge/tests-497%20passed-brightgreen" alt="Tests: 497 passed">
+        <img src="https://img.shields.io/badge/coverage-92.50%25-brightgreen" alt="Coverage: 92.50%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
@@ -14,6 +14,22 @@
 ---
 
 ## 🌟 Key Features
+
+### ⚡ Smart Library Automation & Dynamic Playlists (v1.7.0)
+- **Rule-Based Smart Playlists**:
+  - Build dynamic playlists using composable boolean rules across rating, year, genre, duration, path, title, artist, or album.
+  - Choose conjunction mode: match all rules (AND) or any rule (OR).
+  - Configurable sort fields, sort directions (asc/desc), and custom track limit thresholds.
+  - Interactive live preview modal with instant match counter and 1-click presets (`High Rated`, `Classics`, `Epics & Jams`, `New Additions`).
+  - Full CRUD lifecycle with inline edit and delete actions and distinct `⚡ Smart` badges in the sidebar.
+- **Automated Vault Folder Sync**:
+  - Automatically mirror audio folder structures (e.g. `📁 Rock`, `📁 Jazz`, `📁 Ambient`) as native playlists.
+  - Configurable directory nesting depth (1–3 levels) with zero duplicate indexing.
+  - Dynamic folder badges and real-time synchronization during library scan.
+- **In-App ID3 / Vorbis Metadata & LRC Editor**:
+  - Inspect and modify Title, Artist, Album, Year, Genre, Track Number, and Star Rating directly within Obsidian.
+  - Built-in companion `.lrc` lyrics editor with direct vault write-back.
+  - Quick-access via turntable action bar button (`file-pen`), tracklist hover action, or Obsidian command palette (`Edit Current Track Metadata`).
 
 ### 🌈 Reactive Visuals & Dynamic Aesthetics (v1.6.0)
 - **Dynamic Accent Palette Extraction**:

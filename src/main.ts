@@ -22,6 +22,8 @@ import { DEFAULT_SETTINGS } from './types';
 import { t } from './utils/i18n/i18n';
 import { MusicCodeblockRenderChild } from './components/codeblock/MusicCodeblockRenderChild';
 import { EqualizerModal } from './components/modal/EqualizerModal';
+import { MetadataEditorModal } from './components/modal/MetadataEditorModal';
+import { SmartPlaylistModal } from './components/modal/SmartPlaylistModal';
 import { parseObsidianMusicProtocol } from './utils/protocol/uri';
 import { resolveVaultAudioFile } from './utils/codeblock/resolver';
 import { codeblockCoordinator } from './utils/codeblock/coordinator';
@@ -88,6 +90,42 @@ export default class MusicPlayerPlugin extends Plugin {
 				if (view) {
 					new EqualizerModal(this.app, this, view.equalizerService).open();
 				}
+			}
+		});
+
+		// Add command: edit metadata of current track
+		this.addCommand({
+			id: 'edit-track-metadata',
+			name: t('commands.editMetadata') || 'Edit Track Metadata',
+			callback: async () => {
+				await this.activateView();
+				const view = this.getView();
+				if (view && view.currentTrack) {
+					new MetadataEditorModal(this.app, this, view.currentTrack.path, {
+						onSave: async () => {
+							await view.refreshMusicList();
+						},
+					}).open();
+				} else {
+					new Notice(t('notice.noTrackPlaying') || 'No track is currently playing.');
+				}
+			}
+		});
+
+		// Add command: create smart playlist
+		this.addCommand({
+			id: 'create-smart-playlist',
+			name: t('commands.createSmartPlaylist') || 'Create Smart Playlist',
+			callback: async () => {
+				await this.activateView();
+				const view = this.getView();
+				new SmartPlaylistModal(this.app, this, {
+					onSave: async () => {
+						if (view) {
+							await view.refreshMusicList();
+						}
+					},
+				}).open();
 			}
 		});
 

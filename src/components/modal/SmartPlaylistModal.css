@@ -1,0 +1,116 @@
+.smart-playlist-modal {
+	width: 90vw;
+	max-width: 640px;
+	padding: var(--size-4-4);
+}
+
+.smart-playlist-header {
+	margin-bottom: var(--size-4-3);
+}
+
+.smart-playlist-meta-row {
+	display: flex;
+	gap: var(--size-4-3);
+	margin-bottom: var(--size-4-3);
+	align-items: center;
+}
+
+.smart-playlist-name-input {
+	flex: 2;
+	padding: 6px 10px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.smart-playlist-match-select {
+	flex: 1;
+	padding: 6px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+}
+
+.smart-rules-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: var(--size-4-3);
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 4px;
+}
+
+.smart-rule-row {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	background: var(--background-secondary);
+	padding: 6px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+}
+
+.smart-rule-field,
+.smart-rule-operator {
+	padding: 4px 6px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+}
+
+.smart-rule-value {
+	flex: 1;
+	padding: 4px 8px;
+	border-radius: var(--radius-s);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smaller);
+}
+
+.smart-rule-delete {
+	cursor: pointer;
+	color: var(--text-muted);
+	padding: 2px 6px;
+	border-radius: var(--radius-s);
+}
+
+.smart-rule-delete:hover {
+	color: var(--text-error);
+	background: var(--background-modifier-error-hover);
+}
+
+.smart-playlist-sort-row {
+	display: flex;
+	gap: var(--size-4-2);
+	align-items: center;
+	margin-top: var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.smart-preview-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--background-modifier-accent);
+	color: var(--text-on-accent);
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+}
+
+.smart-playlist-actions {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: var(--size-4-4);
+	padding-top: var(--size-4-3);
+	border-top: 1px solid var(--background-modifier-border);
+}

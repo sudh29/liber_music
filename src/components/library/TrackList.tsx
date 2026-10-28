@@ -47,6 +47,8 @@ export interface TrackListProps {
 	getTrackCover?: (file: TFile) => Promise<string | undefined>;
 	/** Obsidian App instance */
 	app?: App;
+	/** Callback function to open in-app metadata editor */
+	onOpenMetadataEditor?: (path: string) => void;
 }
 
 /**
@@ -70,6 +72,7 @@ export function TrackList({
 	library,
 	getTrackCover,
 	app,
+	onOpenMetadataEditor,
 }: TrackListProps) {
 	// Use lazy track covers hook
 	const { embeddedCovers, trackRefs, stopLoading } = useLazyTrackCovers({
@@ -222,6 +225,21 @@ export function TrackList({
 										e.preventDefault();
 									}}
 								/>
+								{onOpenMetadataEditor ? (
+									<IconButton
+										icon="file-pen"
+										label={t("metadata.editTooltip")}
+										className="track-action-btn clickable-icon"
+										onClick={(e) => {
+											e.stopPropagation();
+											onOpenMetadataEditor(track.path);
+										}}
+										onDoubleClick={(e) => {
+											e.stopPropagation();
+											e.preventDefault();
+										}}
+									/>
+								) : null}
 								{playlistName ? (
 									<IconButton
 										icon="trash-2"

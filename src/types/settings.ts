@@ -95,6 +95,67 @@ export interface MusicPlayerSettings {
 	dynamicAlbumTheme?: boolean;
 	/** Whether real-time audio spectrum groove visualizer is enabled */
 	showVisualizer?: boolean;
+	/** Map of smart playlist ID to SmartPlaylistDefinition */
+	smartPlaylists?: Record<string, SmartPlaylistDefinition>;
+	/** Whether to automatically mirror music folders as native playlists */
+	syncFolderPlaylists?: boolean;
+	/** Folder nesting depth when generating folder playlists (default: 1) */
+	folderPlaylistDepth?: number;
+}
+
+/**
+ * Smart playlist rule target field
+ */
+export type SmartRuleField = 'title' | 'artist' | 'album' | 'genre' | 'year' | 'rating' | 'path' | 'duration';
+
+/**
+ * Smart playlist rule comparison operator
+ */
+export type SmartRuleOperator =
+	| 'equals'
+	| 'notEquals'
+	| 'contains'
+	| 'notContains'
+	| 'greaterThan'
+	| 'lessThan'
+	| 'between';
+
+/**
+ * Individual condition rule within a smart playlist
+ */
+export interface SmartPlaylistRule {
+	/** Unique rule ID */
+	id: string;
+	/** Field being evaluated */
+	field: SmartRuleField;
+	/** Operator applied to field */
+	operator: SmartRuleOperator;
+	/** Comparison value */
+	value: string | number;
+	/** Upper bound value for 'between' operator */
+	secondValue?: number;
+}
+
+/**
+ * Smart playlist configuration and query definition
+ */
+export interface SmartPlaylistDefinition {
+	/** Unique smart playlist ID */
+	id: string;
+	/** Playlist display name */
+	name: string;
+	/** Conjunction mode: match all rules (AND) or any rule (OR) */
+	matchType: 'all' | 'any';
+	/** List of filter rules */
+	rules: SmartPlaylistRule[];
+	/** Sort field (optional) */
+	sortBy?: SmartRuleField;
+	/** Sort direction (default: 'asc') */
+	sortOrder?: 'asc' | 'desc';
+	/** Max tracks to include (optional) */
+	limit?: number;
+	/** Icon name override (optional) */
+	icon?: string;
 }
 
 /**
@@ -126,4 +187,7 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	turntableStyle: 'obsidian', // Default: stealth dark matte aluminum
 	dynamicAlbumTheme: true,   // Default: dynamic album art theming enabled
 	showVisualizer: true,      // Default: real-time spectrum visualizer enabled
+	smartPlaylists: {},        // Default: no smart playlists
+	syncFolderPlaylists: false, // Default: folder auto-sync disabled
+	folderPlaylistDepth: 1,    // Default: depth 1
 };

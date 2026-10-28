@@ -20,6 +20,8 @@ import { AudioService } from "./AudioService";
 import { FavoriteService } from "./FavoriteService";
 import { PlaylistService } from "./PlaylistService";
 import { getOrCreateTrackId } from "@/utils/track/id";
+import { MetadataEditorModal } from "@/components/modal/MetadataEditorModal";
+import { SmartPlaylistModal } from "@/components/modal/SmartPlaylistModal";
 
 /**
  * React API service callbacks interface
@@ -163,6 +165,39 @@ export class ReactApiService {
 			},
 			setRating: async (path: string, rating: number) => {
 				await this.playbackService.setTrackRating(path, rating);
+			},
+			openMetadataEditor: (path: string) => {
+				const modal = new MetadataEditorModal(this.plugin.app, this.plugin, path, {
+					onSave: async () => {
+						await this.callbacks.onLibraryUpdated();
+					},
+				});
+				modal.open();
+			},
+			createSmartPlaylist: async () => {
+				const modal = new SmartPlaylistModal(this.plugin.app, this.plugin, {
+					onSave: async () => {
+						await this.callbacks.onLibraryUpdated();
+					},
+				});
+				modal.open();
+			},
+			editSmartPlaylist: async (id: string) => {
+				const def = this.plugin.settings.smartPlaylists?.[id];
+				if (!def) return;
+				const modal = new SmartPlaylistModal(this.plugin.app, this.plugin, {
+					initialDefinition: def,
+					onSave: async () => {
+						await this.callbacks.onLibraryUpdated();
+					},
+				});
+				modal.open();
+			},
+			deleteSmartPlaylist: async (id: string) => {
+				const success = await this.playlistService.deleteSmartPlaylist(id);
+				if (success) {
+					await this.callbacks.onLibraryUpdated();
+				}
 			},
 		};
 	}

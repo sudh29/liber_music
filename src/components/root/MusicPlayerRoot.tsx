@@ -270,6 +270,11 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 							view.plugin.settings.turntableStyle = nextStyle;
 							void view.plugin.saveSettings();
 						}}
+						onOpenMetadataEditor={() => {
+							if (playback.currentPath) {
+								api.openMetadataEditor(playback.currentPath);
+							}
+						}}
 					/>
 			) : null}
 
@@ -284,6 +289,10 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 					onAddToPlaylist={(path, sectionId) => { void libraryManagement.addToPlaylist(path, sectionId); }}
 					onRemoveFromPlaylist={(path, playlistName) => { void libraryManagement.removeFromPlaylist(path, playlistName); }}
 					onCreatePlaylist={() => { void libraryManagement.createPlaylist(); }}
+					onCreateSmartPlaylist={() => { void api.createSmartPlaylist(); }}
+					onEditSmartPlaylist={(id) => { void api.editSmartPlaylist(id); }}
+					onDeleteSmartPlaylist={(id) => { void api.deleteSmartPlaylist(id); }}
+					onOpenMetadataEditor={(path) => { api.openMetadataEditor(path); }}
 					onPlayCategory={(categoryType, categoryName, tracks) => { void libraryManagement.playCategory(categoryType, categoryName, tracks); }}
 					onEditPlaylist={(playlistName) => { return libraryManagement.editPlaylistName(playlistName); }}
 					onDeletePlaylist={(playlistName) => { return libraryManagement.deletePlaylist(playlistName); }}

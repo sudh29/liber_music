@@ -12,7 +12,7 @@ describe('MusicPlayerSettingTab', () => {
 
 		const definitions = tab.getSettingDefinitions();
 		expect(definitions).toBeInstanceOf(Array);
-		expect(definitions.length).toBe(12);
+		expect(definitions.length).toBe(14);
 
 		const keys = definitions.map((d: any) => d.control?.key);
 		expect(keys).toContain('musicFolder');
@@ -27,6 +27,8 @@ describe('MusicPlayerSettingTab', () => {
 		expect(keys).toContain('turntableStyle');
 		expect(keys).toContain('dynamicAlbumTheme');
 		expect(keys).toContain('showVisualizer');
+		expect(keys).toContain('syncFolderPlaylists');
+		expect(keys).toContain('folderPlaylistDepth');
 	});
 
 	it('should properly configure crossfade slider bounds', () => {
@@ -53,24 +55,29 @@ describe('MusicPlayerSettingTab', () => {
 		const autoPlayTrackDef = definitions.find((d: any) => d.control?.key === 'autoPlayOpenTrackPath');
 		const dailyNotesHeadingDef = definitions.find((d: any) => d.control?.key === 'dailyNotesHeading');
 		const eqPresetDef = definitions.find((d: any) => d.control?.key === 'eqPreset');
+		const folderDepthDef = definitions.find((d: any) => d.control?.key === 'folderPlaylistDepth');
 
 		// Default state: false
 		plugin.settings.autoPlayOnOpen = false;
 		plugin.settings.dailyNotesScrobbler = false;
 		plugin.settings.eqEnabled = false;
+		plugin.settings.syncFolderPlaylists = false;
 
 		expect(autoPlayTrackDef.visible()).toBe(false);
 		expect(dailyNotesHeadingDef.visible()).toBe(false);
 		expect(eqPresetDef.visible()).toBe(false);
+		expect(folderDepthDef.visible()).toBe(false);
 
 		// Enabled state
 		plugin.settings.autoPlayOnOpen = true;
 		plugin.settings.dailyNotesScrobbler = true;
 		plugin.settings.eqEnabled = true;
+		plugin.settings.syncFolderPlaylists = true;
 
 		expect(autoPlayTrackDef.visible()).toBe(true);
 		expect(dailyNotesHeadingDef.visible()).toBe(true);
 		expect(eqPresetDef.visible()).toBe(true);
+		expect(folderDepthDef.visible()).toBe(true);
 	});
 
 	it('should filter audio files for autoPlayOpenTrackPath picker', () => {

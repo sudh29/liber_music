@@ -154,4 +154,31 @@ describe("PlaylistService", () => {
 			expect(await service.removeFromPlaylist("t1", "NonExistent")).toBe(false);
 		});
 	});
+
+	describe("smartPlaylists", () => {
+		it("should get, save, and delete smart playlists", async () => {
+			const { service, plugin } = createService();
+			expect(service.getSmartPlaylists()).toEqual({});
+
+			const smartDef = {
+				id: "sp1",
+				name: "Best Tracks",
+				matchType: "all" as const,
+				rules: [{ id: "r1", field: "rating" as const, operator: "greaterThan" as const, value: 4 }],
+			};
+
+			await service.saveSmartPlaylist(smartDef);
+			expect(plugin.settings.smartPlaylists["sp1"]).toEqual(smartDef);
+			expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+
+			// Delete - user confirms
+			vi.spyOn(ConfirmModal.prototype, "prompt").mockResolvedValue(true);
+			const deleted = await service.deleteSmartPlaylist("sp1");
+			expect(deleted).toBe(true);
+			expect(plugin.settings.smartPlaylists["sp1"]).toBeUndefined();
+
+			// Delete non-existent
+			expect(await service.deleteSmartPlaylist("non_existent")).toBe(false);
+		});
+	});
 });

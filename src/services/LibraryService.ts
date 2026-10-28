@@ -19,6 +19,8 @@ import { PlaylistService } from "./PlaylistService";
 import { LyricsService } from "./LyricsService";
 import { generateArtistsAndAlbums } from "@/utils/data/transform";
 import { getOrCreateTrackId, getTrackPath } from "@/utils/track/id";
+import { evaluateSmartPlaylist } from "@/utils/library/smartPlaylist";
+import { generateFolderPlaylists } from "@/utils/library/folderSync";
 
 export interface LibraryOrchestrationCallbacks {
 	/** Callback invoked on library updates */
@@ -58,7 +60,27 @@ export class LibraryService {
 		} else if (type === "favorites") {
 			tracks = favorites;
 		} else if (type === "playlist") {
-			if (this.playlistService) {
+			const smartDef = Object.values(this.plugin.settings.smartPlaylists || {}).find(d => d.name === name);
+			if (smartDef) {
+				const trackItems = trackList.map(f => {
+					const trackId = getOrCreateTrackId(f.path, this.plugin.settings);
+					const meta = this.plugin.settings.tracks[trackId] || { title: f.basename, artist: "", album: "" };
+					return { id: trackId, path: f.path, info: meta };
+				});
+				const matchedIds = new Set(evaluateSmartPlaylist(smartDef, trackItems));
+				tracks = trackList.filter(f => {
+					const trackId = getOrCreateTrackId(f.path, this.plugin.settings);
+					return matchedIds.has(trackId);
+				});
+			} else if (name.startsWith("📁 ") && this.plugin.settings.syncFolderPlaylists) {
+				const folderPlaylists = generateFolderPlaylists(
+					trackList,
+					this.plugin.settings.musicFolder || "",
+					this.plugin.settings.folderPlaylistDepth ?? 1
+				);
+				const fp = folderPlaylists.find(p => p.name === name);
+				tracks = fp ? sortTracksByTrack(fp.files, this.plugin.settings) : [];
+			} else if (this.playlistService) {
 				const playlistMap = this.playlistService.getPlaylistMap();
 				const playlistTrackIds = playlistMap[name] || [];
 				// Map path to file for fast lookup

@@ -196,5 +196,29 @@ describe("ReactApiService", () => {
 		await api.setRating("song1.mp3", 4);
 		expect(playbackService.setTrackRating).toHaveBeenCalledWith("song1.mp3", 4);
 	});
+
+	it("should open metadata editor modal and trigger smart playlist actions", async () => {
+		const { service, playlistService, callbacks, plugin } = createService();
+		(playlistService as any).deleteSmartPlaylist = vi.fn().mockResolvedValue(true);
+		plugin.settings.smartPlaylists = {
+			"sp1": { id: "sp1", name: "Smart 1", matchType: "all", rules: [] },
+		};
+
+		const api = service.getApi();
+
+		// openMetadataEditor
+		api.openMetadataEditor("song1.mp3");
+
+		// createSmartPlaylist
+		await api.createSmartPlaylist();
+
+		// editSmartPlaylist
+		await api.editSmartPlaylist("sp1");
+
+		// deleteSmartPlaylist
+		await api.deleteSmartPlaylist("sp1");
+		expect((playlistService as any).deleteSmartPlaylist).toHaveBeenCalledWith("sp1");
+		expect(callbacks.onLibraryUpdated).toHaveBeenCalled();
+	});
 });
 

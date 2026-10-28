@@ -145,6 +145,28 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 					type: 'toggle',
 				},
 			},
+			{
+				name: t('settings.syncFolderPlaylists.name'),
+				desc: t('settings.syncFolderPlaylists.desc'),
+				control: {
+					key: 'syncFolderPlaylists',
+					type: 'toggle',
+				},
+			},
+			{
+				name: t('settings.folderPlaylistDepth.name'),
+				desc: t('settings.folderPlaylistDepth.desc'),
+				visible: () => this.plugin.settings.syncFolderPlaylists ?? false,
+				control: {
+					key: 'folderPlaylistDepth',
+					type: 'dropdown',
+					options: {
+						'1': 'Level 1 (Top-level subfolders)',
+						'2': 'Level 2 (Nested subfolders)',
+						'3': 'Level 3 (Deep folders)',
+					},
+				},
+			},
 		];
 	}
 }

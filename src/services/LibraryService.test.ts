@@ -236,6 +236,58 @@ describe("LibraryService", () => {
 			expect(stateService.getState().currentList?.tracks).toHaveLength(1);
 		});
 
+		it("should sync smart playlists and folder playlists in refreshMusicList", () => {
+			const smartDef = {
+				id: "s1",
+				name: "Queen Only",
+				matchType: "all" as const,
+				rules: [{ id: "r1", field: "artist" as const, operator: "equals" as const, value: "Queen" }],
+				sortBy: "title" as const,
+				sortOrder: "asc" as const,
+			};
+
+			const { service, stateService } = createService({
+				settings: {
+					musicFolder: "music",
+					tracks: {
+						"id-1": { title: "Song 1", artist: "Queen", album: "Opera", path: "music/Rock/song1.mp3" },
+						"id-2": { title: "Song 2", artist: "Queen", album: "Opera", path: "music/Rock/song2.mp3" },
+						"id-3": { title: "Song 3", artist: "Bowie", album: "Heroes", path: "music/Jazz/song3.mp3" },
+					},
+					trackIndex: {
+						"id-1": "music/Rock/song1.mp3",
+						"id-2": "music/Rock/song2.mp3",
+						"id-3": "music/Jazz/song3.mp3",
+					},
+					favorites: [],
+					playlists: {},
+					artists: {},
+					albums: {},
+					smartPlaylists: {
+						s1: smartDef,
+					},
+					syncFolderPlaylists: true,
+					folderPlaylistDepth: 1,
+				},
+			});
+
+			const file1 = createMockTFile("music/Rock/song1.mp3");
+			const file2 = createMockTFile("music/Rock/song2.mp3");
+			const file3 = createMockTFile("music/Jazz/song3.mp3");
+
+			vi.spyOn(service, "getAllMusicFiles").mockReturnValue([file1, file2, file3]);
+
+			// 1. Sync smart playlist
+			stateService.setCurrentList({ type: "playlist", name: "Queen Only", tracks: [] });
+			service.refreshMusicList();
+			expect(stateService.getState().currentList?.tracks).toHaveLength(2);
+
+			// 2. Sync folder playlist
+			stateService.setCurrentList({ type: "playlist", name: "📁 Rock", tracks: [] });
+			service.refreshMusicList();
+			expect(stateService.getState().currentList?.tracks).toHaveLength(2);
+		});
+
 		it("should clear playback state when current track is deleted from library", () => {
 			const { service, stateService } = createService();
 			const deletedTrack = createMockTFile("music/deleted.mp3");

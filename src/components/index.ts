@@ -19,6 +19,8 @@ export { QueueModal } from "./modal/QueueModal";
 export { TrackSearchModal } from "./modal/TrackSearchModal";
 export { ConfirmModal } from "./modal/ConfirmModal";
 export { EqualizerModal } from "./modal/EqualizerModal";
+export { MetadataEditorModal } from "./modal/MetadataEditorModal";
+export { SmartPlaylistModal } from "./modal/SmartPlaylistModal";
 
 // Player Components
 export { AlbumDisc } from "./player/AlbumDisc";

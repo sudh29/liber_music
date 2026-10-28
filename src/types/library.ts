@@ -4,6 +4,8 @@
  * Defines data structures used to display library items in React components.
  */
 
+import type { SmartPlaylistDefinition } from "./settings";
+
 /**
  * Track presentation model for UI components
  */
@@ -22,6 +24,28 @@ export interface ReactTrackInfo {
 	duration?: number;
 	/** User star rating (0 to 5) */
 	rating?: number;
+	/** Release year (optional) */
+	year?: number;
+	/** Genre (optional) */
+	genre?: string;
+	/** Track number (optional) */
+	track?: number;
+}
+
+/**
+ * Playlist representation model in library snapshot
+ */
+export interface ReactPlaylistGroup {
+	/** Playlist display name */
+	name: string;
+	/** Tracks in playlist */
+	tracks: ReactTrackInfo[];
+	/** True if this playlist is dynamically evaluated from smart rules */
+	isSmart?: boolean;
+	/** True if this playlist is auto-synchronized from a vault folder */
+	isFolder?: boolean;
+	/** Smart playlist definition if isSmart is true */
+	smartDefinition?: SmartPlaylistDefinition;
 }
 
 /**
@@ -35,7 +59,7 @@ export interface ReactLibrarySnapshot {
 	/** Favorite tracks */
 	favorites: ReactTrackInfo[];
 	/** Playlists array with names and associated tracks */
-	playlists: Array<{ name: string; tracks: ReactTrackInfo[] }>;
+	playlists: ReactPlaylistGroup[];
 	/** Artist groupings */
 	artists: Array<{ name: string; tracks: ReactTrackInfo[] }>;
 	/** Album groupings */

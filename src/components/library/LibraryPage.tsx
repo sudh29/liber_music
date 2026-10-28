@@ -52,6 +52,14 @@ export interface LibraryPageProps {
 	getTrackCover?: (file: TFile) => Promise<string | undefined>;
 	/** Obsidian App instance */
 	app?: App;
+	/** Callback function to create smart playlist */
+	onCreateSmartPlaylist?: () => void;
+	/** Callback function to edit smart playlist */
+	onEditSmartPlaylist?: (id: string) => void;
+	/** Callback function to delete smart playlist */
+	onDeleteSmartPlaylist?: (id: string) => void;
+	/** Callback function to open metadata editor */
+	onOpenMetadataEditor?: (path: string) => void;
 }
 
 /**
@@ -83,6 +91,30 @@ function AddPlaylistButton({ onClick }: { onClick: () => void }) {
 }
 
 /**
+ * Add smart playlist button component (internal)
+ */
+function AddSmartPlaylistButton({ onClick }: { onClick: () => void }) {
+	const iconRef = React.useRef<HTMLDivElement>(null);
+
+	React.useEffect(() => {
+		if (iconRef.current) {
+			setIcon(iconRef.current, "wand-2");
+		}
+	}, []);
+
+	return (
+		<div className="add-playlist-btn">
+			<div
+				ref={iconRef}
+				className="add-playlist-icon clickable-icon"
+				aria-label={t("smartPlaylist.createTitle")}
+				onClick={onClick}
+			/>
+		</div>
+	);
+}
+
+/**
  * Music library page component
  * 
  * Provides complete library management interface: tabs, track list display, track actions, etc.
@@ -104,7 +136,10 @@ export function LibraryPage(props: LibraryPageProps) {
 		});
 	};
 
-	const renderPlaylists = (list: Array<{ name: string; tracks: ReactTrackInfo[] }>, type: "playlists" | "artists" | "albums") => {
+	const renderPlaylists = (
+		list: import("@/types").ReactPlaylistGroup[] | Array<{ name: string; tracks: ReactTrackInfo[] }>,
+		type: "playlists" | "artists" | "albums"
+	) => {
 		const categoryType = type === "playlists" ? "playlist" : type.slice(0, -1);
 		
 		// Helper function: check if sectionId matches currentList
@@ -147,6 +182,9 @@ export function LibraryPage(props: LibraryPageProps) {
 					// Check if current category matches currentList
 					const sectionId = `${categoryType}-${item.name}`;
 					const matched = isSectionMatched(sectionId);
+					const isSmart = "isSmart" in item && Boolean(item.isSmart);
+					const isFolder = "isFolder" in item && Boolean(item.isFolder);
+					const smartDef = "smartDefinition" in item ? item.smartDefinition : undefined;
 
 					return (
 						<div key={item.name} className="section">
@@ -170,6 +208,8 @@ export function LibraryPage(props: LibraryPageProps) {
 										</div>
 									) : null}
 									<div className={`section-title ${matched ? "is-active" : ""}`}>
+										{isSmart ? <span className="playlist-badge-icon">🪄</span> : null}
+										{isFolder ? <span className="playlist-badge-icon">📁</span> : null}
 										<span>{item.name}</span>
 										<span className="section-count">({item.tracks.length})</span>
 									</div>
@@ -186,7 +226,27 @@ export function LibraryPage(props: LibraryPageProps) {
 											props.onPlayCategory(categoryType, item.name, item.tracks)
 										}
 									/>
-									{type === "playlists" && props.onEditPlaylist ? (
+									{type === "playlists" && isSmart && smartDef && props.onEditSmartPlaylist ? (
+										<IconButton
+											icon="sliders"
+											label={t("smartPlaylist.editTitle")}
+											className="section-action-btn clickable-icon"
+											onClick={() => {
+												void props.onEditSmartPlaylist?.(smartDef.id);
+											}}
+										/>
+									) : null}
+									{type === "playlists" && isSmart && smartDef && props.onDeleteSmartPlaylist ? (
+										<IconButton
+											icon="trash-2"
+											label={t("smartPlaylist.deleteTitle")}
+											className="section-action-btn clickable-icon"
+											onClick={() => {
+												void props.onDeleteSmartPlaylist?.(smartDef.id);
+											}}
+										/>
+									) : null}
+									{type === "playlists" && !isSmart && !isFolder && props.onEditPlaylist ? (
 										<IconButton
 											icon="pencil"
 											label={t("library.renamePlaylist")}
@@ -196,7 +256,7 @@ export function LibraryPage(props: LibraryPageProps) {
 											}}
 										/>
 									) : null}
-									{type === "playlists" && props.onDeletePlaylist ? (
+									{type === "playlists" && !isSmart && !isFolder && props.onDeletePlaylist ? (
 										<IconButton
 											icon="trash-2"
 											label={t("library.deletePlaylist")}
@@ -220,7 +280,8 @@ export function LibraryPage(props: LibraryPageProps) {
 										onToggleFavorite={props.onToggleFavorite}
 										onAddToPlaylist={props.onAddToPlaylist}
 										onRemoveFromPlaylist={props.onRemoveFromPlaylist}
-										playlistName={type === "playlists" ? item.name : undefined}
+										onOpenMetadataEditor={props.onOpenMetadataEditor}
+										playlistName={type === "playlists" && !isSmart && !isFolder ? item.name : undefined}
 										library={library}
 										getTrackCover={props.getTrackCover}
 										app={props.app}
@@ -233,7 +294,14 @@ export function LibraryPage(props: LibraryPageProps) {
 					);
 				})}
 
-				{type === "playlists" ? <AddPlaylistButton onClick={props.onCreatePlaylist} /> : null}
+				{type === "playlists" ? (
+					<div className="playlist-add-buttons">
+						<AddPlaylistButton onClick={props.onCreatePlaylist} />
+						{props.onCreateSmartPlaylist ? (
+							<AddSmartPlaylistButton onClick={props.onCreateSmartPlaylist} />
+						) : null}
+					</div>
+				) : null}
 			</div>
 		);
 	};
@@ -260,6 +328,7 @@ export function LibraryPage(props: LibraryPageProps) {
 							onToggleFavorite={props.onToggleFavorite}
 							onAddToPlaylist={props.onAddToPlaylist}
 							onRemoveFromPlaylist={props.onRemoveFromPlaylist}
+							onOpenMetadataEditor={props.onOpenMetadataEditor}
 							library={library}
 							getTrackCover={props.getTrackCover}
 							app={props.app}
@@ -280,6 +349,7 @@ export function LibraryPage(props: LibraryPageProps) {
 						onToggleFavorite={props.onToggleFavorite}
 						onAddToPlaylist={props.onAddToPlaylist}
 						onRemoveFromPlaylist={props.onRemoveFromPlaylist}
+						onOpenMetadataEditor={props.onOpenMetadataEditor}
 						library={library}
 						getTrackCover={props.getTrackCover}
 						app={props.app}

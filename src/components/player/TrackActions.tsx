@@ -58,6 +58,8 @@ export interface TrackActionsProps {
 	onToggleVisualizer?: () => void;
 	/** Callback function to cycle turntable style */
 	onToggleTurntableStyle?: () => void;
+	/** Callback function to open metadata editor */
+	onOpenMetadataEditor?: () => void;
 }
 
 /**
@@ -86,6 +88,7 @@ export function TrackActions({
 	showVisualizer = true,
 	onToggleVisualizer,
 	onToggleTurntableStyle,
+	onOpenMetadataEditor,
 }: TrackActionsProps) {
 	const [isVolumeMenuVisible, setIsVolumeMenuVisible] = React.useState(false);
 	const [isPlaybackRateMenuVisible, setIsPlaybackRateMenuVisible] = React.useState(false);
@@ -305,6 +308,15 @@ export function TrackActions({
 						label={`Turntable style: ${turntableStyle}`}
 						className={`track-action-btn clickable-icon turntable-style-btn style-${turntableStyle}`}
 						onClick={onToggleTurntableStyle}
+					/>
+				)}
+
+				{onOpenMetadataEditor && (
+					<IconButton
+						icon="file-pen"
+						label={t("metadata.editTooltip")}
+						className="track-action-btn clickable-icon metadata-edit-btn"
+						onClick={onOpenMetadataEditor}
 					/>
 				)}
 			</div>

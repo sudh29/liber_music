@@ -104,6 +104,8 @@ export interface PlayPageProps {
 	onToggleVisualizer?: () => void;
 	/** Callback function to cycle turntable style */
 	onToggleTurntableStyle?: () => void;
+	/** Callback function to open metadata editor */
+	onOpenMetadataEditor?: () => void;
 }
 
 export function PlayPage({
@@ -160,6 +162,7 @@ export function PlayPage({
 	equalizerService,
 	onToggleVisualizer,
 	onToggleTurntableStyle,
+	onOpenMetadataEditor,
 }: PlayPageProps) {
 	// Determine whether to use extended lyrics
 	const useExtendedLyrics = viewMode === "disc" 
@@ -340,6 +343,7 @@ export function PlayPage({
 				showVisualizer={showVisualizer}
 				onToggleVisualizer={onToggleVisualizer}
 				onToggleTurntableStyle={onToggleTurntableStyle}
+				onOpenMetadataEditor={onOpenMetadataEditor}
 			/>
 			<ProgressBar
 				current={currentTime}
