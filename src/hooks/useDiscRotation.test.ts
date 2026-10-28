@@ -84,4 +84,24 @@ describe("useDiscRotation hook", () => {
 		expect(result.current.rotationAngle).toBe(0);
 		expect(rafSpy).toHaveBeenCalled();
 	});
+
+	it("cancels animation frame when switching from playing to paused and upon unmount", () => {
+		let rafId = 999;
+		vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => rafId);
+		const cancelSpy = vi.spyOn(window, "cancelAnimationFrame");
+
+		const { rerender, unmount } = renderHook(
+			({ isPlaying }) => useDiscRotation({ isPlaying }),
+			{ initialProps: { isPlaying: true } }
+		);
+
+		rerender({ isPlaying: false });
+		expect(cancelSpy).toHaveBeenCalledWith(rafId);
+
+		// Switch back to playing then unmount
+		rafId = 1000;
+		rerender({ isPlaying: true });
+		unmount();
+		expect(cancelSpy).toHaveBeenCalledWith(1000);
+	});
 });

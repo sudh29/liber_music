@@ -152,20 +152,20 @@ coverage: {
 
 ### Summary of Achievements
 
-- **Total Passing Tests**: **635 tests** across **79 test files** (100% pass rate, 0 failures, 0 timeouts).
-- **Test Scope**: Expanded beyond services and utilities into **10 core React hooks** (`useNavigation`, `usePageState`, `useDiscRotation`, `useDiscSwitchAnimation`, `useTrackCovers`, `useLibraryManagement`, `useLibraryState`, `usePlaybackControl`, `usePlaybackState`, `useLyricsIndex`).
+- **Total Passing Tests**: **672 tests** across **79 test files** (+97 tests, 100% pass rate, 0 failures, 0 timeouts).
+- **Test Scope**: Expanded beyond services and utilities into **11 core React hooks** (`useNavigation`, `usePageState`, `useDiscRotation`, `useDiscSwitchAnimation`, `useTrackCovers`, `useLibraryManagement`, `useLibraryState`, `usePlaybackControl`, `usePlaybackState`, `useLyricsIndex`, `useLazyTrackCovers`) and hardened branch coverage across `PlaybackService`, `LibraryService`, `EqualizerService`, `PlaylistService`, `ListenerService`, `LyricsService`, `metadata`, `companionLrc`, and `extendedParser`.
 - **Coverage Metrics**:
-  - **Lines**: **96.58%** (Threshold ratcheted to 95%)
-  - **Statements**: **95.46%** (Threshold ratcheted to 94%)
-  - **Functions**: **96.34%** (Threshold ratcheted to 94%)
-  - **Branches**: **82.68%** (Threshold ratcheted to 80%)
+  - **Lines**: **98.32%** (Threshold ratcheted to 97%)
+  - **Functions**: **98.08%** (Threshold ratcheted to 96%)
+  - **Statements**: **97.20%** (Threshold ratcheted to 96%)
+  - **Branches**: **85.33%** (Threshold ratcheted to 84%)
 - **Code Health**:
   - **Oxlint**: 0 warnings, 0 errors across 179 files.
   - **Production Bundle**: `main.js` 747.04 KB (36.5% of 2.0 MB ceiling), `styles.css` 85.92 KB (71.6% of 120 KB ceiling).
 
 ### Verification Results
 
-- `npm test`: **79 test files passed, 635 tests passed** (4.4s).
-- `npm run test:coverage`: **All thresholds met**.
-- `npm run lint`: **0 warnings, 0 errors**.
+- `npm test`: **79 test files passed, 672 tests passed** (4.6s).
+- `npm run test:coverage`: **All thresholds met** (`lines: 97, statements: 96, functions: 96, branches: 84`).
+- `npm run lint`: **0 warnings, 0 errors** on 179 files.
 - `npm run build`: **Bundle audit passed cleanly**.

@@ -340,6 +340,53 @@ describe("LyricsService", () => {
 
 		warnSpy.mockRestore();
 	});
+
+	it("should update track duration and catch save failure in embedded lyrics fallback", async () => {
+		const app = new App();
+		const plugin = {
+			app,
+			settings: {
+				...DEFAULT_SETTINGS,
+				trackIndex: { "id1": "Music/embed.mp3" },
+				tracks: {
+					"id1": { id: "id1", path: "Music/embed.mp3", duration: 100 },
+				},
+			},
+			saveSettings: vi.fn().mockRejectedValue(new Error("Disk full")),
+		} as unknown as MusicPlayerPlugin;
+
+		const file = createMockTFile("Music/embed.mp3");
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(file);
+
+		const metadata = await import("@/utils/audio/metadata");
+		const readBinarySpy = vi.spyOn(metadata, "readAudioFileBinary").mockResolvedValue(new ArrayBuffer(10));
+		const metadataSpy = vi.spyOn(metadata, "getEmbeddedAudioMetadataFromBuffer").mockResolvedValue({
+			duration: 150,
+			lyricsText: "[00:01.00]Embedded lyrics",
+		});
+		const readHeaderSpy = vi.spyOn(metadata, "readAudioFileHeaderBinary").mockResolvedValue(null);
+
+		const service = new LyricsService(plugin);
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		try {
+			const result = await service.loadLyricsAsync("Music/embed.mp3");
+			expect(result.lyrics).toHaveLength(1);
+			expect(plugin.settings.tracks["id1"].duration).toBe(150);
+			expect(warnSpy).toHaveBeenCalledWith("Failed to save embedded metadata to settings:", expect.any(Error));
+
+			// Trigger outer catch block (line 226) when readAudioFileHeaderBinary throws
+			readHeaderSpy.mockRejectedValueOnce(new Error("Read binary crash"));
+			const emptyResult = await service.loadLyricsAsync("Music/embed.mp3");
+			expect(emptyResult.lyrics).toHaveLength(1); // from cached track settings
+			expect(warnSpy).toHaveBeenCalledWith("Failed to save embedded metadata to settings:", expect.any(Error));
+		} finally {
+			readBinarySpy.mockRestore();
+			metadataSpy.mockRestore();
+			readHeaderSpy.mockRestore();
+			warnSpy.mockRestore();
+		}
+	});
 });
 
 

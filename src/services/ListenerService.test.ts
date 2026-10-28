@@ -252,4 +252,33 @@ describe("ListenerService", () => {
 		errorSpy.mockRestore();
 		service.cleanup();
 	});
+
+	it("should catch and log errors in file delete, create, modify, and rename event handlers", async () => {
+		const { service, app, libraryService } = createService();
+		service.setup();
+
+		const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		vi.mocked(libraryService.removeTrackFromLibrary).mockRejectedValueOnce(new Error("Disk fail"));
+		app.vault.trigger("delete", new TFile("Music/deleted.mp3"));
+
+		vi.mocked(libraryService.updateTrackMetadata).mockRejectedValueOnce(new Error("Metadata fail"));
+		app.vault.trigger("create", new TFile("Music/created.mp3"));
+
+		vi.mocked(libraryService.updateTrackMetadata).mockRejectedValueOnce(new Error("Modify fail"));
+		app.vault.trigger("modify", new TFile("Music/modified.mp3"));
+
+		vi.mocked(libraryService.renameTrackInLibrary).mockRejectedValueOnce(new Error("Rename fail"));
+		app.vault.trigger("rename", new TFile("Music/renamed.mp3"), "Music/old.mp3");
+
+		await new Promise((r) => setTimeout(r, 20));
+
+		expect(errSpy).toHaveBeenCalledWith("Error handling file deletion: Music/deleted.mp3", expect.any(Error));
+		expect(errSpy).toHaveBeenCalledWith("Error handling file creation: Music/created.mp3", expect.any(Error));
+		expect(errSpy).toHaveBeenCalledWith("Error handling file modification: Music/modified.mp3", expect.any(Error));
+		expect(errSpy).toHaveBeenCalledWith("Error handling file rename: Music/old.mp3 -> Music/renamed.mp3", expect.any(Error));
+
+		errSpy.mockRestore();
+		service.cleanup();
+	});
 });

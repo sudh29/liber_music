@@ -63,11 +63,25 @@ describe("usePlaybackState hook", () => {
 
 	it("runs 60fps rAF loop when playing on currentDisc tab", () => {
 		mockView.state.isPlaying = true;
-		const rafSpy = vi.spyOn(window, "requestAnimationFrame").mockReturnValue(123 as any);
+		let rafCb: FrameRequestCallback | null = null;
+		const rafSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+			rafCb = cb;
+			return 123;
+		});
 
 		renderHook(() => usePlaybackState(mockView, { activeTab: "currentDisc" }));
 
 		expect(rafSpy).toHaveBeenCalled();
+		expect(rafCb).not.toBeNull();
+
+		act(() => {
+			vi.advanceTimersByTime(25);
+			if (rafCb) {
+				rafCb(performance.now());
+			}
+		});
+
+		expect(mockView.getReactPlaybackSnapshot).toHaveBeenCalled();
 	});
 
 	it("throttles updates when on library tab even if playing", () => {
@@ -130,5 +144,91 @@ describe("usePlaybackState hook", () => {
 
 		unmount();
 		expect(removeEventSpy).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
+	});
+
+	it("skips sync when tab becomes hidden during visibilitychange", () => {
+		const addEventSpy = vi.spyOn(document, "addEventListener");
+
+		renderHook(() => usePlaybackState(mockView));
+		const visCall = addEventSpy.mock.calls.find((c: any) => c[0] === "visibilitychange");
+		const visHandler = visCall[1];
+
+		Object.defineProperty(document, "hidden", { value: true, configurable: true });
+		mockView.getReactPlaybackSnapshot.mockClear();
+
+		act(() => {
+			visHandler();
+		});
+
+		// Since document.hidden is true, syncSnapshot should not be called
+		expect(mockView.getReactPlaybackSnapshot).not.toHaveBeenCalled();
+
+		Object.defineProperty(document, "hidden", { value: false, configurable: true });
+	});
+
+	it("functions safely when view has no audioElement", () => {
+		const viewWithoutAudio = {
+			...mockView,
+			audioElement: null,
+		};
+
+		const { unmount } = renderHook(() => usePlaybackState(viewWithoutAudio));
+		expect(mockView.getReactPlaybackSnapshot).toHaveBeenCalled();
+		expect(() => unmount()).not.toThrow();
+	});
+
+	it("skips duplicate snapshot sync if rAF fires within 16ms", () => {
+		Object.defineProperty(document, "hidden", { value: false, configurable: true });
+		mockView.state.isPlaying = true;
+		let rafCb: FrameRequestCallback | null = null;
+		vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+			rafCb = cb;
+			return 101;
+		});
+
+		renderHook(() => usePlaybackState(mockView, { activeTab: "currentDisc" }));
+
+		// First frame: advances and syncs
+		act(() => {
+			vi.advanceTimersByTime(20);
+			if (rafCb) rafCb(performance.now());
+		});
+		expect(mockView.getReactPlaybackSnapshot).toHaveBeenCalledTimes(2);
+
+		// Second frame immediately (< 16ms)
+		mockView.getReactPlaybackSnapshot.mockClear();
+		act(() => {
+			if (rafCb) rafCb(performance.now());
+		});
+		expect(mockView.getReactPlaybackSnapshot).not.toHaveBeenCalled();
+	});
+
+	it("cancels active rAF on visibilitychange and unmount when playing on currentDisc", () => {
+		Object.defineProperty(document, "hidden", { value: false, configurable: true });
+		mockView.state.isPlaying = true;
+		const cancelRafSpy = vi.spyOn(window, "cancelAnimationFrame");
+		const addEventSpy = vi.spyOn(document, "addEventListener");
+
+		const { unmount } = renderHook(() => usePlaybackState(mockView, { activeTab: "currentDisc" }));
+
+		const visCall = addEventSpy.mock.calls.find((c: any) => c[0] === "visibilitychange");
+		const visHandler = visCall[1];
+
+		act(() => {
+			visHandler();
+		});
+		expect(cancelRafSpy).toHaveBeenCalled();
+
+		unmount();
+		expect(cancelRafSpy).toHaveBeenCalled();
+	});
+
+	it("handles undefined view.state with fallback isPlaying false", () => {
+		const viewWithoutState = {
+			...mockView,
+			state: undefined as any,
+		};
+		const { result } = renderHook(() => usePlaybackState(viewWithoutState));
+		expect(result.current.playback).toBeDefined();
 	});
 });

@@ -652,5 +652,191 @@ describe("PlaybackService", () => {
 		plugin.settings.enableWasmVorbisDecoder = true;
 		errSpy.mockRestore();
 	});
+
+	it("should handle audio element events: timeupdate, loadedmetadata, ended", async () => {
+		const progressSpy = vi.fn();
+		const durationSpy = vi.fn();
+		const endSpy = vi.fn();
+		const mediaSessionMock = {
+			updatePositionState: vi.fn(),
+			updateMetadata: vi.fn(),
+			updatePlaybackState: vi.fn(),
+		} as any;
+		const crossfadeMock = {
+			resetTrackState: vi.fn(),
+			onTimeUpdate: vi.fn(),
+		} as any;
+
+		const wakeLockMock = {
+			onPlaybackStateChange: vi.fn(),
+		} as any;
+
+		const service = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{
+				onProgressUpdate: progressSpy,
+				onDurationUpdate: durationSpy,
+				onTrackEnd: endSpy,
+			},
+			mediaSessionMock,
+			wakeLockMock,
+			undefined,
+			undefined,
+			crossfadeMock
+		);
+
+		await service.playTrack(0);
+		const audioEl = audioService.getAudioElement()!;
+		Object.defineProperty(audioEl, "duration", { value: 120, configurable: true });
+		Object.defineProperty(audioEl, "currentTime", { value: 45, configurable: true });
+		Object.defineProperty(audioEl, "playbackRate", { value: 1.0, configurable: true });
+
+		audioEl.dispatchEvent(new Event("timeupdate"));
+		expect(progressSpy).toHaveBeenCalled();
+		expect(mediaSessionMock.updatePositionState).toHaveBeenCalledWith(120, 45, 1.0);
+		expect(crossfadeMock.onTimeUpdate).toHaveBeenCalledWith(45, 120, audioEl, 1.0);
+
+		audioEl.dispatchEvent(new Event("loadedmetadata"));
+		expect(durationSpy).toHaveBeenCalled();
+		expect(mediaSessionMock.updatePositionState).toHaveBeenCalledWith(120, 45, 1.0);
+
+		audioEl.dispatchEvent(new Event("ended"));
+		expect(endSpy).toHaveBeenCalled();
+	});
+
+	it("should catch AbortError silently during autoPlay in playTrack", async () => {
+		vi.spyOn(audioService, "play").mockRejectedValueOnce(
+			new DOMException("The play() request was interrupted", "AbortError")
+		);
+		const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		await playbackService.playTrack(0, false, undefined, undefined, true);
+
+		expect(errSpy).not.toHaveBeenCalled();
+		errSpy.mockRestore();
+	});
+
+	it("should return false from playByPath if track does not exist in trackList", async () => {
+		const result = await playbackService.playByPath("music/nonexistent.mp3");
+		expect(result).toBe(false);
+	});
+
+	it("should return early in playCategory when track list is empty", async () => {
+		const setCurrentListSpy = vi.spyOn(stateService, "setCurrentList");
+		await playbackService.playCategory("artist", "Queen", []);
+		expect(setCurrentListSpy).not.toHaveBeenCalled();
+	});
+
+	it("should reset currentTime if ended and catch AbortError in togglePlay", async () => {
+		await playbackService.playTrack(0);
+		const audioEl = audioService.getAudioElement()!;
+		Object.defineProperty(audioEl, "duration", { value: 100, configurable: true });
+		Object.defineProperty(audioEl, "currentTime", { value: 100, configurable: true });
+		Object.defineProperty(audioEl, "ended", { value: true, configurable: true });
+
+		stateService.setIsPlaying(false);
+		vi.spyOn(audioService, "play").mockRejectedValueOnce(
+			new DOMException("Play interrupted", "AbortError")
+		);
+
+		await playbackService.togglePlay();
+		expect(audioEl.currentTime).toBe(0);
+	});
+
+	it("should log repeat play interruption debug message on AbortError and error message on other errors", async () => {
+		stateService.setPlayMode("repeat-one");
+		await playbackService.playTrack(0);
+
+		const debugSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		// 1. AbortError branch
+		vi.spyOn(audioService, "play").mockRejectedValueOnce(
+			new DOMException("Track switched", "AbortError")
+		);
+		playbackService.handleTrackEnd();
+		await new Promise((r) => setTimeout(r, 10));
+
+		expect(debugSpy).toHaveBeenCalledWith(
+			expect.stringContaining("Repeat play interrupted"),
+			expect.any(String)
+		);
+
+		// 2. Generic error branch
+		(playbackService as any).lastHandleTrackEndAt = 0;
+		vi.spyOn(audioService, "play").mockRejectedValueOnce(new Error("Audio hardware error"));
+		playbackService.handleTrackEnd();
+		await new Promise((r) => setTimeout(r, 10));
+
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Error during repeat play:",
+			expect.any(Error)
+		);
+
+		debugSpy.mockRestore();
+		errorSpy.mockRestore();
+	});
+
+	it("should invoke callbacks for refresh music list and library updated with skipLibraryUpdate", async () => {
+		const refreshSpy = vi.fn();
+		const libraryUpdatedSpy = vi.fn().mockResolvedValue(undefined);
+
+		const service = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{
+				onRefreshMusicList: refreshSpy,
+				onLibraryUpdated: libraryUpdatedSpy,
+			}
+		);
+
+		// With skipLibraryUpdate = true
+		await service.playTrack(0, false, undefined, undefined, false, true);
+		expect(refreshSpy).toHaveBeenCalled();
+		expect(libraryUpdatedSpy).toHaveBeenCalled();
+
+		// With skipLibraryUpdate = false
+		refreshSpy.mockClear();
+		libraryUpdatedSpy.mockClear();
+		await service.playTrack(0, false, undefined, undefined, false, false);
+		expect(refreshSpy).toHaveBeenCalled();
+		expect(libraryUpdatedSpy).toHaveBeenCalled();
+	});
+
+	it("should abort playTrack if superseded by concurrent request while awaiting library update", async () => {
+		let resolveLibUpdate: () => void = () => {};
+		const libraryUpdatedPromise = new Promise<void>((resolve) => {
+			resolveLibUpdate = resolve;
+		});
+
+		const service = new PlaybackService(
+			plugin,
+			stateService,
+			audioService,
+			lyricsService,
+			listService,
+			snapshotService,
+			{
+				onLibraryUpdated: () => libraryUpdatedPromise,
+			}
+		);
+
+		const firstPlay = service.playTrack(0);
+		const secondPlay = service.playTrack(1);
+
+		resolveLibUpdate();
+		await Promise.all([firstPlay, secondPlay]);
+
+		expect(stateService.getState().currentTrack).toBe(mockFiles[1]);
+	});
 });
 

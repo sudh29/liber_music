@@ -163,4 +163,121 @@ describe("useDiscSwitchAnimation hook", () => {
 		unmount();
 		expect(clearTimeoutSpy).toHaveBeenCalled();
 	});
+
+	it("returns early without resetting rotation if wantsSlide is true and workspaceLeafWidth is 0", () => {
+		const onResetRotation = vi.fn();
+		const { rerender } = renderHook(
+			(props) => useDiscSwitchAnimation(props),
+			{
+				initialProps: {
+					isPlaying: false,
+					coverUrl: "cover1.jpg",
+					trackKey: "track-1",
+					lastAction: "next" as const,
+					workspaceLeafWidth: 0,
+					onResetRotation,
+				},
+			}
+		);
+
+		rerender({
+			isPlaying: false,
+			coverUrl: "cover1.jpg",
+			trackKey: "track-2",
+			lastAction: "next" as const,
+			workspaceLeafWidth: 0,
+			onResetRotation,
+		});
+
+		expect(onResetRotation).not.toHaveBeenCalled();
+	});
+
+	it("updates refs when cover or track changes while animating", async () => {
+		const { result, rerender } = renderHook(
+			(props) => useDiscSwitchAnimation(props),
+			{
+				initialProps: {
+					isPlaying: true,
+					coverUrl: "cover1.jpg",
+					nextCoverUrl: "cover2.jpg",
+					trackKey: "track-1",
+					workspaceLeafWidth: 400,
+				},
+			}
+		);
+
+		await act(async () => {
+			void result.current.handleSwitch(true);
+		});
+
+		expect(result.current.isAnimating).toBe(true);
+
+		rerender({
+			isPlaying: true,
+			coverUrl: "cover-new.jpg",
+			nextCoverUrl: "cover2.jpg",
+			trackKey: "track-new",
+			workspaceLeafWidth: 400,
+		});
+
+		expect(result.current.isAnimating).toBe(true);
+	});
+
+	it("automatically triggers handleSwitch when trackKey changes with lastAction next", () => {
+		const { result, rerender } = renderHook(
+			(props) => useDiscSwitchAnimation(props),
+			{
+				initialProps: {
+					isPlaying: true,
+					coverUrl: "cover1.jpg",
+					nextCoverUrl: "cover2.jpg",
+					trackKey: "t1",
+					lastAction: null as "next" | "prev" | null,
+					workspaceLeafWidth: 400,
+				},
+			}
+		);
+
+		rerender({
+			isPlaying: true,
+			coverUrl: "cover2.jpg",
+			nextCoverUrl: "cover3.jpg",
+			trackKey: "t2",
+			lastAction: "next",
+			workspaceLeafWidth: 400,
+		});
+
+		expect(result.current.isAnimating).toBe(true);
+	});
+
+	it("resolves preloadCoverImage even if image loading errors", async () => {
+		const origImage = globalThis.Image;
+		try {
+			(globalThis as any).Image = class {
+				onload: (() => void) | null = null;
+				onerror: (() => void) | null = null;
+				complete = false;
+				set src(_v: string) {
+					queueMicrotask(() => this.onerror?.());
+				}
+			};
+
+			const { result } = renderHook(() =>
+				useDiscSwitchAnimation({
+					isPlaying: true,
+					coverUrl: "corrupt.jpg",
+					nextCoverUrl: "corrupt2.jpg",
+					workspaceLeafWidth: 400,
+				})
+			);
+
+			await act(async () => {
+				await result.current.handleSwitch(true);
+			});
+
+			expect(result.current.isAnimating).toBe(true);
+		} finally {
+			(globalThis as any).Image = origImage;
+		}
+	});
 });

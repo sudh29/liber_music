@@ -88,4 +88,11 @@ describe("LyricsExtendedParser", () => {
 		expect(lines[1]?.time).toBe(20.0);
 		expect(lines[2]?.time).toBe(35.0);
 	});
+
+	it("should ignore invalid inline bracket timestamps when parsing character timing", () => {
+		const lrc = "[00:01.00]Valid <99:99:99> Text";
+		const lines = LyricsExtendedParser.parse(lrc);
+		expect(lines).toHaveLength(1);
+		expect(lines[0]?.text).toBe("Valid <99:99:99> Text");
+	});
 });

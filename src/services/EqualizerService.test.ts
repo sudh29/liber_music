@@ -255,4 +255,34 @@ describe("EqualizerService", () => {
 		(globalThis as any).AudioContext = origAudioContext;
 		warnSpy.mockRestore();
 	});
+
+	it("should disconnect previous sourceNode when attaching a different audio element", () => {
+		const service = new EqualizerService();
+		const audioEl1 = new MockAudioElement("track1.mp3") as unknown as HTMLAudioElement;
+		const audioEl2 = new MockAudioElement("track2.mp3") as unknown as HTMLAudioElement;
+
+		expect(service.attachAudioElement(audioEl1)).toBe(true);
+		const source1 = (service as any).sourceNode;
+		const disconnectSpy = vi.spyOn(source1, "disconnect");
+
+		expect(service.attachAudioElement(audioEl2)).toBe(true);
+		expect(disconnectSpy).toHaveBeenCalled();
+	});
+
+	it("should catch and log error if createMediaElementSource throws", () => {
+		const service = new EqualizerService();
+		const audioEl = new MockAudioElement("track1.mp3") as unknown as HTMLAudioElement;
+		const ctx = service.getAudioContext()!;
+		vi.spyOn(ctx, "createMediaElementSource").mockImplementation(() => {
+			throw new Error("CORS or source creation failure");
+		});
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		expect(service.attachAudioElement(audioEl)).toBe(false);
+		expect(warnSpy).toHaveBeenCalledWith(
+			"EqualizerService failed to attach audio element:",
+			expect.any(Error)
+		);
+		warnSpy.mockRestore();
+	});
 });

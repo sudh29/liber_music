@@ -98,4 +98,22 @@ describe("useTrackCovers hook", () => {
 		expect(result.current.finalPrevCoverUrl).toBeUndefined();
 		expect(result.current.finalNextCoverUrl).toBeUndefined();
 	});
+
+	it("handles currentPath not present in trackList", async () => {
+		const { view } = createMockView();
+		const playback: ReactPlaybackSnapshot = {
+			currentPath: "music/nonexistent.mp3",
+		} as any;
+
+		const { result } = renderHook(() => useTrackCovers({ playback, view }));
+
+		await act(async () => {
+			await Promise.resolve();
+		});
+
+		expect(result.current.finalCoverUrl).toBeUndefined();
+		expect(result.current.finalPrevCoverUrl).toBeUndefined();
+		expect(result.current.finalNextCoverUrl).toBeUndefined();
+		expect(view.getTrackCoverAsync).not.toHaveBeenCalled();
+	});
 });

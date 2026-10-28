@@ -423,5 +423,51 @@ describe("metadata audio utilities", () => {
 			);
 			errorSpy.mockRestore();
 		});
+
+		it("should extract lyrics when tag value is an array of strings or object with array of strings", async () => {
+			mockParseBuffer.mockResolvedValueOnce({
+				format: { duration: 180 },
+				common: {
+					title: "Multi-chunk lyrics",
+				},
+				native: {
+					"Vorbis": [
+						{ id: "LYRICS", value: ["Line 1", "Line 2", "Line 3"] },
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const meta = await getEmbeddedAudioMetadataFromBuffer(new ArrayBuffer(50), "ogg");
+			expect(meta.lyricsText).toBe("Line 1\nLine 2\nLine 3");
+
+			mockParseBuffer.mockResolvedValueOnce({
+				format: { duration: 180 },
+				common: {},
+				native: {
+					"ID3v2.3": [
+						{ id: "USLT", value: { text: ["Verse 1", "Verse 2"] } },
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const meta2 = await getEmbeddedAudioMetadataFromBuffer(new ArrayBuffer(50), "mp3");
+			expect(meta2.lyricsText).toBe("Verse 1\nVerse 2");
+
+			mockParseBuffer.mockResolvedValueOnce({
+				format: { duration: 180 },
+				common: {},
+				native: {
+					"Vorbis": [
+						{ id: "LYRICS", value: 123456 }, // number is unextractable
+					],
+				},
+				quality: { warnings: [] },
+			});
+
+			const meta3 = await getEmbeddedAudioMetadataFromBuffer(new ArrayBuffer(50), "ogg");
+			expect(meta3.lyricsText).toBeUndefined();
+		});
 	});
 });

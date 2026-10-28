@@ -606,5 +606,78 @@ describe("LibraryService", () => {
 			);
 			errSpy.mockRestore();
 		});
+
+		it("should detect library inconsistency when stored track path is not present in actual vault audio files", async () => {
+			const { service, app } = createService({
+				settings: {
+					tracks: {
+						"id-1": { path: "music/song1.mp3" },
+					},
+					trackIndex: {
+						"id-1": "music/song1.mp3",
+					},
+				},
+			});
+
+			// Actual files in vault contain song_other.mp3 (same count = 1, but different path)
+			const mockFile = createMockTFile("music/song_other.mp3");
+			vi.spyOn(app.vault, "getFiles").mockReturnValue([mockFile]);
+
+			const isInconsistent = await service.checkLibraryConsistency();
+			expect(isInconsistent).toBe(true);
+		});
+
+		it("should rebuild all music library data via updateMusicLibrary", async () => {
+			const { service, app, plugin } = createService();
+			const updaterModule = await import("@/utils/library/updater");
+			vi.spyOn(updaterModule, "rebuildAllData").mockResolvedValue(42);
+
+			const count = await service.rebuildAllData();
+			expect(count).toBe(42);
+			expect(updaterModule.rebuildAllData).toHaveBeenCalledWith(app, plugin);
+		});
+
+		it("should throw error if refreshCurrentTrackDisplay or handleLibraryUpdated is called without required services", async () => {
+			const { service } = createService();
+
+			(service as any).lyricsService = null;
+			await expect(service.refreshCurrentTrackDisplay()).rejects.toThrow(
+				"refreshCurrentTrackDisplay requires StateService and LyricsService instances"
+			);
+
+			(service as any).stateService = null;
+			await expect(service.handleLibraryUpdated(new Set())).rejects.toThrow(
+				"handleLibraryUpdated requires StateService instance"
+			);
+		});
+
+		it("should detect inconsistency when trackId fails to resolve to a path", async () => {
+			const { service, app } = createService({
+				settings: {
+					tracks: {
+						"ghost-id": { title: "Ghost" },
+					},
+					trackIndex: {},
+				},
+			});
+
+			vi.spyOn(app.vault, "getFiles").mockReturnValue([createMockTFile("music/real.mp3")]);
+			const inconsistent = await service.checkLibraryConsistency();
+			expect(inconsistent).toBe(true);
+		});
+
+		it("should handle missing playlist and unknown list type during syncCurrentListAfterRefresh", () => {
+			const { service, stateService } = createService();
+
+			// 1. Missing playlist: type = "playlist", but name not in playlists
+			stateService.setCurrentList({ type: "playlist", name: "NonExistentPlaylist", tracks: [] });
+			service.syncCurrentListAfterRefresh();
+			expect(stateService.getState().currentList?.tracks).toEqual([]);
+
+			// 2. Unknown list type fallback
+			stateService.setCurrentList({ type: "custom-type", name: "Custom", tracks: [] });
+			service.syncCurrentListAfterRefresh();
+			expect(stateService.getState().currentList?.type).toBe("custom-type");
+		});
 	});
 });

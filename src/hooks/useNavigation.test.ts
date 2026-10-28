@@ -60,5 +60,17 @@ describe("useNavigation hook", () => {
 		expect(result.current.tab).toBe("currentDisc");
 		expect(result.current.currentPage).toBe("lyrics");
 		expect(result.current.shouldMarkInitialLyricsMount).toBe(true);
+
+		// Now tab is already currentDisc, calling openLyrics directly
+		act(() => {
+			result.current.openLyrics();
+		});
+		expect(result.current.currentPage).toBe("lyrics");
+
+		// When currentPage is lyrics, calling openDisc should set pendingPage to disc
+		act(() => {
+			result.current.openDisc();
+		});
+		expect(result.current.currentPage).toBe("disc");
 	});
 });

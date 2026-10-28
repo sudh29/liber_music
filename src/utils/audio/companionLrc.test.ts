@@ -124,5 +124,23 @@ describe("companionLrc utility", () => {
 		);
 		warnSpy.mockRestore();
 	});
+
+	it("should return null immediately if input audioPath is already an .lrc path", async () => {
+		const app = new App();
+		const result = await readCompanionLrc(app, "Music/already.lrc");
+		expect(result).toBeNull();
+	});
+
+	it("should return null if adapter read returns only whitespace", async () => {
+		const app = new App();
+		vi.spyOn(app.vault, "getAbstractFileByPath").mockReturnValue(null);
+		(app.vault as unknown as { adapter: { exists: any; read: any } }).adapter = {
+			exists: vi.fn().mockResolvedValue(true),
+			read: vi.fn().mockResolvedValue("   \t  \n  "),
+		};
+
+		const result = await readCompanionLrc(app, "Music/whitespace.mp3");
+		expect(result).toBeNull();
+	});
 });
 
