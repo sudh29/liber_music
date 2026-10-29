@@ -112,4 +112,29 @@ describe("MetadataEditorModal", () => {
 
 		expect(app.vault.modify).toHaveBeenCalledWith(mockLrcFile, "[00:12.00]Brand new lyrics");
 	});
+
+	it("should clear companion .lrc file if lyrics are emptied", async () => {
+		const mockLrcFile = new TFile("Music/Artist/Song.lrc");
+		(app.vault as any).getAbstractFileByPath = vi.fn().mockImplementation((p: string) => {
+			if (p.endsWith(".lrc")) return mockLrcFile;
+			return null;
+		});
+		(app.vault as any).modify = vi.fn().mockResolvedValue(undefined);
+
+		// Initialize with some lyrics
+		plugin.settings.tracks["id_1"].lyrics = "Old lyrics";
+
+		const modal = new MetadataEditorModal(app, plugin, "Music/Artist/Song.mp3");
+		modal.onOpen();
+
+		const textarea = modal.contentEl.querySelector(".metadata-lyrics-textarea") as HTMLTextAreaElement;
+		textarea.value = "   "; // empty/whitespace
+
+		const saveBtn = modal.contentEl.querySelector(".mod-cta") as HTMLButtonElement;
+		saveBtn.click();
+
+		await new Promise((resolve) => setTimeout(resolve, 0));
+
+		expect(app.vault.modify).toHaveBeenCalledWith(mockLrcFile, "");
+	});
 });

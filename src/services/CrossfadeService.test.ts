@@ -71,6 +71,8 @@ describe("CrossfadeService", () => {
 
 			const outgoingEl = new MockAudioElement() as unknown as HTMLAudioElement;
 			outgoingEl.volume = 1.0;
+			outgoingEl.paused = false;
+			incomingEl.paused = false;
 
 			// 5s remaining: should not trigger (duration 100, currentTime 95)
 			service.onTimeUpdate(95, 100, outgoingEl);
@@ -107,6 +109,8 @@ describe("CrossfadeService", () => {
 			});
 
 			const outgoingEl = new MockAudioElement() as unknown as HTMLAudioElement;
+			outgoingEl.paused = false;
+			incomingEl.paused = false;
 			service.onTimeUpdate(97.5, 100, outgoingEl);
 			await vi.advanceTimersByTimeAsync(0);
 
@@ -177,6 +181,45 @@ describe("CrossfadeService", () => {
 		it("should clean up cleanly on dispose", () => {
 			const service = new CrossfadeService(5);
 			service.dispose();
+			expect(service.isCrossfadeActive()).toBe(false);
+		});
+
+		it("should immediately set targetVolume on incomingElement if outgoingElement is paused", async () => {
+			const service = new CrossfadeService(3);
+			const outgoingEl = new MockAudioElement() as unknown as HTMLAudioElement;
+			outgoingEl.paused = true;
+			const incomingEl = new MockAudioElement() as unknown as HTMLAudioElement;
+
+			const onTransitionComplete = vi.fn();
+			service.setCallbacks({
+				onTriggerTransition: vi.fn().mockResolvedValue(incomingEl),
+				onTransitionComplete,
+			});
+
+			service.onTimeUpdate(97.5, 100, outgoingEl, 0.8);
+			await vi.advanceTimersByTimeAsync(0);
+
+			expect(incomingEl.volume).toBe(0.8);
+			expect(onTransitionComplete).toHaveBeenCalled();
+			expect(service.isCrossfadeActive()).toBe(false);
+		});
+
+		it("should immediately set targetVolume on incomingElement if outgoingElement is identical to incomingElement", async () => {
+			const service = new CrossfadeService(3);
+			const sharedEl = new MockAudioElement() as unknown as HTMLAudioElement;
+			sharedEl.paused = false;
+
+			const onTransitionComplete = vi.fn();
+			service.setCallbacks({
+				onTriggerTransition: vi.fn().mockResolvedValue(sharedEl),
+				onTransitionComplete,
+			});
+
+			service.onTimeUpdate(97.5, 100, sharedEl, 0.7);
+			await vi.advanceTimersByTimeAsync(0);
+
+			expect(sharedEl.volume).toBe(0.7);
+			expect(onTransitionComplete).toHaveBeenCalled();
 			expect(service.isCrossfadeActive()).toBe(false);
 		});
 	});

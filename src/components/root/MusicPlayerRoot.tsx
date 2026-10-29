@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 import { Platform, TFile } from "obsidian";
 import "./MusicPlayerRoot.css";
 import { ConfirmModal, EqualizerModal, LibraryPage, NavigationBar, PlayPage } from "@/components";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { t } from "@/utils/i18n/i18n";
 import {
 	useLibraryManagement,
@@ -177,7 +178,7 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 	});
 
 	return (
-		<>
+		<ErrorBoundary>
 			{createPortal(
 				<NavigationBar
 					activeTab={navigation.tab}
@@ -303,7 +304,7 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 					app={view.app}
 				/>
 			) : null}
-		</>
+		</ErrorBoundary>
 	);
 }
 

@@ -10,7 +10,7 @@ import type MusicPlayerPlugin from "@/main";
 import { parseMusicCodeblock, type MusicCodeblockConfig } from "@/utils/codeblock/parser";
 import { resolveVaultAudioFile } from "@/utils/codeblock/resolver";
 import { codeblockCoordinator } from "@/utils/codeblock/coordinator";
-import { formatTime, generateObsidianTrackUri } from "@/utils/protocol/uri";
+import { formatTime } from "@/utils/protocol/uri";
 import { LyricsParser, type LyricLine } from "@/utils/lyrics/parser";
 import { getCompanionLrcFile } from "@/utils/audio/companionLrc";
 import { t } from "@/utils/i18n/i18n";
@@ -483,8 +483,11 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 	 */
 	private openInSidebar(file: TFile): void {
 		const time = this.audio ? this.audio.currentTime : this.config.start;
-		const uri = generateObsidianTrackUri(file.path, time);
-		window.location.href = uri;
+		void this.plugin.handleProtocolAction({
+			track: file.path,
+			time: String(Math.floor(time)),
+			autoplay: "true",
+		});
 	}
 
 	/**

@@ -72,7 +72,8 @@ export function usePlaybackState(
 			if (highFrequency) {
 				rafId = window.requestAnimationFrame(() => {
 					const now = Date.now();
-					if (now - lastUpdateTime >= 16) {
+					// Throttle snapshot sync to 200ms during active playback to eliminate 60fps root re-render storms
+					if (now - lastUpdateTime >= 200) {
 						syncSnapshot();
 					}
 					scheduleNext();

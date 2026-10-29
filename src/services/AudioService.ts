@@ -99,7 +99,16 @@ export class AudioService {
 	 */
 	setEqualizerService(eqService: EqualizerService): void {
 		this.equalizerService = eqService;
-		if (this.audioElement) {
+		if (this.audioElement && (typeof eqService.isEnabled !== "function" || eqService.isEnabled())) {
+			this.equalizerService.attachAudioElement(this.audioElement);
+		}
+	}
+
+	/**
+	 * Synchronizes equalizer attachment based on its enabled state.
+	 */
+	syncEqualizerState(): void {
+		if (this.equalizerService && this.audioElement && this.equalizerService.isEnabled()) {
 			this.equalizerService.attachAudioElement(this.audioElement);
 		}
 	}
@@ -130,26 +139,37 @@ export class AudioService {
 		// Read file into memory and create Blob URL
 		// Prevents file lock so file can be safely renamed or removed
 		try {
-			const binary = await this.app.vault.readBinary(trackFile);
-			let blob: Blob;
-
 			const wasmEnabled = this.plugin?.settings.enableWasmVorbisDecoder ?? true;
-			if (wasmEnabled && shouldTranscodeVorbis(trackFile.extension)) {
-				try {
-					blob = await transcodeOggVorbisToWavBlob(binary);
-				} catch (decodeErr) {
-					console.warn(`WASM Vorbis decoding failed for ${trackFile.path}, falling back to native:`, decodeErr);
+			const needsTranscode = wasmEnabled && shouldTranscodeVorbis(trackFile.extension);
+			const isLargeFile = Boolean(trackFile.stat?.size && trackFile.stat.size > 15 * 1024 * 1024);
+
+			// For large files (>15MB) that do not require WASM transcoding, stream directly via
+			// Obsidian's local resource handler to prevent memory exhaustion / OOM kills on mobile
+			if (isLargeFile && !needsTranscode) {
+				const url = this.app.vault.getResourcePath(trackFile);
+				this.audioElement = new Audio(url);
+			} else {
+				const binary = await this.app.vault.readBinary(trackFile);
+				let blob: Blob;
+
+				if (needsTranscode) {
+					try {
+						blob = await transcodeOggVorbisToWavBlob(binary);
+					} catch (decodeErr) {
+						console.warn(`WASM Vorbis decoding failed for ${trackFile.path}, falling back to native:`, decodeErr);
+						blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
+					}
+				} else {
 					blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
 				}
-			} else {
-				blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
+
+				const blobUrl = URL.createObjectURL(blob);
+				this.currentBlobUrl = blobUrl;
+
+				// Create new audio element
+				this.audioElement = new Audio(blobUrl);
 			}
 
-			const blobUrl = URL.createObjectURL(blob);
-			this.currentBlobUrl = blobUrl;
-
-			// Create new audio element
-			this.audioElement = new Audio(blobUrl);
 			this.audioElement.volume = volume;
 			this.audioElement.playbackRate = playbackRate;
 
@@ -163,8 +183,8 @@ export class AudioService {
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
 			this.audioElement.addEventListener("error", this.onAudioError);
 
-			// Connect to Web Audio equalizer graph if enabled
-			if (this.equalizerService) {
+			// Connect to Web Audio equalizer graph only if actively enabled to preserve native mobile background audio
+			if (this.equalizerService && (typeof this.equalizerService.isEnabled !== "function" || this.equalizerService.isEnabled())) {
 				this.equalizerService.attachAudioElement(this.audioElement);
 			}
 
@@ -288,7 +308,9 @@ export class AudioService {
 		}
 		
 		try {
-			await this.equalizerService?.resumeContext();
+			if (this.equalizerService && (typeof this.equalizerService.isEnabled !== "function" || this.equalizerService.isEnabled())) {
+				await this.equalizerService.resumeContext();
+			}
 			await this.audioElement.play();
 		} catch (error) {
 			// AbortError when pause() interrupts play() during track changes is normal

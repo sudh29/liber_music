@@ -6,7 +6,7 @@
  * 2. An offline JSON audit log at .obsidian/plugins/liber-music-player-plugin/history.json
  */
 
-import { App, TFile } from "obsidian";
+import { App, normalizePath, TFile } from "obsidian";
 import type MusicPlayerPlugin from "@/main";
 import type { TrackInfo } from "@/types";
 import { formatTime, generateObsidianTrackUri } from "@/utils/protocol/uri";
@@ -112,7 +112,7 @@ export class ScrobblerService {
 		const folder = dailyNotesPlugin?.instance?.options?.folder?.trim() || "";
 		
 		const filename = `${defaultDateStr}.md`;
-		return folder ? `${folder}/${filename}` : filename;
+		return normalizePath(folder ? `${folder}/${filename}` : filename);
 	}
 
 	/**
@@ -174,9 +174,15 @@ export class ScrobblerService {
 
 			const abstractFile = this.app.vault.getAbstractFileByPath(notePath);
 			if (abstractFile instanceof TFile) {
-				const content = await this.app.vault.read(abstractFile);
-				const updatedContent = appendEntryToDailyNote(content, heading, logEntry);
-				await this.app.vault.modify(abstractFile, updatedContent);
+				if (typeof this.app.vault.process === "function") {
+					await this.app.vault.process(abstractFile, (content: string) => {
+						return appendEntryToDailyNote(content, heading, logEntry);
+					});
+				} else {
+					const content = await this.app.vault.read(abstractFile);
+					const updatedContent = appendEntryToDailyNote(content, heading, logEntry);
+					await this.app.vault.modify(abstractFile, updatedContent);
+				}
 			} else {
 				// Note doesn't exist yet: create it with folder hierarchy if needed
 				const folderIndex = notePath.lastIndexOf("/");
@@ -207,7 +213,7 @@ export class ScrobblerService {
 		duration?: number
 	): Promise<void> {
 		try {
-			const historyPath = `${this.plugin.manifest.dir || ".obsidian/plugins/liber-music-player-plugin"}/history.json`;
+			const historyPath = normalizePath(`${this.plugin.manifest.dir || ".obsidian/plugins/liber-music-player-plugin"}/history.json`);
 			const record: HistoryRecord = {
 				timestamp: new Date().toISOString(),
 				trackPath: track.path,

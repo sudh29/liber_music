@@ -153,7 +153,11 @@ export default class MusicPlayerPlugin extends Plugin {
 	 * Plugin cleanup on unload
 	 */
 	onunload() {
-		// Note: Don't detach leaves in onunload per Obsidian guidelines
+		// Clean up view listeners and audio instances without detaching leaves
+		const view = this.getView();
+		if (view) {
+			void view.onClose();
+		}
 	}
 
 	/**

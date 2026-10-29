@@ -256,7 +256,6 @@ export class ListenerService {
 				return;
 			}
 		};
-		this.app.vault.on('rename', renameHandler);
 
 		// File modify event
 		const modifyHandler = (file: TAbstractFile) => {
@@ -264,7 +263,18 @@ export class ListenerService {
 				void this.handleFileModify(file.path);
 			}
 		};
-		this.app.vault.on('modify', modifyHandler);
+
+		const deleteRef = this.app.vault.on('delete', deleteHandler);
+		const createRef = this.app.vault.on('create', createHandler);
+		const renameRef = this.app.vault.on('rename', renameHandler);
+		const modifyRef = this.app.vault.on('modify', modifyHandler);
+
+		if (typeof this.plugin.registerEvent === "function") {
+			this.plugin.registerEvent(deleteRef);
+			this.plugin.registerEvent(createRef);
+			this.plugin.registerEvent(renameRef);
+			this.plugin.registerEvent(modifyRef);
+		}
 
 		// Store remover callbacks
 		this.vaultEventListeners.push(

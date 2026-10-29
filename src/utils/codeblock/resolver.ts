@@ -54,7 +54,15 @@ export function resolveVaultAudioFile(
 		}
 	}
 
-	// Strategy 3: Vault-wide search by filename or basename
+	// Strategy 3: Fast metadataCache linkpath lookup
+	if (app.metadataCache?.getFirstLinkpathDest) {
+		const cachedFile = app.metadataCache.getFirstLinkpathDest(cleanIdentifier, "");
+		if (cachedFile instanceof TFile && isSupportedAudioExtension(cachedFile.extension)) {
+			return cachedFile;
+		}
+	}
+
+	// Strategy 4: Vault-wide search by filename or basename
 	const targetBasename = cleanIdentifier.includes("/")
 		? cleanIdentifier.slice(cleanIdentifier.lastIndexOf("/") + 1)
 		: cleanIdentifier;

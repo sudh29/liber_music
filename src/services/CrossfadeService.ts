@@ -59,6 +59,13 @@ export class CrossfadeService {
 	}
 
 	/**
+	 * Sets transition and buffering callbacks.
+	 */
+	setCallbacks(callbacks?: CrossfadeCallbacks): void {
+		this.callbacks = callbacks;
+	}
+
+	/**
 	 * Sets crossfade duration in seconds [0, 10].
 	 */
 	setDuration(seconds: number): void {
@@ -141,6 +148,17 @@ export class CrossfadeService {
 
 			if (!incomingElement || !this.isTransitioning) {
 				this.isTransitioning = false;
+				return;
+			}
+
+			// If outgoing element is paused or identical to incoming element,
+			// crossfading two streams is impossible. Set target volume immediately.
+			if (outgoingElement.paused || outgoingElement === incomingElement) {
+				try {
+					incomingElement.volume = targetVolume;
+				} catch {}
+				this.isTransitioning = false;
+				this.callbacks?.onTransitionComplete?.();
 				return;
 			}
 

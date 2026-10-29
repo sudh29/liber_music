@@ -104,4 +104,21 @@ showLyrics: true
 		child.onunload();
 		expect(containerEl.children.length).toBe(0);
 	});
+
+	it("should route openInSidebar through plugin handleProtocolAction instead of navigating window", async () => {
+		mockPlugin.handleProtocolAction = vi.fn().mockResolvedValue(undefined);
+		const source = `track: "Music/Song.mp3"`;
+		const child = new MusicCodeblockRenderChild(containerEl, mockPlugin, source);
+		await child.onload();
+
+		const sidebarBtn = containerEl.querySelector<HTMLElement>(".music-codeblock-ext-btn");
+		expect(sidebarBtn).not.toBeNull();
+		sidebarBtn?.click();
+
+		expect(mockPlugin.handleProtocolAction).toHaveBeenCalledWith({
+			track: "Music/Song.mp3",
+			time: "0",
+			autoplay: "true",
+		});
+	});
 });

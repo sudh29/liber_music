@@ -707,3 +707,19 @@ export const Platform = {
 	isMacOS: false,
 	isSafari: false,
 };
+
+export class Keymap {
+	static isModifier(evt: MouseEvent | TouchEvent | KeyboardEvent, modifier: string): boolean {
+		if (modifier === "Mod") {
+			if (Platform.isMacOS || Platform.isIosApp) {
+				return evt.metaKey;
+			}
+			return evt.ctrlKey || evt.metaKey;
+		}
+		if (modifier === "Ctrl") return evt.ctrlKey;
+		if (modifier === "Meta") return evt.metaKey;
+		if (modifier === "Shift") return evt.shiftKey;
+		if (modifier === "Alt") return evt.altKey;
+		return false;
+	}
+}

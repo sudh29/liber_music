@@ -148,4 +148,28 @@ describe("resolveVaultAudioFile", () => {
 		const result = resolveVaultAudioFile(mockApp, "mysong");
 		expect(result).toBe(mockAudio);
 	});
+
+	it("should resolve via metadataCache getFirstLinkpathDest without scanning vault files", () => {
+		const mockAudio = new TFile();
+		mockAudio.path = "Audio/FastTrack.mp3";
+		mockAudio.extension = "mp3";
+
+		const getFilesSpy = vi.fn().mockReturnValue([]);
+		const mockApp: any = {
+			vault: {
+				getAbstractFileByPath: vi.fn().mockReturnValue(null),
+				getFiles: getFilesSpy,
+			},
+			metadataCache: {
+				getFirstLinkpathDest: vi.fn().mockImplementation((path) => {
+					if (path === "FastTrack") return mockAudio;
+					return null;
+				}),
+			},
+		};
+
+		const result = resolveVaultAudioFile(mockApp, "FastTrack");
+		expect(result).toBe(mockAudio);
+		expect(getFilesSpy).not.toHaveBeenCalled();
+	});
 });
