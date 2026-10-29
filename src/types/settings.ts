@@ -27,6 +27,8 @@ export interface TrackInfo {
 	duration?: number;
 	/** ReplayGain track gain in dB */
 	replayGainDb?: number;
+	/** ReplayGain album gain in dB */
+	replayGainAlbumDb?: number;
 	/** User star rating (0 to 5) */
 	rating?: number;
 	/** File modification timestamp (mtime) in ms for incremental scanning */
@@ -83,6 +85,8 @@ export interface MusicPlayerSettings {
 	dailyNotesScrobbler?: boolean;
 	/** Daily note section/heading to append tracks under (default: "## 🎧 Music Log") */
 	dailyNotesHeading?: string;
+	/** ReplayGain volume normalization mode: 'track', 'album', or 'off' */
+	replayGainMode?: 'track' | 'album' | 'off';
 	/** Crossfade duration in seconds (0 = gapless playback without crossfade, 1-10s = crossfade) */
 	crossfadeDuration?: number;
 	/** Whether the 10-band Web Audio DSP Equalizer is enabled */
@@ -185,6 +189,7 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	keepScreenAwake: false,     // Default: do not keep screen awake
 	dailyNotesScrobbler: false, // Default: do not record to Daily Notes
 	dailyNotesHeading: '## 🎧 Music Log', // Default heading in Daily Notes
+	replayGainMode: 'track',   // Default: track gain normalization
 	crossfadeDuration: 0,      // Default: gapless playback (0s)
 	eqEnabled: false,          // Default: EQ disabled / bypassed
 	eqPreset: 'Flat',          // Default preset

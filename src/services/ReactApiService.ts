@@ -134,9 +134,13 @@ export class ReactApiService {
 				const audioElement = this.audioService.getAudioElement();
 				if (audioElement) audioElement.volume = clampedVolume;
 				this.stateService.setVolume(clampedVolume);
-				// Persist to data.json
+				// Persist settings
 				this.plugin.settings.volume = clampedVolume;
-				await this.plugin.saveData(this.plugin.settings);
+				if (typeof this.plugin.saveSettings === "function") {
+					await this.plugin.saveSettings();
+				} else if (typeof (this.plugin as any).saveData === "function") {
+					await (this.plugin as any).saveData(this.plugin.settings);
+				}
 			},
 			getVolume: () => {
 				const state = this.stateService.getState();
@@ -148,9 +152,13 @@ export class ReactApiService {
 				const audioElement = this.audioService.getAudioElement();
 				if (audioElement) audioElement.playbackRate = clampedRate;
 				this.stateService.setPlaybackRate(clampedRate);
-				// Persist to data.json
+				// Persist settings
 				this.plugin.settings.playbackRate = clampedRate;
-				await this.plugin.saveData(this.plugin.settings);
+				if (typeof this.plugin.saveSettings === "function") {
+					await this.plugin.saveSettings();
+				} else if (typeof (this.plugin as any).saveData === "function") {
+					await (this.plugin as any).saveData(this.plugin.settings);
+				}
 			},
 			getPlaybackRate: () => {
 				const state = this.stateService.getState();

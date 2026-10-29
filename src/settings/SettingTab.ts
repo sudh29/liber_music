@@ -93,6 +93,19 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 				},
 			},
 			{
+				name: t('settings.replayGainMode.name'),
+				desc: t('settings.replayGainMode.desc'),
+				control: {
+					key: 'replayGainMode',
+					type: 'dropdown',
+					options: {
+						track: t('settings.replayGainMode.track'),
+						album: t('settings.replayGainMode.album'),
+						off: t('settings.replayGainMode.off'),
+					},
+				},
+			},
+			{
 				name: t('settings.eqEnabled.name'),
 				desc: t('settings.eqEnabled.desc'),
 				control: {

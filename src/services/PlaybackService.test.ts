@@ -838,5 +838,55 @@ describe("PlaybackService", () => {
 
 		expect(stateService.getState().currentTrack).toBe(mockFiles[1]);
 	});
+
+	it("should calculate effective volume using ReplayGain album mode when configured", async () => {
+		const track = mockFiles[0];
+		plugin.settings.tracks[track.path] = {
+			id: track.path,
+			path: track.path,
+			title: "Song",
+			artist: "Artist",
+			album: "Album",
+			replayGainDb: -6.0,
+			replayGainAlbumDb: -2.0,
+		};
+
+		// 1. Mode = 'album': uses replayGainAlbumDb (-2.0 dB -> multiplier ~0.794)
+		plugin.settings.replayGainMode = "album";
+		stateService.setVolume(1.0);
+		await playbackService.playTrack(0);
+		expect(audioService.getAudioElement()?.volume).toBeCloseTo(0.794, 2);
+
+		// 2. Mode = 'track': uses replayGainDb (-6.0 dB -> multiplier ~0.501)
+		plugin.settings.replayGainMode = "track";
+		await playbackService.playTrack(0);
+		expect(audioService.getAudioElement()?.volume).toBeCloseTo(0.501, 2);
+
+		// 3. Mode = 'off': unadjusted base volume (1.0)
+		plugin.settings.replayGainMode = "off";
+		await playbackService.playTrack(0);
+		expect(audioService.getAudioElement()?.volume).toBe(1.0);
+	});
+
+	it("should pass isCrossfading flag to createAudioElement and avoid resetting track state when crossfading", async () => {
+		await playbackService.playTrack(0);
+
+		const createAudioElementSpy = vi.spyOn(audioService, "createAudioElement");
+		const crossfadeService = playbackService.getCrossfadeService();
+		const resetTrackStateSpy = crossfadeService ? vi.spyOn(crossfadeService, "resetTrackState") : null;
+
+		await playbackService.playNext(true);
+
+		expect(createAudioElementSpy).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.any(Number),
+			expect.any(Number),
+			expect.anything(),
+			true // isCrossfading
+		);
+		if (resetTrackStateSpy) {
+			expect(resetTrackStateSpy).not.toHaveBeenCalled();
+		}
+	});
 });
 

@@ -12,7 +12,7 @@ describe('MusicPlayerSettingTab', () => {
 
 		const definitions = tab.getSettingDefinitions();
 		expect(definitions).toBeInstanceOf(Array);
-		expect(definitions.length).toBe(15);
+		expect(definitions.length).toBe(16);
 
 		const keys = definitions.map((d: any) => d.control?.key);
 		expect(keys).toContain('musicFolder');
@@ -22,6 +22,7 @@ describe('MusicPlayerSettingTab', () => {
 		expect(keys).toContain('dailyNotesScrobbler');
 		expect(keys).toContain('dailyNotesHeading');
 		expect(keys).toContain('crossfadeDuration');
+		expect(keys).toContain('replayGainMode');
 		expect(keys).toContain('eqEnabled');
 		expect(keys).toContain('eqPreset');
 		expect(keys).toContain('turntableStyle');

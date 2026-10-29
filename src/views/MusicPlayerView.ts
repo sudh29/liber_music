@@ -197,8 +197,11 @@ export class MusicPlayerView extends ItemView {
 			this.plugin.settings.crossfadeDuration ?? 0,
 			{
 				onTriggerTransition: async () => {
-					await this.playbackService.playNext();
+					await this.playbackService.playNext(true);
 					return this.audioService.getAudioElement();
+				},
+				onTransitionComplete: () => {
+					void this.audioService.cleanupOutgoing();
 				},
 				onPrebufferNextTrack: async () => {
 					const state = this.stateService.getState();

@@ -8,7 +8,7 @@
  * - Managing volume and playback rate
  */
 
-import { App, TFile } from "obsidian";
+import { App, Platform, TFile } from "obsidian";
 import { EqualizerService } from "./EqualizerService";
 import { shouldTranscodeVorbis, transcodeOggVorbisToWavBlob } from "@/utils/audio/vorbisDecoder";
 import type MusicPlayerPlugin from "@/main";
@@ -42,6 +42,11 @@ export class AudioService {
 	private currentBlobUrl: string | null = null;
 	/** Reference to current event handlers bound to audioElement (for proper removal) */
 	private currentHandlers: AudioEventHandlers | null = null;
+
+	/** Outgoing audio element preserved during dual-pipeline crossfade transitions */
+	private outgoingAudioElement: HTMLAudioElement | null = null;
+	private outgoingBlobUrl: string | null = null;
+	private outgoingHandlers: AudioEventHandlers | null = null;
 
 	/**
 	 * When seek finishes near media end (including decode alignment pushing currentTime to duration),
@@ -131,10 +136,23 @@ export class AudioService {
 		trackFile: TFile,
 		volume: number,
 		playbackRate: number,
-		handlers: AudioEventHandlers
+		handlers: AudioEventHandlers,
+		preserveOutgoingForCrossfade: boolean = false
 	): Promise<HTMLAudioElement> {
-		// Clean up existing audio element and Blob URL
-		await this.cleanup();
+		const canCrossfade = preserveOutgoingForCrossfade && Boolean(this.audioElement && !this.audioElement.paused);
+		if (canCrossfade && this.audioElement) {
+			// Move active element to outgoing slot for dual-pipeline crossfading
+			await this.cleanupOutgoing();
+			this.outgoingAudioElement = this.audioElement;
+			this.outgoingBlobUrl = this.currentBlobUrl;
+			this.outgoingHandlers = this.currentHandlers;
+			this.audioElement = null;
+			this.currentBlobUrl = null;
+			this.currentHandlers = null;
+		} else {
+			// Clean up existing audio element and Blob URL
+			await this.cleanup();
+		}
 
 		// Read file into memory and create Blob URL
 		// Prevents file lock so file can be safely renamed or removed
@@ -143,9 +161,9 @@ export class AudioService {
 			const needsTranscode = wasmEnabled && shouldTranscodeVorbis(trackFile.extension);
 			const isLargeFile = Boolean(trackFile.stat?.size && trackFile.stat.size > 15 * 1024 * 1024);
 
-			// For large files (>15MB) that do not require WASM transcoding, stream directly via
-			// Obsidian's local resource handler to prevent memory exhaustion / OOM kills on mobile
-			if (isLargeFile && !needsTranscode) {
+			// For large files (>15MB) or on mobile platforms (Android/iOS WebView) that do not require WASM transcoding,
+			// stream directly via Obsidian's local resource handler to prevent memory exhaustion / OOM kills
+			if (!needsTranscode && (isLargeFile || Platform.isMobile)) {
 				const url = this.app.vault.getResourcePath(trackFile);
 				this.audioElement = new Audio(url);
 			} else {
@@ -170,7 +188,7 @@ export class AudioService {
 				this.audioElement = new Audio(blobUrl);
 			}
 
-			this.audioElement.volume = volume;
+			this.audioElement.volume = canCrossfade ? 0 : volume;
 			this.audioElement.playbackRate = playbackRate;
 
 			// Store current handlers for proper cleanup
@@ -256,6 +274,42 @@ export class AudioService {
 	}
 
 	/**
+	 * Gets active outgoing audio element during crossfade, if any
+	 */
+	getOutgoingAudioElement(): HTMLAudioElement | null {
+		return this.outgoingAudioElement;
+	}
+
+	/**
+	 * Cleans up the outgoing audio element preserved during a dual-pipeline crossfade transition.
+	 */
+	async cleanupOutgoing(): Promise<void> {
+		if (this.outgoingAudioElement) {
+			try {
+				if (!this.outgoingAudioElement.paused) {
+					this.outgoingAudioElement.pause();
+				}
+			} catch {}
+
+			if (this.outgoingHandlers) {
+				this.outgoingAudioElement.removeEventListener("timeupdate", this.outgoingHandlers.onTimeUpdate);
+				this.outgoingAudioElement.removeEventListener("loadedmetadata", this.outgoingHandlers.onLoadedMetadata);
+				this.outgoingAudioElement.removeEventListener("ended", this.outgoingHandlers.onEnded);
+			}
+
+			this.outgoingAudioElement = null;
+			this.outgoingHandlers = null;
+		}
+
+		if (this.outgoingBlobUrl) {
+			try {
+				URL.revokeObjectURL(this.outgoingBlobUrl);
+			} catch {}
+			this.outgoingBlobUrl = null;
+		}
+	}
+
+	/**
 	 * Cleans up audio element:
 	 * Pauses playback, removes event listeners, revokes Blob URL, and nullifies references.
 	 * Called when creating a new audio element or destroying the service.
@@ -263,6 +317,7 @@ export class AudioService {
 	 * Handles active playback gracefully to avoid AbortError when pause() interrupts pending play().
 	 */
 	async cleanup(): Promise<void> {
+		await this.cleanupOutgoing();
 		if (this.audioElement) {
 			if (!this.audioElement.paused) {
 				this.audioElement.pause();
@@ -295,6 +350,11 @@ export class AudioService {
 	 */
 	pause(): void {
 		this.audioElement?.pause();
+		if (this.outgoingAudioElement && !this.outgoingAudioElement.paused) {
+			try {
+				this.outgoingAudioElement.pause();
+			} catch {}
+		}
 	}
 
 	/**

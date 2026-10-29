@@ -142,6 +142,7 @@ export async function rebuildAllData(
 					track: audioMetadata?.track,
 					duration: audioMetadata?.duration,
 					replayGainDb: audioMetadata?.replayGainDb,
+					replayGainAlbumDb: audioMetadata?.replayGainAlbumDb,
 					rating: cached?.rating,
 					mtime,
 					size,
