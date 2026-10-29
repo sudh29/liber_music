@@ -33,15 +33,19 @@ export function getOrCreateTrackId(
 	filePath: string,
 	settings: { trackIndex: Record<string, string> }
 ): string {
+	const deterministicId = generateTrackId(filePath);
+	if (settings.trackIndex[deterministicId] === filePath) {
+		return deterministicId;
+	}
+
 	for (const [trackId, path] of Object.entries(settings.trackIndex)) {
 		if (path === filePath) {
 			return trackId;
 		}
 	}
 	
-	const trackId = generateTrackId(filePath);
-	settings.trackIndex[trackId] = filePath;
-	return trackId;
+	settings.trackIndex[deterministicId] = filePath;
+	return deterministicId;
 }
 
 /**

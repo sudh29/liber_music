@@ -19,6 +19,7 @@ import {
 import { generateArtistsAndAlbums } from "../data/transform";
 import { scanVaultAudioFiles } from "./scanVaultAudio";
 import { parseTrackFilename } from "../audio/filenameParser";
+import { getOrCreateTrackId } from "../track/id";
 import { t, tWithParams } from "@/utils/i18n/i18n";
 
 /**
@@ -80,7 +81,6 @@ export async function rebuildAllData(
 					})
 				);
 
-				const { getOrCreateTrackId } = await import("@/utils/track/id");
 				const trackId = getOrCreateTrackId(file.path, plugin.settings);
 
 				const mtime = file.stat?.mtime;

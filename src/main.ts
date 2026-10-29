@@ -153,10 +153,12 @@ export default class MusicPlayerPlugin extends Plugin {
 	 * Plugin cleanup on unload
 	 */
 	onunload() {
-		// Clean up view listeners and audio instances without detaching leaves
-		const view = this.getView();
-		if (view) {
-			void view.onClose();
+		// Clean up view listeners and audio instances across all leaves without detaching
+		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MUSIC_PLAYER);
+		for (const leaf of leaves) {
+			if (leaf.view instanceof MusicPlayerView) {
+				void leaf.view.onClose();
+			}
 		}
 	}
 
