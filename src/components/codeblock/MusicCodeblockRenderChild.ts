@@ -5,7 +5,7 @@
  * Inherits from Obsidian's MarkdownRenderChild for automatic lifecycle teardown.
  */
 
-import { MarkdownRenderChild, Notice, TFile } from "obsidian";
+import { MarkdownRenderChild, Notice, setIcon, TFile } from "obsidian";
 import type MusicPlayerPlugin from "@/main";
 import { parseMusicCodeblock, type MusicCodeblockConfig } from "@/utils/codeblock/parser";
 import { resolveVaultAudioFile } from "@/utils/codeblock/resolver";
@@ -16,21 +16,14 @@ import { getCompanionLrcFile } from "@/utils/audio/companionLrc";
 import { t } from "@/utils/i18n/i18n";
 import "./MusicCodeblock.css";
 
-/** Play icon SVG markup */
-const PLAY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="6 3 20 12 6 21 6 3"/></svg>`;
-/** Pause icon SVG markup */
-const PAUSE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
-/** Disc / Vinyl icon SVG markup */
-const VINYL_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6" stroke-dasharray="2 2"/></svg>`;
-/** External link / sidebar player icon SVG markup */
-const EXTERNAL_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
-
 /** DOM helper functions that work in both Obsidian runtime and Happy-DOM/Vitest */
 function emptyEl(el: HTMLElement): void {
 	if (typeof el.empty === "function") {
 		el.empty();
 	} else {
-		el.innerHTML = "";
+		while (el.firstChild) {
+			el.removeChild(el.firstChild);
+		}
 	}
 }
 
@@ -207,7 +200,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 			cls: "music-codeblock-btn music-codeblock-play-btn",
 			attr: { "aria-label": "Play/Pause", role: "button", tabindex: "0" },
 		});
-		this.playButtonEl.innerHTML = PLAY_ICON;
+		setIcon(this.playButtonEl, "play");
 		this.playButtonEl.addEventListener("click", () => this.togglePlay());
 
 		// Track metadata
@@ -236,7 +229,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 			cls: "music-codeblock-btn music-codeblock-ext-btn",
 			attr: { "aria-label": "Open in sidebar player", role: "button", tabindex: "0" },
 		});
-		extBtn.innerHTML = EXTERNAL_ICON;
+		setIcon(extBtn, "external-link");
 		extBtn.addEventListener("click", () => this.openInSidebar(file));
 	}
 
@@ -254,7 +247,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 		const headerEl = createDiv(playerEl, { cls: "music-codeblock-header" });
 
 		const iconEl = createDiv(headerEl, { cls: "music-codeblock-disc-icon" });
-		iconEl.innerHTML = VINYL_ICON;
+		setIcon(iconEl, "disc");
 
 		const metaEl = createDiv(headerEl, { cls: "music-codeblock-meta" });
 		createDiv(metaEl, { cls: "music-codeblock-title", text: title });
@@ -264,7 +257,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 			cls: "music-codeblock-btn music-codeblock-ext-btn",
 			attr: { "aria-label": "Open in sidebar player", role: "button", tabindex: "0" },
 		});
-		extBtn.innerHTML = EXTERNAL_ICON;
+		setIcon(extBtn, "external-link");
 		extBtn.addEventListener("click", () => this.openInSidebar(file));
 
 		// Controls row
@@ -274,7 +267,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 			cls: "music-codeblock-btn music-codeblock-play-btn is-prominent",
 			attr: { "aria-label": "Play/Pause", role: "button", tabindex: "0" },
 		});
-		this.playButtonEl.innerHTML = PLAY_ICON;
+		setIcon(this.playButtonEl, "play");
 		this.playButtonEl.addEventListener("click", () => this.togglePlay());
 
 		const timelineEl = createDiv(controlsEl, { cls: "music-codeblock-timeline" });
@@ -457,7 +450,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 	private setPlayState(playing: boolean): void {
 		this.isPlaying = playing;
 		if (this.playButtonEl) {
-			this.playButtonEl.innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+			setIcon(this.playButtonEl, playing ? "pause" : "play");
 			if (playing) {
 				addCls(this.playButtonEl, "is-playing");
 			} else {

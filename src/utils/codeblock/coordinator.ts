@@ -29,7 +29,9 @@ export class CodeblockCoordinator {
 		if (this.activeAudio && this.activeAudio !== audio) {
 			try {
 				this.activeAudio.pause();
-			} catch {}
+			} catch {
+				// Ignore audio pause error
+			}
 			if (this.activeStopCallback) {
 				this.activeStopCallback();
 			}
@@ -42,7 +44,9 @@ export class CodeblockCoordinator {
 		if (this.globalPauseCallback) {
 			try {
 				this.globalPauseCallback();
-			} catch {}
+			} catch {
+				// Ignore pause callback error
+			}
 		}
 	}
 
@@ -63,7 +67,9 @@ export class CodeblockCoordinator {
 		if (this.activeAudio) {
 			try {
 				this.activeAudio.pause();
-			} catch {}
+			} catch {
+				// Ignore audio pause error
+			}
 			if (this.activeStopCallback) {
 				this.activeStopCallback();
 			}

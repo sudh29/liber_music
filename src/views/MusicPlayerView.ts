@@ -209,7 +209,9 @@ export class MusicPlayerView extends ItemView {
 					if (nextTrack) {
 						try {
 							await this.app.vault.readBinary(nextTrack);
-						} catch {}
+						} catch {
+							// Ignore pre-buffering error for optional upcoming track
+						}
 					}
 				},
 			}

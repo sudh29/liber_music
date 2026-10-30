@@ -20,6 +20,8 @@ export default tseslint.config(
 			"main.js",
 			"vite.config.ts",
 			"tests/**",
+			"src/**/*.test.ts",
+			"src/**/*.test.tsx",
 		],
 	},
 	{

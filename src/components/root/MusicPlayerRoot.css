@@ -20,3 +20,12 @@
 	padding: 0;
 	position: relative;
 }
+
+/* ========== Hidden textarea helper for cross-platform clipboard copy ========== */
+.music-clipboard-hidden {
+	position: fixed !important;
+	left: -9999px !important;
+	top: -9999px !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}

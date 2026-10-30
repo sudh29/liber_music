@@ -57,10 +57,12 @@ export class EqualizerModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl } = this;
-		if (contentEl.empty) {
+		if (typeof contentEl.empty === "function") {
 			contentEl.empty();
 		} else {
-			contentEl.innerHTML = "";
+			while (contentEl.firstChild) {
+				contentEl.removeChild(contentEl.firstChild);
+			}
 		}
 
 		this.modalEl.addClass("music-player-eq-modal");
@@ -237,10 +239,12 @@ export class EqualizerModal extends Modal {
 
 	onClose(): void {
 		const { contentEl } = this;
-		if (contentEl.empty) {
+		if (typeof contentEl.empty === "function") {
 			contentEl.empty();
 		} else {
-			contentEl.innerHTML = "";
+			while (contentEl.firstChild) {
+				contentEl.removeChild(contentEl.firstChild);
+			}
 		}
 	}
 }

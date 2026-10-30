@@ -108,9 +108,9 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 		}
 	};
 
-	const targetWindow =
-		(view.containerEl as any)?.win ||
-		view.containerEl?.ownerDocument?.defaultView ||
+	const targetWindow: Window =
+		(view.containerEl as HTMLElement & { win?: Window })?.win ??
+		view.containerEl?.ownerDocument?.defaultView ??
 		window;
 
 	targetWindow.addEventListener("keydown", handleKeyDown, true);

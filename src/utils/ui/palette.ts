@@ -201,7 +201,7 @@ export async function extractPaletteFromImageUrl(
 
 	return new Promise<PaletteTheme>((resolve) => {
 		let isResolved = false;
-		const timer = setTimeout(() => {
+		const timer = window.setTimeout(() => {
 			if (!isResolved) {
 				isResolved = true;
 				resolve({ ...DEFAULT_PALETTE_THEME });
@@ -214,10 +214,10 @@ export async function extractPaletteFromImageUrl(
 		img.onload = () => {
 			if (isResolved) return;
 			isResolved = true;
-			clearTimeout(timer);
+			window.clearTimeout(timer);
 
 			try {
-				const canvas = document.createElement('canvas');
+				const canvas = typeof createEl === "function" ? createEl("canvas") : document.createElement("canvas");
 				canvas.width = 24;
 				canvas.height = 24;
 				const ctx = canvas.getContext('2d');
@@ -240,7 +240,7 @@ export async function extractPaletteFromImageUrl(
 		img.onerror = () => {
 			if (!isResolved) {
 				isResolved = true;
-				clearTimeout(timer);
+				window.clearTimeout(timer);
 				resolve({ ...DEFAULT_PALETTE_THEME });
 			}
 		};

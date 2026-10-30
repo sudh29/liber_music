@@ -16,14 +16,14 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
 		}
 	}
 
-	if (typeof document !== "undefined" && typeof document.createElement === "function") {
+	if (typeof document !== "undefined") {
 		try {
-			const textArea = document.createElement("textarea");
+			const textArea = typeof createEl === "function"
+				? createEl("textarea", { cls: "music-clipboard-hidden" })
+				: document.createElement("textarea");
 			textArea.value = text;
-			textArea.style.position = "fixed";
-			textArea.style.left = "-9999px";
-			textArea.style.top = "-9999px";
 			textArea.setAttribute("readonly", "");
+			textArea.className = "music-clipboard-hidden";
 			document.body.appendChild(textArea);
 			textArea.select();
 			const successful = document.execCommand("copy");
@@ -36,3 +36,4 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
 
 	return false;
 }
+

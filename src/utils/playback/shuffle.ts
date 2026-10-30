@@ -124,9 +124,12 @@ export class ShuffleManager {
 		// If first element of new cycle equals last played, swap it with another index
 		if (lastPlayed !== undefined && shuffled[0] === lastPlayed && shuffled.length > 1) {
 			const swapIdx = Math.floor(Math.random() * (shuffled.length - 1)) + 1;
-			const temp = shuffled[0]!;
-			shuffled[0] = shuffled[swapIdx]!;
-			shuffled[swapIdx] = temp;
+			const temp = shuffled[0] as number;
+			const targetVal = shuffled[swapIdx];
+			if (targetVal !== undefined) {
+				shuffled[0] = targetVal;
+				shuffled[swapIdx] = temp;
+			}
 		}
 
 		const firstOfNewCycle = shuffled.shift()!;

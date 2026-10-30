@@ -44,7 +44,7 @@ export function resolveVaultAudioFile(
 		}
 
 		// As partial path in trackIndex values
-		for (const [id, path] of Object.entries(trackIndex)) {
+		for (const [, path] of Object.entries(trackIndex)) {
 			if (path === cleanIdentifier || path.endsWith("/" + cleanIdentifier)) {
 				const file = app.vault.getAbstractFileByPath(path);
 				if (file instanceof TFile && isSupportedAudioExtension(file.extension)) {
