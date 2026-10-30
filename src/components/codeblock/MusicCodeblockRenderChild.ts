@@ -311,7 +311,9 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 			const companionLrc = getCompanionLrcFile(this.plugin.app, file.path);
 			if (companionLrc) {
 				try {
-					lyricsText = await this.plugin.app.vault.read(companionLrc);
+					lyricsText = typeof this.plugin.app.vault.cachedRead === "function"
+						? await this.plugin.app.vault.cachedRead(companionLrc)
+						: await this.plugin.app.vault.read(companionLrc);
 				} catch {}
 			}
 		}

@@ -236,7 +236,9 @@ export class LyricsService {
 		try {
 			let content: string | null = null;
 			if (lrcFile) {
-				content = await this.plugin.app.vault.read(lrcFile);
+				content = typeof this.plugin.app.vault.cachedRead === "function"
+					? await this.plugin.app.vault.cachedRead(lrcFile)
+					: await this.plugin.app.vault.read(lrcFile);
 			} else {
 				content = await readCompanionLrc(this.plugin.app, trackPath);
 			}

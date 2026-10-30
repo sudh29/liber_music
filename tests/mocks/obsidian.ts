@@ -259,6 +259,10 @@ export class Vault {
 		return typeof content === "string" ? content : "";
 	}
 
+	async cachedRead(file: TFile): Promise<string> {
+		return this.read(file);
+	}
+
 	async readBinary(file: TFile): Promise<ArrayBuffer> {
 		const content = this.fileContents.get(file.path);
 		if (content instanceof ArrayBuffer) return content;

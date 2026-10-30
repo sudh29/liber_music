@@ -68,7 +68,9 @@ export async function readCompanionLrc(
 		// 1. Try Obsidian memory vault index first
 		const lrcFile = getCompanionLrcFile(app, audioFile);
 		if (lrcFile) {
-			const content = await app.vault.read(lrcFile);
+			const content = typeof app.vault.cachedRead === "function"
+				? await app.vault.cachedRead(lrcFile)
+				: await app.vault.read(lrcFile);
 			if (content && content.trim().length > 0) return content;
 		}
 

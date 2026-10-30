@@ -43,6 +43,8 @@ export type PlayMode = 'normal' | 'repeat-all' | 'repeat-one' | 'shuffle';
 export default class MusicPlayerPlugin extends Plugin {
 	/** Plugin settings object storing configuration and library metadata */
 	declare settings: MusicPlayerSettings;
+	private saveTimeout: number | null = null;
+	private pendingSaveResolvers: Array<() => void> = [];
 
 	/**
 	 * Plugin initialization on load
@@ -152,7 +154,17 @@ export default class MusicPlayerPlugin extends Plugin {
 	/**
 	 * Plugin cleanup on unload
 	 */
-	onunload() {
+	async onunload() {
+		// Flush any pending debounced settings save immediately
+		if (this.saveTimeout !== null) {
+			window.clearTimeout(this.saveTimeout);
+			this.saveTimeout = null;
+			await this.saveSettings();
+			const resolvers = this.pendingSaveResolvers;
+			this.pendingSaveResolvers = [];
+			resolvers.forEach((r) => r());
+		}
+
 		// Clean up view listeners and audio instances across all leaves without detaching
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MUSIC_PLAYER);
 		for (const leaf of leaves) {
@@ -229,6 +241,25 @@ export default class MusicPlayerPlugin extends Plugin {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Debounced settings persistence (coalesces rapid writes such as volume or playback rate slider drags).
+	 */
+	async requestSaveSettings(delayMs: number = 300): Promise<void> {
+		return new Promise((resolve) => {
+			this.pendingSaveResolvers.push(resolve);
+			if (this.saveTimeout !== null) {
+				window.clearTimeout(this.saveTimeout);
+			}
+			this.saveTimeout = window.setTimeout(async () => {
+				this.saveTimeout = null;
+				await this.saveSettings();
+				const resolvers = this.pendingSaveResolvers;
+				this.pendingSaveResolvers = [];
+				resolvers.forEach((r) => r());
+			}, delayMs);
+		});
 	}
 
 	/**
