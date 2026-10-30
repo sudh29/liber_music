@@ -4,7 +4,7 @@
         <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.0.0-7f6df2?logo=obsidian" alt="Version 2.0.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-675%20passed-brightgreen" alt="Tests: 675 passed">
+        <img src="https://img.shields.io/badge/tests-690%20passed-brightgreen" alt="Tests: 690 passed">
         <img src="https://img.shields.io/badge/coverage-98.32%25-brightgreen" alt="Coverage: 98.32%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
@@ -22,9 +22,9 @@
 
 | Feature / Capability | Upstream (`TracingOrigins`) | Liber Music Player (`v2.0.0`) | Architectural & User Impact |
 |:---|:---:|:---:|:---|
-| **Automated Testing & CI** | ❌ **0 tests (0% coverage)** | ✅ **675 tests across 80 suites (98.32% lines, 85.37% branches)** | Strict quality regression gates; every parser, decoder, and state hook is verified in CI. |
+| **Automated Testing & CI** | ❌ **0 tests (0% coverage)** | ✅ **690 tests across 82 suites (98.32% lines, 85.37% branches)** | Strict quality regression gates; every parser, decoder, and state hook is verified in CI. |
 | **iOS / iPadOS OGG Playback** | ❌ Fails (Apple WebKit cannot decode OGG/Opus) | ✅ **100% Codec Parity via inlined WASM Vorbis** | Bypasses WebKit limitations; decodes `.ogg` & `.opus` to WAV Blob URLs on iOS/iPadOS without user re-encoding. |
-| **Audio DSP & Equalizer** | ❌ None (raw browser output only) | ✅ **10-Band Biquad EQ & Gapless Sinusoidal Crossfading** | ISO octave bands (31Hz–16kHz), ±12dB preamp, 7 tuned presets (Harman Target, Bass Boost, etc.), and 0s–10s crossfade. |
+| **Audio DSP & Equalizer** | ❌ None (raw browser output only) | ✅ **10-Band Biquad EQ & Dual-Pipeline Crossfading** | ISO octave bands (31Hz–16kHz), ±12dB preamp, 7 tuned presets, and true simultaneous dual-stream sinusoidal crossfading. |
 | **Markdown Note Integration** | ❌ None (sidebar only) | ✅ **````music```` Codeblock Player Embeds** | Embed interactive mini-players directly inside Obsidian markdown notes with custom start/end timestamps and lyrics. |
 | **Lyric Deep-Linking** | ❌ None | ✅ **1-Click Timestamp URI Citation Links** | Click 🔗 on any lyric line to copy `obsidian://music-player?track=...&t=...` that jumps to exact moments across the vault. |
 | **Daily Notes Scrobbler** | ❌ None | ✅ **Automated Listening Journaling** | Logs completed listening sessions (>70%) to active Daily Notes with an offline audit ledger (`history.json`). |
@@ -34,10 +34,10 @@
 | **External Companion `.lrc`** | ❌ Ignored (embedded tags only) | ✅ **Full Companion `.lrc` Auto-Discovery** | Automatically finds and synchronizes standalone `.lrc` files located alongside audio files in the vault. |
 | **Visualizer & Theming** | ❌ Static CSS, 1 fixed vinyl look | ✅ **Real-Time Spectrum Visualizer & Dynamic Palette** | 16-bar Web Audio spectrum monitor; offscreen canvas quantizes album art colors into CSS variables; 3 turntable styles. |
 | **Mobile System Integration** | ❌ None (stops on lock) | ✅ **MediaSession API & Screen Wake Lock** | Lock screen player widget, Android notification controls, Bluetooth headphone keys, and screen keep-awake toggle. |
-| **Mobile Memory Safety** | ⚠️ High RAM (reads entire 50MB files) | ✅ **512KB Header-Only Binary Chunking** | Streamed header reads eliminate mobile out-of-memory crashes; event-loop yielding prevents UI freezes. |
+| **Mobile Memory Safety** | ⚠️ High RAM (reads entire 50MB files) | ✅ **512KB Header-Only Chunking & Streaming** | Streamed header reads eliminate mobile out-of-memory crashes; direct vault URL streaming for large tracks. |
 | **Shuffle Queue Correctness** | ⚠️ Flawed (repeats songs, button erasure) | ✅ **True Non-Repeating Fisher-Yates Shuffle** | Dedicated `ShuffleManager` guarantees 100% of tracks play before recycling; preserved icon rendering. |
-| **Loudness Normalization** | ❌ None | ✅ **ReplayGain & EBU R128 Tag Support** | Automatic volume normalization across disparate track masters. |
-| **Build & Toolchain** | ⚠️ Basic legacy esbuild | ✅ **Vite+ (`vp`) & Rust Oxc Compiler / Linter** | Rust-powered transforms (`oxc-transform-react`), 0 lint warnings across 179 files, and automated bundle size audits. |
+| **Loudness Normalization** | ❌ None | ✅ **ReplayGain (Track & Album Modes) & EBU R128** | Automatic volume normalization preserving either per-song target loudness or inter-track album dynamics. |
+| **Build & Toolchain** | ⚠️ Basic legacy esbuild | ✅ **Vite+ (`vp`) & Rust Oxc Compiler / Linter** | Rust-powered transforms (`oxc-transform-react`), 0 lint warnings across 184 files, and automated bundle size audits. |
 | **Release & Distribution** | ⚠️ Manual file drops | ✅ **Automated GitHub Actions & BRAT Support** | Automated tagged releases with SLSA provenance attestations and 1-click beta updates via BRAT. |
 | **Localization & Repo Hygiene** | ⚠️ Chinese/English mix, Python `.gitignore` | ✅ **Clean English Architecture & Strict Hygiene** | 100% localized English docs/codebase, strict Node/Obsidian `.gitignore`, and zero untracked binaries in repository. |
 
@@ -131,9 +131,15 @@ Beyond new functional capabilities, Liber Music Player features deep architectur
   - **Harman Target Curve**: Scientifically calibrated listener preference target.
   - **Electronic**: Sub-bass extension and sparkling highs.
   - **Custom**: User-adjusted band gains.
-- **Strict Gapless Playback & Equal-Power Crossfading**:
-  - `0s` setting provides strict gapless playback with pre-buffered track transitions.
-  - Configurable `1s - 10s` smooth transitions using equal-power sinusoidal crossfade curves (`cos(t * π/2)` / `sin(t * π/2)`).
+- **Dual-Pipeline Gapless & Equal-Power Crossfading Engine**:
+  - **Bit-Transparent Gapless (0s)**: Pre-buffers upcoming track binary headers to execute zero-latency seamless track transitions.
+  - **Acoustic Constant-Power Crossfade (1s–10s)**: Leverages a simultaneous dual-stream pipeline (`outgoingAudioElement` and `incomingAudioElement`), blending acoustic energy along equal-power curves (`cos(t * π/2)` / `sin(t * π/2)`) with zero volume drops or clicks.
+  - Automatic fallback safety: immediately engages full volume if the outgoing stream is paused or unavailable.
+- **ReplayGain & EBU R128 Volume Normalization**:
+  - Automatically reads embedded `REPLAYGAIN_TRACK_GAIN` and `REPLAYGAIN_ALBUM_GAIN` tags across ID3, Vorbis, and MP4 containers.
+  - **Track Gain Mode**: Normalizes individual song loudness across mixed playlists.
+  - **Album Gain Mode**: Preserves intentional acoustic dynamics between consecutive songs in an album release.
+  - **Off Mode**: Bit-exact unadjusted raw audio volume.
 - **Interactive Equalizer Modal & Commands**:
   - Quick-access equalizer button (`sliders-horizontal`) directly in the turntable track action bar.
   - Obsidian command palette: `Open 10-Band Equalizer`.
@@ -268,9 +274,14 @@ Word timestamps are enclosed within `<mm:ss.xx>` tags following the line timesta
 - **Music Folder Path**: Specify a dedicated vault subfolder (e.g. `Music/` or `Media/Audio`) to scan. Leaving this empty scans the entire vault.
 - **Autoplay on Launch**: Automatically resume or start the first track when the player view opens.
 - **Autoplay Track**: Pick a specific track to start on launch.
-- **Record listening history to Daily Notes**: Automatically logs completed listening sessions to your daily note journal.
+- **Record listening history to Daily Notes**: Automatically logs completed listening sessions to your daily note journal via atomic `Vault.process` mutations.
 - **Daily Notes Section Heading**: Heading title under which song logs are appended (default: `## 🎧 Music Log`).
 - **Keep Screen Awake**: Toggle Screen Wake Lock API to prevent device sleep during synchronized karaoke lyric tracking.
+- **ReplayGain volume normalization**: Choose between `Track Gain` (matches loudness per song), `Album Gain` (preserves dynamics across an album release), or `Off`.
+- **Crossfade duration**: Configure transition blending between tracks from `0s` (strict gapless pre-buffering) to `10s` (equal-power crossfade).
+- **10-Band Equalizer & Presets**: Enable the DSP equalizer engine and select default acoustic curve (`Flat`, `Harman Target`, `Bass Boost`, etc.).
+- **Turntable Visual Style**: Select turntable aesthetics (`Brushed Obsidian`, `Vintage Walnut`, or `Cyberpunk Acrylic`).
+- **WASM Vorbis Decoder**: Toggle real-time inlined WebAssembly Vorbis/Opus decoding for iOS and iPadOS Safari WebViews.
 
 ---
 
@@ -308,7 +319,7 @@ npm run build
 - **UI Framework**: React 18 & Vanilla CSS Design System
 - **Toolchain**: **Vite+** (`vp`) for next-generation developer tooling
 - **Compiler & Linter**: **Oxc** (`oxc-transform-react` & `vp lint`) for ultra-fast Rust-based parsing, transforms, and linting
-- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 675 passing unit and integration tests across 80 test suites (98.32% line coverage)
+- **Test Runner**: **Vitest** via Vite+ (`vp test run`) with 690 passing unit and integration tests across 82 test suites (98.32% line coverage)
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture
