@@ -15,7 +15,6 @@ import type {
 	SmartPlaylistRule,
 	SmartRuleField,
 	SmartRuleOperator,
-	TrackInfo,
 } from "@/types/settings";
 import { evaluateSmartPlaylist } from "@/utils/library/smartPlaylist";
 import { t } from "@/utils/i18n/i18n";
@@ -45,7 +44,7 @@ export class SmartPlaylistModal extends Modal {
 		super(app);
 
 		if (options.initialDefinition) {
-			this.definition = JSON.parse(JSON.stringify(options.initialDefinition));
+			this.definition = JSON.parse(JSON.stringify(options.initialDefinition)) as SmartPlaylistDefinition;
 		} else {
 			this.definition = {
 				id: `smart_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -155,11 +154,11 @@ export class SmartPlaylistModal extends Modal {
 
 		sortRow.createSpan({ text: t("smartPlaylist.limit") });
 		this.limitInput = sortRow.createEl("input", {
+			cls: "smart-playlist-limit-input",
 			type: "number",
 			value: this.definition.limit ? String(this.definition.limit) : "",
 		});
 		this.limitInput.placeholder = t("smartPlaylist.unlimited");
-		this.limitInput.style.width = "70px";
 
 		// Actions Row with preview badge and save/cancel
 		const actionRow = contentEl.createDiv({ cls: "smart-playlist-actions" });
@@ -234,7 +233,7 @@ export class SmartPlaylistModal extends Modal {
 			});
 
 			// Delete button
-			const deleteBtn = row.createEl("span", {
+			const deleteBtn = row.createSpan({
 				cls: "smart-rule-delete",
 				text: "✕",
 			});

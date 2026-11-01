@@ -85,7 +85,7 @@ export default class MusicPlayerPlugin extends Plugin {
 		// Add command: open 10-band equalizer
 		this.addCommand({
 			id: 'open-equalizer',
-			name: t('commands.openEqualizer') || 'Open 10-Band Equalizer',
+			name: t('commands.openEqualizer') || 'Open 10-band equalizer',
 			callback: async () => {
 				await this.activateView();
 				const view = this.getView();
@@ -98,7 +98,7 @@ export default class MusicPlayerPlugin extends Plugin {
 		// Add command: edit metadata of current track
 		this.addCommand({
 			id: 'edit-track-metadata',
-			name: t('commands.editMetadata') || 'Edit Track Metadata',
+			name: t('commands.editMetadata') || 'Edit track metadata',
 			callback: async () => {
 				await this.activateView();
 				const view = this.getView();
@@ -117,7 +117,7 @@ export default class MusicPlayerPlugin extends Plugin {
 		// Add command: create smart playlist
 		this.addCommand({
 			id: 'create-smart-playlist',
-			name: t('commands.createSmartPlaylist') || 'Create Smart Playlist',
+			name: t('commands.createSmartPlaylist') || 'Create smart playlist',
 			callback: async () => {
 				await this.activateView();
 				const view = this.getView();
@@ -128,6 +128,114 @@ export default class MusicPlayerPlugin extends Plugin {
 						}
 					},
 				}).open();
+			}
+		});
+
+		// Add command: play/pause playback
+		this.addCommand({
+			id: 'play-pause',
+			name: t('commands.playPause') || 'Play or pause playback',
+			callback: () => {
+				const view = this.getView();
+				if (view) {
+					void view.togglePlay();
+				} else {
+					new Notice(t('notice.noActivePlayer') || 'Liber Music Player view is not open.');
+				}
+			}
+		});
+
+		// Add command: skip to next track
+		this.addCommand({
+			id: 'next-track',
+			name: t('commands.nextTrack') || 'Play next track',
+			callback: () => {
+				const view = this.getView();
+				if (view) {
+					void view.playNext();
+				} else {
+					new Notice(t('notice.noActivePlayer') || 'Liber Music Player view is not open.');
+				}
+			}
+		});
+
+		// Add command: skip to previous track
+		this.addCommand({
+			id: 'prev-track',
+			name: t('commands.prevTrack') || 'Play previous track',
+			callback: () => {
+				const view = this.getView();
+				if (view) {
+					void view.playPrevious();
+				} else {
+					new Notice(t('notice.noActivePlayer') || 'Liber Music Player view is not open.');
+				}
+			}
+		});
+
+		// Add command: increase volume
+		this.addCommand({
+			id: 'volume-up',
+			name: t('commands.volumeUp') || 'Increase volume',
+			callback: () => {
+				const view = this.getView();
+				if (view) {
+					const curVol = view.volume ?? 1;
+					const newVol = Math.min(1, Math.round((curVol + 0.05) * 100) / 100);
+					view.setVolume(newVol);
+					this.settings.volume = newVol;
+					void this.requestSaveSettings();
+					new Notice(`Volume: ${Math.round(newVol * 100)}%`);
+				} else {
+					new Notice(t('notice.noActivePlayer') || 'Liber Music Player view is not open.');
+				}
+			}
+		});
+
+		// Add command: decrease volume
+		this.addCommand({
+			id: 'volume-down',
+			name: t('commands.volumeDown') || 'Decrease volume',
+			callback: () => {
+				const view = this.getView();
+				if (view) {
+					const curVol = view.volume ?? 1;
+					const newVol = Math.max(0, Math.round((curVol - 0.05) * 100) / 100);
+					view.setVolume(newVol);
+					this.settings.volume = newVol;
+					void this.requestSaveSettings();
+					new Notice(`Volume: ${Math.round(newVol * 100)}%`);
+				} else {
+					new Notice(t('notice.noActivePlayer') || 'Liber Music Player view is not open.');
+				}
+			}
+		});
+
+		// Add command: toggle shuffle
+		this.addCommand({
+			id: 'toggle-shuffle',
+			name: t('commands.toggleShuffle') || 'Toggle shuffle',
+			callback: () => {
+				const view = this.getView();
+				if (view) {
+					void view.toggleShuffle();
+				} else {
+					new Notice(t('notice.noActivePlayer') || 'Liber Music Player view is not open.');
+				}
+			}
+		});
+
+		// Add command: toggle repeat mode
+		this.addCommand({
+			id: 'toggle-repeat',
+			name: t('commands.toggleRepeat') || 'Toggle repeat mode',
+			callback: () => {
+				const view = this.getView();
+				if (view) {
+					void view.togglePlayMode();
+				} else {
+					new Notice(t('notice.noActivePlayer') || 'Liber Music Player view is not open.');
+				}
 			}
 		});
 
@@ -154,12 +262,12 @@ export default class MusicPlayerPlugin extends Plugin {
 	/**
 	 * Plugin cleanup on unload
 	 */
-	async onunload() {
+	onunload(): void {
 		// Flush any pending debounced settings save immediately
 		if (this.saveTimeout !== null) {
 			window.clearTimeout(this.saveTimeout);
 			this.saveTimeout = null;
-			await this.saveSettings();
+			void this.saveData(this.settings);
 			const resolvers = this.pendingSaveResolvers;
 			this.pendingSaveResolvers = [];
 			resolvers.forEach((r) => r());
@@ -169,7 +277,7 @@ export default class MusicPlayerPlugin extends Plugin {
 		const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_MUSIC_PLAYER);
 		for (const leaf of leaves) {
 			if (leaf.view instanceof MusicPlayerView) {
-				void leaf.view.onClose();
+				leaf.view.destroyServices();
 			}
 		}
 	}
@@ -252,12 +360,14 @@ export default class MusicPlayerPlugin extends Plugin {
 			if (this.saveTimeout !== null) {
 				window.clearTimeout(this.saveTimeout);
 			}
-			this.saveTimeout = window.setTimeout(async () => {
-				this.saveTimeout = null;
-				await this.saveSettings();
-				const resolvers = this.pendingSaveResolvers;
-				this.pendingSaveResolvers = [];
-				resolvers.forEach((r) => r());
+			this.saveTimeout = window.setTimeout(() => {
+				void (async () => {
+					this.saveTimeout = null;
+					await this.saveSettings();
+					const resolvers = this.pendingSaveResolvers;
+					this.pendingSaveResolvers = [];
+					resolvers.forEach((r) => r());
+				})();
 			}, delayMs);
 		});
 	}
@@ -345,7 +455,12 @@ export default class MusicPlayerPlugin extends Plugin {
 			return;
 		}
 
-		const file = resolveVaultAudioFile(this.app, payload.track, this.settings.trackIndex);
+		const file = resolveVaultAudioFile(
+			this.app,
+			payload.track,
+			this.settings.trackIndex,
+			this.settings.musicFolder
+		);
 		if (!file) {
 			new Notice(t('notice.trackMissing'));
 			return;

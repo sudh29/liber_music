@@ -289,7 +289,9 @@ export class AudioService {
 				if (!this.outgoingAudioElement.paused) {
 					this.outgoingAudioElement.pause();
 				}
-			} catch {}
+			} catch {
+				// Ignore pause errors on outgoing element
+			}
 
 			if (this.outgoingHandlers) {
 				this.outgoingAudioElement.removeEventListener("timeupdate", this.outgoingHandlers.onTimeUpdate);
@@ -304,7 +306,9 @@ export class AudioService {
 		if (this.outgoingBlobUrl) {
 			try {
 				URL.revokeObjectURL(this.outgoingBlobUrl);
-			} catch {}
+			} catch {
+				// Ignore URL revoke error
+			}
 			this.outgoingBlobUrl = null;
 		}
 	}
@@ -353,7 +357,9 @@ export class AudioService {
 		if (this.outgoingAudioElement && !this.outgoingAudioElement.paused) {
 			try {
 				this.outgoingAudioElement.pause();
-			} catch {}
+			} catch {
+				// Ignore pause error on outgoing element
+			}
 		}
 	}
 

@@ -40,7 +40,7 @@ describe("Protocol & Codeblock Lifecycle Integration", () => {
 			},
 		]);
 
-		plugin = new MusicPlayerPlugin(mockApp, { id: "liber-music-player-plugin" });
+		plugin = new MusicPlayerPlugin(mockApp, { id: "liber-music-player" });
 		plugin.settings = {
 			musicFolder: "",
 			trackIndex: {

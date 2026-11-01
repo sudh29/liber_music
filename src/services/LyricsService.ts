@@ -49,7 +49,7 @@ export class LyricsService {
 				lyrics: "",
 			};
 		}
-		return this.plugin.settings.tracks[trackId]!;
+		return this.plugin.settings.tracks[trackId];
 	}
 
 	/**

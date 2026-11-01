@@ -10,7 +10,7 @@
 
 import { App, Modal, Setting } from "obsidian";
 import type MusicPlayerPlugin from "@/main";
-import { EqualizerService, type EqState } from "@/services/EqualizerService";
+import { EqualizerService } from "@/services/EqualizerService";
 import {
 	EQ_BAND_COUNT,
 	EQ_FREQUENCIES,
@@ -22,13 +22,11 @@ import "./EqualizerModal.css";
 
 // Safe DOM helper functions
 function createDiv(parent: HTMLElement, className?: string): HTMLDivElement {
-	if (parent.createDiv) return parent.createDiv({ cls: className }) as HTMLDivElement;
-	return parent.createEl("div", { cls: className }) as HTMLDivElement;
+	return parent.createDiv({ cls: className });
 }
 
 function createSpan(parent: HTMLElement, className?: string, text?: string): HTMLSpanElement {
-	if (parent.createSpan) return parent.createSpan({ cls: className, text }) as HTMLSpanElement;
-	return parent.createEl("span", { cls: className, text }) as HTMLSpanElement;
+	return parent.createSpan({ cls: className, text });
 }
 
 function createEl<K extends keyof HTMLElementTagNameMap>(
@@ -36,7 +34,7 @@ function createEl<K extends keyof HTMLElementTagNameMap>(
 	tag: K,
 	options?: { cls?: string; text?: string; type?: string; value?: string }
 ): HTMLElementTagNameMap[K] {
-	return parent.createEl(tag, options) as HTMLElementTagNameMap[K];
+	return parent.createEl(tag, options);
 }
 
 export class EqualizerModal extends Modal {
@@ -93,7 +91,7 @@ export class EqualizerModal extends Modal {
 					toggleLabel.removeClass("active");
 				}
 			});
-			this.toggleSwitch = toggle?.toggleEl?.querySelector ? (toggle.toggleEl.querySelector("input") as HTMLInputElement) : null;
+			this.toggleSwitch = toggle?.toggleEl?.find ? (toggle.toggleEl.find("input") as HTMLInputElement) : null;
 		});
 
 		// Controls Bar (Presets + Reset)
@@ -113,7 +111,8 @@ export class EqualizerModal extends Modal {
 		customOpt.selected = state.preset === "Custom";
 
 		select.addEventListener("change", (e) => {
-			const val = ((e?.target as any)?.value ?? select.value) as string;
+			const target = e.target as HTMLSelectElement | null;
+			const val = target?.value ?? select.value;
 			if (val !== "Custom") {
 				this.equalizerService.setPreset(val);
 				this.updateSlidersFromState();
@@ -147,7 +146,8 @@ export class EqualizerModal extends Modal {
 		);
 
 		pSlider.addEventListener("input", (e) => {
-			const val = parseFloat((e?.target as any)?.value ?? pSlider.value);
+			const target = e.target as HTMLInputElement | null;
+			const val = parseFloat(target?.value ?? pSlider.value);
 			this.equalizerService.setPreamp(val);
 			if (this.preampBadge) {
 				this.preampBadge.textContent = this.formatDb(val);
@@ -185,7 +185,8 @@ export class EqualizerModal extends Modal {
 			this.bandSliders.push(slider);
 
 			slider.addEventListener("input", (e) => {
-				const val = parseFloat((e?.target as any)?.value ?? slider.value);
+				const target = e.target as HTMLInputElement | null;
+				const val = parseFloat(target?.value ?? slider.value);
 				this.equalizerService.setBandGain(i, val);
 				badge.textContent = this.formatDb(val);
 				badge.className = `music-player-eq-band-db ${val > 0 ? "boost" : val < 0 ? "cut" : ""}`;

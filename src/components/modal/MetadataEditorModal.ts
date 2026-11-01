@@ -141,7 +141,7 @@ export class MetadataEditorModal extends Modal {
 		this.starElements = [];
 
 		for (let i = 1; i <= 5; i++) {
-			const star = starsContainer.createEl("span", {
+			const star = starsContainer.createSpan({
 				cls: `metadata-star-btn ${i <= this.rating ? "active" : ""}`,
 				text: "★",
 			});

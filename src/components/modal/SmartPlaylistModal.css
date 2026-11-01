@@ -94,6 +94,10 @@
 	color: var(--text-muted);
 }
 
+.smart-playlist-limit-input {
+	width: 70px;
+}
+
 .smart-preview-badge {
 	display: inline-flex;
 	align-items: center;

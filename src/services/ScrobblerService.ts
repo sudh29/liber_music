@@ -3,13 +3,13 @@
  * 
  * Records finished or 70%+ completed track playback into:
  * 1. Today's Daily Note under a configured heading (e.g. "## 🎧 Music Log")
- * 2. An offline JSON audit log at .obsidian/plugins/liber-music-player-plugin/history.json
+ * 2. An offline JSON audit log at <configDir>/plugins/<pluginId>/history.json
  */
 
 import { App, normalizePath, TFile } from "obsidian";
 import type MusicPlayerPlugin from "@/main";
 import type { TrackInfo } from "@/types";
-import { formatTime, generateObsidianTrackUri } from "@/utils/protocol/uri";
+import { generateObsidianTrackUri } from "@/utils/protocol/uri";
 
 /**
  * Single listening session record in JSON history
@@ -213,7 +213,8 @@ export class ScrobblerService {
 		duration?: number
 	): Promise<void> {
 		try {
-			const historyPath = normalizePath(`${this.plugin.manifest.dir || ".obsidian/plugins/liber-music-player-plugin"}/history.json`);
+			const basePath = this.plugin.manifest.dir ?? `${this.app.vault.configDir}/plugins/${this.plugin.manifest.id}`;
+			const historyPath = normalizePath(`${basePath}/history.json`);
 			const record: HistoryRecord = {
 				timestamp: new Date().toISOString(),
 				trackPath: track.path,
@@ -228,8 +229,10 @@ export class ScrobblerService {
 			if (exists) {
 				try {
 					const raw = await this.app.vault.adapter.read(historyPath);
-					records = JSON.parse(raw);
-					if (!Array.isArray(records)) {
+					const parsed: unknown = JSON.parse(raw);
+					if (Array.isArray(parsed)) {
+						records = parsed as HistoryRecord[];
+					} else {
 						records = [];
 					}
 				} catch {

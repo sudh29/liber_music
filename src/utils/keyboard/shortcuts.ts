@@ -113,7 +113,11 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 		view.containerEl?.ownerDocument?.defaultView ??
 		window;
 
-	targetWindow.addEventListener("keydown", handleKeyDown, true);
+	if (typeof view.registerDomEvent === "function") {
+		view.registerDomEvent(targetWindow, "keydown", handleKeyDown, true);
+	} else {
+		targetWindow.addEventListener("keydown", handleKeyDown, true);
+	}
 
 	return {
 		cleanup: () => {

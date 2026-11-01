@@ -7,7 +7,7 @@ import { VIEW_TYPE_MUSIC_PLAYER } from "@/views/MusicPlayerView";
 describe("E2E 1: Plugin Lifecycle & View Activation", () => {
 	it("should initialize plugin, register views, commands, and ribbon icon on onload", async () => {
 		const app = new App();
-		const manifest = { id: "liber-music-player-plugin", version: "1.3.8" };
+		const manifest = { id: "liber-music-player", version: "2.0.0" };
 		const plugin = new MusicPlayerPlugin(app, manifest);
 
 		// 1. Trigger onload
@@ -17,6 +17,13 @@ describe("E2E 1: Plugin Lifecycle & View Activation", () => {
 		expect(plugin.commands.some((c) => c.id === "open-player")).toBe(true);
 		expect(plugin.commands.some((c) => c.id === "open-settings")).toBe(true);
 		expect(plugin.commands.some((c) => c.id === "open-equalizer")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "play-pause")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "next-track")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "prev-track")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "volume-up")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "volume-down")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "toggle-shuffle")).toBe(true);
+		expect(plugin.commands.some((c) => c.id === "toggle-repeat")).toBe(true);
 
 		// Check ribbon icon
 		expect(plugin.ribbonIcons.some((r) => r.icon === "lucide-music")).toBe(true);
@@ -36,6 +43,15 @@ describe("E2E 1: Plugin Lifecycle & View Activation", () => {
 		const eqCmd = plugin.commands.find((c) => c.id === "open-equalizer");
 		expect(eqCmd).toBeDefined();
 		await eqCmd?.callback();
+
+		// Test playback command callbacks
+		plugin.commands.find((c) => c.id === "play-pause")?.callback();
+		plugin.commands.find((c) => c.id === "next-track")?.callback();
+		plugin.commands.find((c) => c.id === "prev-track")?.callback();
+		plugin.commands.find((c) => c.id === "volume-up")?.callback();
+		plugin.commands.find((c) => c.id === "volume-down")?.callback();
+		plugin.commands.find((c) => c.id === "toggle-shuffle")?.callback();
+		plugin.commands.find((c) => c.id === "toggle-repeat")?.callback();
 
 		// 4. Test saveSettings synchronizes live view services
 		const view = plugin.getView();

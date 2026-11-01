@@ -32,9 +32,9 @@ export class LRUMap<K, V> extends Map<K, V> {
 		if (super.has(key)) {
 			super.delete(key);
 		} else if (this.size >= this.maxCapacity) {
-			const oldestKey: K | undefined = this.keys().next().value;
-			if (oldestKey !== undefined) {
-				this.delete(oldestKey);
+			const nextEntry = this.keys().next();
+			if (!nextEntry.done) {
+				this.delete(nextEntry.value);
 			}
 		}
 		super.set(key, value);

@@ -217,7 +217,7 @@ export async function extractPaletteFromImageUrl(
 			window.clearTimeout(timer);
 
 			try {
-				const canvas = typeof createEl === "function" ? createEl("canvas") : document.createElement("canvas");
+				const canvas = createEl("canvas");
 				canvas.width = 24;
 				canvas.height = 24;
 				const ctx = canvas.getContext('2d');

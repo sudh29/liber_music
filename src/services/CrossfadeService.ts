@@ -156,7 +156,9 @@ export class CrossfadeService {
 			if (outgoingElement.paused || outgoingElement === incomingElement) {
 				try {
 					incomingElement.volume = targetVolume;
-				} catch {}
+				} catch {
+					// Ignore volume assignment error on detached audio element
+				}
 				this.isTransitioning = false;
 				this.callbacks?.onTransitionComplete?.();
 				return;
@@ -173,9 +175,9 @@ export class CrossfadeService {
 				isCancelled = true;
 			};
 
-			const intervalId = globalThis.setInterval(() => {
+			const intervalId = window.setInterval(() => {
 				if (isCancelled) {
-					globalThis.clearInterval(intervalId);
+					window.clearInterval(intervalId);
 					return;
 				}
 
@@ -186,13 +188,17 @@ export class CrossfadeService {
 				try {
 					outgoingElement.volume = outgoingGain;
 					incomingElement.volume = incomingGain;
-				} catch {}
+				} catch {
+					// Ignore volume update error during transition
+				}
 
 				if (progress >= 1.0) {
-					globalThis.clearInterval(intervalId);
+					window.clearInterval(intervalId);
 					try {
 						outgoingElement.pause();
-					} catch {}
+					} catch {
+						// Ignore pause error on outgoing element
+					}
 					this.isTransitioning = false;
 					this.activeCrossfadeCancel = null;
 					this.callbacks?.onTransitionComplete?.();
@@ -210,7 +216,7 @@ export class CrossfadeService {
 			this.activeCrossfadeCancel = null;
 		}
 		if (this.transitionTimer !== null) {
-			globalThis.clearTimeout(this.transitionTimer);
+			window.clearTimeout(this.transitionTimer);
 			this.transitionTimer = null;
 		}
 		this.isTransitioning = false;

@@ -264,17 +264,10 @@ export class ListenerService {
 			}
 		};
 
-		const deleteRef = this.app.vault.on('delete', deleteHandler);
-		const createRef = this.app.vault.on('create', createHandler);
-		const renameRef = this.app.vault.on('rename', renameHandler);
-		const modifyRef = this.app.vault.on('modify', modifyHandler);
-
-		if (typeof this.plugin.registerEvent === "function") {
-			this.plugin.registerEvent(deleteRef);
-			this.plugin.registerEvent(createRef);
-			this.plugin.registerEvent(renameRef);
-			this.plugin.registerEvent(modifyRef);
-		}
+		this.app.vault.on('delete', deleteHandler);
+		this.app.vault.on('create', createHandler);
+		this.app.vault.on('rename', renameHandler);
+		this.app.vault.on('modify', modifyHandler);
 
 		// Store remover callbacks
 		this.vaultEventListeners.push(

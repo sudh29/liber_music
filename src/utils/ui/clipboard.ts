@@ -6,6 +6,10 @@
  * or blocked by WebView permissions.
  */
 
+interface LegacyClipboardDocument {
+	execCommand(commandId: string): boolean;
+}
+
 export async function copyTextToClipboard(text: string): Promise<boolean> {
 	if (typeof navigator !== "undefined" && navigator?.clipboard?.writeText) {
 		try {
@@ -18,16 +22,16 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
 
 	if (typeof document !== "undefined") {
 		try {
-			const textArea = typeof createEl === "function"
-				? createEl("textarea", { cls: "music-clipboard-hidden" })
-				: document.createElement("textarea");
+			const textArea = createEl("textarea", { cls: "music-clipboard-hidden" });
 			textArea.value = text;
 			textArea.setAttribute("readonly", "");
-			textArea.className = "music-clipboard-hidden";
 			document.body.appendChild(textArea);
 			textArea.select();
-			const successful = document.execCommand("copy");
-			document.body.removeChild(textArea);
+			const legacyDoc = document as unknown as LegacyClipboardDocument;
+			const successful = typeof legacyDoc.execCommand === "function"
+				? legacyDoc.execCommand("copy")
+				: false;
+			textArea.remove();
 			return Boolean(successful);
 		} catch {
 			return false;

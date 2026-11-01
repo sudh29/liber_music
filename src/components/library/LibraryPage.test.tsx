@@ -83,13 +83,13 @@ describe("LibraryPage", () => {
 		const playlistsTab = screen.getByText("Playlists");
 		fireEvent.click(playlistsTab);
 
-		// Find edit button for smart playlist (label: Edit Smart Playlist)
-		const editSmartBtn = screen.getByLabelText("Edit Smart Playlist");
+		// Find edit button for smart playlist (label: Edit smart playlist)
+		const editSmartBtn = screen.getByLabelText("Edit smart playlist");
 		fireEvent.click(editSmartBtn);
 		expect(defaultProps.onEditSmartPlaylist).toHaveBeenCalledWith("sp_1");
 
-		// Find delete button for smart playlist (label: Delete Smart Playlist)
-		const deleteSmartBtn = screen.getByLabelText("Delete Smart Playlist");
+		// Find delete button for smart playlist (label: Delete smart playlist)
+		const deleteSmartBtn = screen.getByLabelText("Delete smart playlist");
 		fireEvent.click(deleteSmartBtn);
 		expect(defaultProps.onDeleteSmartPlaylist).toHaveBeenCalledWith("sp_1");
 	});
@@ -99,7 +99,7 @@ describe("LibraryPage", () => {
 		const playlistsTab = screen.getByText("Playlists");
 		fireEvent.click(playlistsTab);
 
-		const addSmartBtn = screen.getByLabelText("Create Smart Playlist");
+		const addSmartBtn = screen.getByLabelText("Create smart playlist");
 		fireEvent.click(addSmartBtn);
 		expect(defaultProps.onCreateSmartPlaylist).toHaveBeenCalled();
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { TFile } from "obsidian";
+import { TFile, TFolder } from "obsidian";
 import { resolveVaultAudioFile } from "./resolver";
 
 describe("resolveVaultAudioFile", () => {
@@ -169,6 +169,34 @@ describe("resolveVaultAudioFile", () => {
 		};
 
 		const result = resolveVaultAudioFile(mockApp, "FastTrack");
+		expect(result).toBe(mockAudio);
+		expect(getFilesSpy).not.toHaveBeenCalled();
+	});
+
+	it("should resolve via scoped musicFolder without scanning entire vault", () => {
+		const mockAudio = new TFile();
+		mockAudio.name = "MyFolderSong.mp3";
+		mockAudio.path = "Music/MyFolderSong.mp3";
+		mockAudio.extension = "mp3";
+		mockAudio.basename = "MyFolderSong";
+
+		const mockFolder = Object.assign(new TFolder(), {
+			path: "Music",
+			children: [mockAudio],
+		});
+
+		const getFilesSpy = vi.fn().mockReturnValue([]);
+		const mockApp: any = {
+			vault: {
+				getAbstractFileByPath: vi.fn().mockImplementation((path) => {
+					if (path === "Music") return mockFolder;
+					return null;
+				}),
+				getFiles: getFilesSpy,
+			},
+		};
+
+		const result = resolveVaultAudioFile(mockApp, "MyFolderSong.mp3", undefined, "Music");
 		expect(result).toBe(mockAudio);
 		expect(getFilesSpy).not.toHaveBeenCalled();
 	});

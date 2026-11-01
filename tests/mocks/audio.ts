@@ -76,10 +76,15 @@ export class MockAudioElement extends EventTarget {
  */
 export function installMockAudio(): () => void {
 	const originalAudio = (globalThis as any).Audio;
+	const win = typeof window !== "undefined" ? window : globalThis;
+	const originalWinAudio = (win as any).Audio;
+
 	(globalThis as any).Audio = MockAudioElement as any;
+	(win as any).Audio = MockAudioElement as any;
 
 	return () => {
 		(globalThis as any).Audio = originalAudio;
+		(win as any).Audio = originalWinAudio;
 	};
 }
 
@@ -234,12 +239,19 @@ export class MockAudioContext extends EventTarget {
 export function installMockWebAudio(): () => void {
 	const originalContext = (globalThis as any).AudioContext;
 	const originalWebkit = (globalThis as any).webkitAudioContext;
+	const win = typeof window !== "undefined" ? window : globalThis;
+	const originalWinContext = (win as any).AudioContext;
+	const originalWinWebkit = (win as any).webkitAudioContext;
 
 	(globalThis as any).AudioContext = MockAudioContext as any;
 	(globalThis as any).webkitAudioContext = MockAudioContext as any;
+	(win as any).AudioContext = MockAudioContext as any;
+	(win as any).webkitAudioContext = MockAudioContext as any;
 
 	return () => {
 		(globalThis as any).AudioContext = originalContext;
 		(globalThis as any).webkitAudioContext = originalWebkit;
+		(win as any).AudioContext = originalWinContext;
+		(win as any).webkitAudioContext = originalWinWebkit;
 	};
 }

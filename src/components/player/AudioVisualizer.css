@@ -31,6 +31,8 @@
 	flex: 1;
 	max-width: 5px;
 	min-width: 2px;
+	height: var(--bar-height, 3px);
+	opacity: var(--bar-opacity, 0.45);
 	border-radius: 2px 2px 1px 1px;
 	background: linear-gradient(
 		to top,

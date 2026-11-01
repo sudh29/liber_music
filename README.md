@@ -1,14 +1,14 @@
 <div align="center">
-    <h1>Liber Music Player Plugin for Obsidian</h1>
+    <h1>Liber Music Player for Obsidian</h1>
     <p>
         <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.0.0-7f6df2?logo=obsidian" alt="Version 2.0.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-        <img src="https://img.shields.io/badge/tests-690%20passed-brightgreen" alt="Tests: 690 passed">
+        <img src="https://img.shields.io/badge/tests-691%20passed-brightgreen" alt="Tests: 691 passed">
         <img src="https://img.shields.io/badge/coverage-98.32%25-brightgreen" alt="Coverage: 98.32%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
-    <p>An audiophile-grade skeuomorphic vinyl music player plugin embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
+    <p>An audiophile-grade skeuomorphic vinyl music player embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
 </div>
 
 ---
@@ -206,13 +206,27 @@ Beyond new functional capabilities, Liber Music Player features deep architectur
   - Clicking this link anywhere in Obsidian activates the sidebar player, loads the track, and jumps directly to that timestamp.
 - **Daily Notes Listening History Scrobbler**:
   - Automatically records completed tracks (>70% listened) to your active Daily Note journal under a configurable heading (e.g. `## 🎧 Music Log`).
-  - Maintains an offline, persistent audit ledger in `.obsidian/plugins/liber-music-player-plugin/history.json`.
+  - Maintains an offline, persistent audit ledger in `<configDir>/plugins/liber-music-player/history.json`.
 - **Single-Source Audio Coordination**: Playing an in-note snippet automatically pauses sidebar playback and vice versa to eliminate conflicting audio streams.
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## ⌨️ Global Commands & Keyboard Shortcuts
 
+### Global Hotkey Commands (`Settings → Hotkeys`)
+Control playback from anywhere in Obsidian without focusing the sidebar leaf:
+- **Liber Music Player: Play or pause playback**
+- **Liber Music Player: Play next track**
+- **Liber Music Player: Play previous track**
+- **Liber Music Player: Increase volume** (5% steps)
+- **Liber Music Player: Decrease volume** (5% steps)
+- **Liber Music Player: Toggle shuffle**
+- **Liber Music Player: Toggle repeat mode**
+- **Liber Music Player: Open 10-band equalizer**
+- **Liber Music Player: Edit track metadata**
+- **Liber Music Player: Create smart playlist**
+
+### In-Player View Shortcuts
 When the player view is active, the following hotkeys are supported:
 
 | Key Binding | Action |
@@ -229,7 +243,7 @@ When the player view is active, the following hotkeys are supported:
 
 ## 📖 Lyrics Format Specification
 
-Liber Music Player Plugin supports standard timestamped LRC as well as word-by-word syllable karaoke timestamps.
+Liber Music Player supports standard timestamped LRC as well as word-by-word syllable karaoke timestamps.
 
 ### 1. Standard LRC
 ```text
@@ -249,23 +263,23 @@ Word timestamps are enclosed within `<mm:ss.xx>` tags following the line timesta
 
 ## 📦 Installation
 
-### Option 1: Community Plugin Market (Recommended)
+### Option 1: Community Plugin Directory (Recommended)
 1. Open Obsidian **Settings → Community plugins**.
 2. Turn off **Restricted mode**.
-3. Click **Browse** and search for **Liber Music Player Plugin**.
+3. Click **Browse** and search for **Liber Music Player**.
 4. Click **Install**, then **Enable**.
 
 ### Option 2: Obsidian42 - BRAT (Beta Releases)
 1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) from Community plugins.
 2. Open BRAT settings and click **Add Beta plugin**.
 3. Enter repository path: `sudh29/liber_music`.
-4. Click **Add Plugin** and enable **Liber Music Player Plugin** under Community Plugins.
+4. Click **Add Plugin** and enable **Liber Music Player** under Community Plugins.
 
 ### Option 3: Manual Installation
 1. Download the latest release (`main.js`, `manifest.json`, and `styles.css`) from [GitHub Releases](https://github.com/sudh29/liber_music/releases).
-2. Create a folder named `liber-music-player-plugin` in `<YourVault>/.obsidian/plugins/`.
-3. Copy the downloaded files into `<YourVault>/.obsidian/plugins/liber-music-player-plugin/`.
-4. Reload Obsidian and toggle **Liber Music Player Plugin** on in settings.
+2. Create a folder named `liber-music-player` in `<YourVault>/.obsidian/plugins/`.
+3. Copy the downloaded files into `<YourVault>/.obsidian/plugins/liber-music-player/`.
+4. Reload Obsidian and toggle **Liber Music Player** on in settings.
 
 ---
 

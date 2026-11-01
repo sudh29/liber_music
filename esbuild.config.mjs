@@ -276,6 +276,13 @@ async function main() {
 
 	if (prod) {
 		await context.rebuild();
+		// Copy built artifacts to project root for BRAT and direct git clone vault compatibility
+		const distMain = path.join(process.cwd(), outDir, "main.js");
+		const distCss = path.join(process.cwd(), outDir, "styles.css");
+		const rootMain = path.join(process.cwd(), "main.js");
+		const rootCss = path.join(process.cwd(), "styles.css");
+		if (fs.existsSync(distMain)) fs.copyFileSync(distMain, rootMain);
+		if (fs.existsSync(distCss)) fs.copyFileSync(distCss, rootCss);
 		process.exit(0);
 	} else {
 		watchManifest();

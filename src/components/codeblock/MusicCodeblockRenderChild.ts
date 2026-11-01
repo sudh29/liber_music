@@ -5,54 +5,32 @@
  * Inherits from Obsidian's MarkdownRenderChild for automatic lifecycle teardown.
  */
 
-import { MarkdownRenderChild, Notice, setIcon, TFile } from "obsidian";
+import { MarkdownRenderChild, setIcon, TFile } from "obsidian";
 import type MusicPlayerPlugin from "@/main";
-import { parseMusicCodeblock, type MusicCodeblockConfig } from "@/utils/codeblock/parser";
+import { type MusicCodeblockConfig, parseMusicCodeblock } from "@/utils/codeblock/parser";
 import { resolveVaultAudioFile } from "@/utils/codeblock/resolver";
 import { codeblockCoordinator } from "@/utils/codeblock/coordinator";
 import { formatTime } from "@/utils/protocol/uri";
-import { LyricsParser, type LyricLine } from "@/utils/lyrics/parser";
+import { type LyricLine, LyricsParser } from "@/utils/lyrics/parser";
 import { getCompanionLrcFile } from "@/utils/audio/companionLrc";
 import { t } from "@/utils/i18n/i18n";
 import "./MusicCodeblock.css";
 
-/** DOM helper functions that work in both Obsidian runtime and Happy-DOM/Vitest */
+/** DOM helper functions using native Obsidian HTMLElement extensions */
 function emptyEl(el: HTMLElement): void {
-	if (typeof el.empty === "function") {
-		el.empty();
-	} else {
-		while (el.firstChild) {
-			el.removeChild(el.firstChild);
-		}
-	}
+	el.empty();
 }
 
 function addCls(el: HTMLElement, ...classes: string[]): void {
-	if (typeof el.addClass === "function") {
-		el.addClass(...classes);
-	} else {
-		classes.forEach((c) => el.classList.add(c));
-	}
+	classes.forEach((c) => el.addClass(c));
 }
 
 function removeCls(el: HTMLElement, ...classes: string[]): void {
-	if (typeof el.removeClass === "function") {
-		el.removeClass(...classes);
-	} else {
-		classes.forEach((c) => el.classList.remove(c));
-	}
+	classes.forEach((c) => el.removeClass(c));
 }
 
 function createDiv(parent: HTMLElement, options?: { cls?: string; text?: string; attr?: Record<string, string> }): HTMLDivElement {
-	let div: HTMLDivElement;
-	if (typeof parent.createDiv === "function") {
-		div = parent.createDiv({ cls: options?.cls, text: options?.text });
-	} else {
-		div = document.createElement("div");
-		if (options?.cls) div.className = options.cls;
-		if (options?.text) div.textContent = options.text;
-		parent.appendChild(div);
-	}
+	const div = parent.createDiv({ cls: options?.cls, text: options?.text });
 	if (options?.attr) {
 		for (const [k, v] of Object.entries(options.attr)) {
 			div.setAttribute(k, v);
@@ -62,14 +40,7 @@ function createDiv(parent: HTMLElement, options?: { cls?: string; text?: string;
 }
 
 function createSpan(parent: HTMLElement, options?: { cls?: string; text?: string }): HTMLSpanElement {
-	if (typeof parent.createSpan === "function") {
-		return parent.createSpan(options);
-	}
-	const span = document.createElement("span");
-	if (options?.cls) span.className = options.cls;
-	if (options?.text) span.textContent = options.text;
-	parent.appendChild(span);
-	return span;
+	return parent.createSpan(options);
 }
 
 function createEl<K extends keyof HTMLElementTagNameMap>(
@@ -77,20 +48,7 @@ function createEl<K extends keyof HTMLElementTagNameMap>(
 	tag: K,
 	options?: { cls?: string; type?: string; text?: string; attr?: Record<string, string> }
 ): HTMLElementTagNameMap[K] {
-	if (typeof parent.createEl === "function") {
-		return parent.createEl(tag, options);
-	}
-	const el = document.createElement(tag);
-	if (options?.cls) el.className = options.cls;
-	if (options?.type && "type" in el) (el as any).type = options.type;
-	if (options?.text) el.textContent = options.text;
-	if (options?.attr) {
-		for (const [k, v] of Object.entries(options.attr)) {
-			el.setAttribute(k, v);
-		}
-	}
-	parent.appendChild(el);
-	return el;
+	return parent.createEl(tag, options);
 }
 
 export class MusicCodeblockRenderChild extends MarkdownRenderChild {
@@ -113,7 +71,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 		this.config = parseMusicCodeblock(source);
 	}
 
-	async onload(): Promise<void> {
+	onload(): void {
 		emptyEl(this.containerEl);
 		addCls(this.containerEl, "music-codeblock-wrapper");
 
@@ -126,7 +84,8 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 		const file = resolveVaultAudioFile(
 			this.plugin.app,
 			this.config.track,
-			this.plugin.settings.trackIndex
+			this.plugin.settings.trackIndex,
+			this.plugin.settings.musicFolder
 		);
 
 		if (!file) {
@@ -134,7 +93,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 			return;
 		}
 
-		await this.renderPlayer(file);
+		void this.renderPlayer(file);
 	}
 
 	onunload(): void {
@@ -143,7 +102,9 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 			try {
 				this.audio.pause();
 				this.audio.src = "";
-			} catch {}
+			} catch {
+				// Ignore audio reset error on teardown
+			}
 			this.audio = null;
 		}
 		emptyEl(this.containerEl);
@@ -158,7 +119,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 		const artist = this.config.artist || trackInfo?.artist || t("meta.unknownArtist");
 
 		const audioSrc = this.plugin.app.vault.getResourcePath(file);
-		this.audio = document.createElement("audio");
+		this.audio = createEl(this.containerEl, "audio");
 		this.audio.src = audioSrc;
 		this.audio.preload = "metadata";
 
@@ -180,7 +141,7 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 		this.setupAudioListeners();
 
 		if (this.config.autoplay) {
-			setTimeout(() => {
+			window.setTimeout(() => {
 				this.togglePlay();
 			}, 300);
 		}
@@ -307,7 +268,9 @@ export class MusicCodeblockRenderChild extends MarkdownRenderChild {
 					lyricsText = typeof this.plugin.app.vault.cachedRead === "function"
 						? await this.plugin.app.vault.cachedRead(companionLrc)
 						: await this.plugin.app.vault.read(companionLrc);
-				} catch {}
+				} catch {
+					// Fallback to empty lyrics
+				}
 			}
 		}
 

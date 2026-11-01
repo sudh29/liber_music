@@ -136,12 +136,10 @@ export class ReactApiService {
 				this.stateService.setVolume(clampedVolume);
 				// Persist settings (debounced to avoid disk writes on rapid slider drags)
 				this.plugin.settings.volume = clampedVolume;
-				if (typeof (this.plugin as any).requestSaveSettings === "function") {
-					await (this.plugin as any).requestSaveSettings();
+				if (typeof this.plugin.requestSaveSettings === "function") {
+					await this.plugin.requestSaveSettings();
 				} else if (typeof this.plugin.saveSettings === "function") {
 					await this.plugin.saveSettings();
-				} else if (typeof (this.plugin as any).saveData === "function") {
-					await (this.plugin as any).saveData(this.plugin.settings);
 				}
 			},
 			getVolume: () => {
@@ -156,12 +154,10 @@ export class ReactApiService {
 				this.stateService.setPlaybackRate(clampedRate);
 				// Persist settings (debounced to avoid disk writes on rapid slider drags)
 				this.plugin.settings.playbackRate = clampedRate;
-				if (typeof (this.plugin as any).requestSaveSettings === "function") {
-					await (this.plugin as any).requestSaveSettings();
+				if (typeof this.plugin.requestSaveSettings === "function") {
+					await this.plugin.requestSaveSettings();
 				} else if (typeof this.plugin.saveSettings === "function") {
 					await this.plugin.saveSettings();
-				} else if (typeof (this.plugin as any).saveData === "function") {
-					await (this.plugin as any).saveData(this.plugin.settings);
 				}
 			},
 			getPlaybackRate: () => {
