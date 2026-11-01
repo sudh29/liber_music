@@ -60,7 +60,7 @@ Every requirement, guideline, automated CI check, and linter rule has been syste
      {
        "id": "liber-music-player",
        "name": "Liber Music Player",
-       "version": "2.0.0",
+       "version": "2.1.0",
        "minAppVersion": "1.13.4",
        "description": "Play local music files from your vault in the sidebar with synced lyrics, graphic equalizer, and audio bookmarks.",
        "author": "Liber Primus",
@@ -371,7 +371,7 @@ Running `npx eslint .` currently flags 104 errors and warnings across 18 files. 
 
 ### 5.2 GitHub Tagging & Asset Automation (`.github/workflows/release.yml`)
 * **Rules**:
-  1. Release tag must match SemVer **without leading `v`** (`2.0.0`, not `v2.0.0`).
+  1. Release tag must match SemVer **without leading `v`** (`2.1.0`, not `v2.1.0`).
   2. Release assets must be individual downloadable files: `main.js`, `manifest.json`, and `styles.css`.
 * **Verification**: Verify that `softprops/action-gh-release@v2` uploads the individual artifacts.
 

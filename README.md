@@ -1,7 +1,7 @@
 <div align="center">
     <h1>Liber Music Player for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.0.0-7f6df2?logo=obsidian" alt="Version 2.0.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.1.0-7f6df2?logo=obsidian" alt="Version 2.1.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
         <img src="https://img.shields.io/badge/tests-691%20passed-brightgreen" alt="Tests: 691 passed">
@@ -20,9 +20,9 @@
 
 ### 📊 Comprehensive Comparison Matrix
 
-| Feature / Capability | Upstream (`TracingOrigins`) | Liber Music Player (`v2.0.0`) | Architectural & User Impact |
+| Feature / Capability | Upstream (`TracingOrigins`) | Liber Music Player (`v2.1.0`) | Architectural & User Impact |
 |:---|:---:|:---:|:---|
-| **Automated Testing & CI** | ❌ **0 tests (0% coverage)** | ✅ **690 tests across 82 suites (98.32% lines, 85.37% branches)** | Strict quality regression gates; every parser, decoder, and state hook is verified in CI. |
+| **Automated Testing & CI** | ❌ **0 tests (0% coverage)** | ✅ **691 tests across 82 suites (98.32% lines, 85.37% branches)** | Strict quality regression gates; every parser, decoder, and state hook is verified in CI. |
 | **iOS / iPadOS OGG Playback** | ❌ Fails (Apple WebKit cannot decode OGG/Opus) | ✅ **100% Codec Parity via inlined WASM Vorbis** | Bypasses WebKit limitations; decodes `.ogg` & `.opus` to WAV Blob URLs on iOS/iPadOS without user re-encoding. |
 | **Audio DSP & Equalizer** | ❌ None (raw browser output only) | ✅ **10-Band Biquad EQ & Dual-Pipeline Crossfading** | ISO octave bands (31Hz–16kHz), ±12dB preamp, 7 tuned presets, and true simultaneous dual-stream sinusoidal crossfading. |
 | **Markdown Note Integration** | ❌ None (sidebar only) | ✅ **````music```` Codeblock Player Embeds** | Embed interactive mini-players directly inside Obsidian markdown notes with custom start/end timestamps and lyrics. |
@@ -45,7 +45,7 @@
 
 Beyond new functional capabilities, Liber Music Player features deep architectural optimizations targeting render latency, disk I/O, battery life, and memory management.
 
-| Performance Metric / Operation | Upstream (`TracingOrigins`) | Liber Music Player (`v2.0.0`) | Measured Speedup & Efficiency |
+| Performance Metric / Operation | Upstream (`TracingOrigins`) | Liber Music Player (`v2.1.0`) | Measured Speedup & Efficiency |
 |:---|:---:|:---:|:---:|
 | **Incremental Vault Rescan (2,000 tracks)** | ~18.5 seconds (full sequential binary disk reads) | **< 40 ms** (`mtime` + `size` cache verification) | 🚀 **~450x faster** (0 redundant disk reads) |
 | **5,000-Track List Render / Mount Time** | ~1,200 ms initial mount lag & dropped frames | **< 16 ms** instant frame budget (virtual windowing) | 🚀 **~75x faster** (rock-solid 60fps scrolling) |
@@ -67,7 +67,7 @@ Beyond new functional capabilities, Liber Music Player features deep architectur
 
 ## 🌟 Key Features
 
-### 📦 Production Ops, Automated Distribution & BRAT Compatibility (v2.0.0)
+### 📦 Production Ops, Automated Distribution & BRAT Compatibility (v2.1.0)
 - **Compact Tree-Shaken Distribution Bundle**:
   - `dist/main.js` is ~747 KB (well under the strict 2.0 MB ceiling), containing zero dead code and zero external network dependencies.
   - `dist/styles.css` is ~86 KB with inlined high-DPI turntable assets, completely self-contained.

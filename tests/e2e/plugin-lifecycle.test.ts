@@ -7,7 +7,7 @@ import { VIEW_TYPE_MUSIC_PLAYER } from "@/views/MusicPlayerView";
 describe("E2E 1: Plugin Lifecycle & View Activation", () => {
 	it("should initialize plugin, register views, commands, and ribbon icon on onload", async () => {
 		const app = new App();
-		const manifest = { id: "liber-music-player", version: "2.0.0" };
+		const manifest = { id: "liber-music-player", version: "2.1.0" };
 		const plugin = new MusicPlayerPlugin(app, manifest);
 
 		// 1. Trigger onload
