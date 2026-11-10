@@ -40,17 +40,17 @@ function NavIconButton({ icon, label, active, disabled, onClick, showBadge, rebu
 	}, [icon]);
 
 	return (
-		<div className="nav-icon-wrapper">
+		<div className="music-player-nav-icon-wrapper nav-icon-wrapper">
 			<button
 				ref={buttonRef}
 				type="button"
-				className={`clickable-icon nav-action-button ${active ? "active" : ""} ${disabled ? "is-disabled" : ""}`}
+				className={`clickable-icon music-player-nav-button nav-action-button ${active ? "active" : ""} ${disabled ? "is-disabled" : ""}`}
 				aria-label={label}
 				onClick={onClick}
 				disabled={disabled}
 			/>
 			{showBadge && (
-				<span className="nav-icon-badge" aria-label={rebuildBadgeAria ?? ""} />
+				<span className="music-player-nav-badge nav-icon-badge" aria-label={rebuildBadgeAria ?? ""} />
 			)}
 		</div>
 	);
@@ -111,7 +111,7 @@ export function NavigationBar(props: NavigationBarProps) {
 	} = props;
 
 	return (
-		<div className="nav-buttons-container">
+		<div className="music-player-nav-buttons">
 			<NavIconButton icon="search" label={t("nav.search")} onClick={onSearch} />
 			<NavIconButton
 				icon="music-2"

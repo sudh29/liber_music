@@ -1,7 +1,12 @@
 
-/* ========== Navigation Bar Icons ========== */
+/* ========== Navigation Bar Icons - Scoped & Isolated from Obsidian Core Mobile CSS ========== */
 
+.is-phone .workspace-drawer .music-player .music-player-nav-buttons,
+.workspace-drawer .music-player .music-player-nav-buttons,
+.music-player .music-player-nav-buttons,
 .music-player .nav-buttons-container {
+	position: static !important;
+	inset: auto !important;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -10,8 +15,10 @@
 	margin: 0 auto;
 	padding: 2px 4px;
 	box-sizing: border-box;
+	z-index: 5;
 }
 
+.music-player .music-player-nav-icon-wrapper,
 .music-player .nav-icon-wrapper {
 	position: relative;
 	display: inline-flex;
@@ -19,6 +26,7 @@
 	justify-content: center;
 }
 
+.music-player .music-player-nav-button.clickable-icon,
 .music-player .nav-action-button.clickable-icon {
 	color: var(--text-muted);
 	border-radius: var(--radius-m, 8px);
@@ -26,21 +34,25 @@
 	transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.music-player .music-player-nav-button.clickable-icon:hover,
 .music-player .nav-action-button.clickable-icon:hover {
 	color: var(--text-normal);
 	background: var(--background-modifier-hover);
 	transform: scale(1.06);
 }
 
+.music-player .music-player-nav-button.clickable-icon:active,
 .music-player .nav-action-button.clickable-icon:active {
 	transform: scale(0.94);
 }
 
+.music-player .music-player-nav-button.clickable-icon.active,
 .music-player .nav-action-button.clickable-icon.active {
 	color: var(--md-sys-color-primary, var(--interactive-accent));
 	background: var(--md-sys-color-primary-container, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.14));
 }
 
+.music-player .music-player-nav-button.is-disabled,
 .music-player .nav-action-button.is-disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
@@ -49,6 +61,7 @@
 
 /* ========== Navigation Bar Badge Dot ========== */
 
+.music-player .music-player-nav-badge,
 .music-player .nav-icon-badge {
 	position: absolute;
 	top: 2px;
@@ -63,6 +76,7 @@
 }
 
 @media (pointer: coarse) {
+	.music-player .music-player-nav-button.clickable-icon,
 	.music-player .nav-action-button.clickable-icon {
 		min-width: 38px;
 		min-height: 38px;

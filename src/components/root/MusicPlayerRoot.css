@@ -44,13 +44,15 @@
 
 .music-player .music-player-nav-header-bar {
 	flex: 0 0 auto;
+	flex-shrink: 0;
 	width: 100%;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	padding: clamp(2px, 0.6vh, 6px) clamp(8px, 1.8vw, 16px);
 	box-sizing: border-box;
-	z-index: 5;
+	z-index: 10;
+	position: relative;
 }
 
 .music-player .music-player-main-content {

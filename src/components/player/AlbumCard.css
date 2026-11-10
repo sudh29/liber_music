@@ -17,7 +17,7 @@
 /* Ambient mesh reflection glow */
 .album-card-ambient-backdrop {
 	position: absolute;
-	width: min(76%, 195px, 22vh);
+	width: min(72%, 185px, 20vh);
 	aspect-ratio: 1 / 1;
 	height: auto;
 	border-radius: clamp(16px, 3.5vw, 28px);
@@ -55,7 +55,7 @@
 /* Main artwork card container - Compact & Minimalist */
 .album-card-surface {
 	position: relative;
-	width: min(80%, 210px, 24vh);
+	width: min(75%, 200px, 22vh);
 	aspect-ratio: 1 / 1;
 	height: auto;
 	max-height: 100%;

@@ -57,9 +57,9 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	max-width: min(80%, 210px, 24vh);
+	max-width: min(75%, 200px, 22vh);
 	min-height: 0;
-	margin: 2px auto clamp(4px, 1vh, 10px);
+	margin: 2px auto clamp(2px, 0.8vh, 8px);
 }
 
 .music-player .lyrics-triplet-wrapper {
@@ -102,6 +102,7 @@
 /* ========== Bottom Controls Section ========== */
 .music-player .player-bottom-section {
 	flex: 0 0 auto;
+	flex-shrink: 0;
 	width: 100%;
 	max-width: 420px;
 	display: flex;
