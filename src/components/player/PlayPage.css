@@ -57,7 +57,7 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	max-width: min(100%, 340px, 42vh);
+	max-width: min(100%, 320px, 34vh);
 	min-height: 0;
 }
 

@@ -46,7 +46,7 @@ export class ViewSetupService {
 		}
 
 		const navContainer = leafContent ?? container;
-		const navHostEl = navContainer.querySelector("nav-header");
+		const navHostEl = navContainer.querySelector(".nav-header, nav-header");
 		let navHost = navHostEl instanceof HTMLElement ? navHostEl : null;
 		if (!navHost) {
 			navHost = navContainer.createDiv();
@@ -61,6 +61,9 @@ export class ViewSetupService {
 			navHost.classList.add("music-player");
 			navHost.empty?.();
 		}
+		// Hide legacy navHost to prevent DOM collisions with mobile bottom bars
+		navHost.addClass("is-hidden");
+		navHost.setCssProps({ display: "none" });
 
 		// Clean up residual React mount points if present
 		const oldReactMounts = container.querySelectorAll(".music-player-react-root");

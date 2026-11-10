@@ -11,7 +11,6 @@
  */
 
 import * as React from "react";
-import { createPortal } from "react-dom";
 import { Platform, TFile } from "obsidian";
 import "./MusicPlayerRoot.css";
 import { ConfirmModal, EqualizerModal, LibraryPage, NavigationBar, PlayPage } from "@/components";
@@ -179,7 +178,7 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 
 	return (
 		<ErrorBoundary>
-			{createPortal(
+			<div className="music-player-nav-header-bar">
 				<NavigationBar
 					activeTab={navigation.tab}
 					currentPage={navigation.tab === "currentDisc" ? navigation.currentPage : undefined}
@@ -193,12 +192,12 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 					}}
 					isRebuilding={isRebuilding}
 					needsRebuild={needsRebuild}
-				/>,
-				navHost
-			)}
+				/>
+			</div>
 
-			{navigation.tab === "currentDisc" ? (
-				<PlayPage
+			<div className="music-player-main-content">
+				{navigation.tab === "currentDisc" ? (
+					<PlayPage
 						viewMode={navigation.currentPage}
 						onSwitchViewMode={
 							navigation.currentPage === "disc" 
@@ -305,6 +304,7 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 					app={view.app}
 				/>
 			) : null}
+			</div>
 		</ErrorBoundary>
 	);
 }
