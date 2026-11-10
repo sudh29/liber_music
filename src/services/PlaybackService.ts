@@ -213,7 +213,8 @@ export class PlaybackService {
 		targetTrack?: TFile,
 		direction?: "prev" | "next",
 		autoPlay: boolean = true,
-		skipLibraryUpdate: boolean = false
+		skipLibraryUpdate: boolean = false,
+		isCrossfading: boolean = false
 	): Promise<void> {
 		const requestId = ++this.playRequestId;
 
@@ -284,10 +285,19 @@ export class PlaybackService {
 		const userVolume = state.volume ?? 1.0;
 		const trackId = getOrCreateTrackId(track.path, this.plugin.settings);
 		const trackInfo = this.plugin.settings.tracks[trackId];
-		const effectiveVolume = applyReplayGainToVolume(userVolume, trackInfo?.replayGainDb);
+		const mode = this.plugin.settings.replayGainMode ?? "track";
+		const gainDb =
+			mode === "album"
+				? (trackInfo?.replayGainAlbumDb ?? trackInfo?.replayGainDb)
+				: mode === "off"
+				? undefined
+				: trackInfo?.replayGainDb;
+		const effectiveVolume = applyReplayGainToVolume(userVolume, gainDb);
 		const savedPlaybackRate = this.audioService.getAudioElement()?.playbackRate ?? state.playbackRate ?? 1.0;
 		
-		this.crossfadeService?.resetTrackState();
+		if (!isCrossfading) {
+			this.crossfadeService?.resetTrackState();
+		}
 
 		await this.audioService.createAudioElement(track, effectiveVolume, savedPlaybackRate, {
 			onTimeUpdate: () => {
@@ -311,7 +321,7 @@ export class PlaybackService {
 			onError: (err) => {
 				this.handlePlaybackError(err, track);
 			},
-		});
+		}, isCrossfading);
 
 		const { lyrics, extendedLyrics } = await this.lyricsService.loadLyricsAsync(track.path);
 		this.stateService.setLyrics(lyrics, extendedLyrics);
@@ -408,7 +418,7 @@ export class PlaybackService {
 	/**
 	 * Plays next track in queue.
 	 */
-	async playNext(): Promise<void> {
+	async playNext(isCrossfading: boolean = false): Promise<void> {
 		const state = this.stateService.getState();
 		const result = this.calculateNextTrack(
 			state.currentTrack,
@@ -424,7 +434,7 @@ export class PlaybackService {
 		await this.preloadCover(coverUrl);
 		
 		this.stateService.setPendingNextCoverUrl(coverUrl);
-		await this.playTrack(result.globalIndex, true, result.target, "next");
+		await this.playTrack(result.globalIndex, !isCrossfading, result.target, "next", true, false, isCrossfading);
 	}
 
 	/**

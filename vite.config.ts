@@ -13,8 +13,9 @@ export default defineConfig({
 	},
 	test: {
 		globals: true,
-		isolate: false,
+		isolate: true,
 		environment: "node",
+		setupFiles: [path.resolve(import.meta.dirname, "./tests/setup-dom.ts")],
 		include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.{ts,tsx}"],
 		coverage: {
 			provider: "v8",

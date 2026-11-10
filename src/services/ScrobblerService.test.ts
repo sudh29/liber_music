@@ -66,7 +66,7 @@ describe("ScrobblerService", () => {
 			};
 
 			mockPlugin = {
-				manifest: { dir: ".obsidian/plugins/liber-music-player-plugin" },
+				manifest: { id: "liber-music-player", dir: ".obsidian/plugins/liber-music-player" },
 				settings: {
 					dailyNotesScrobbler: true,
 					dailyNotesHeading: "## 🎧 Music Log",

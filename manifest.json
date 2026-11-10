@@ -1,9 +1,9 @@
 {
-	"id": "liber-music-player-plugin",
-	"name": "Liber Music Player Plugin",
-	"version": "2.0.0",
+	"id": "liber-music-player",
+	"name": "Liber Music Player",
+	"version": "2.1.0",
 	"minAppVersion": "1.13.4",
-	"description": "Play local music files from the vault in the sidebar with Liber Music Player Plugin.",
+	"description": "Play local music files from your vault in the sidebar with synced lyrics, graphic equalizer, and audio bookmarks.",
 	"author": "Liber Primus",
 	"authorUrl": "https://github.com/sudh29/liber_music",
 	"fundingUrl": "https://github.com/sudh29/liber_music",

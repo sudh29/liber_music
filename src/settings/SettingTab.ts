@@ -93,6 +93,19 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 				},
 			},
 			{
+				name: t('settings.replayGainMode.name'),
+				desc: t('settings.replayGainMode.desc'),
+				control: {
+					key: 'replayGainMode',
+					type: 'dropdown',
+					options: {
+						track: t('settings.replayGainMode.track'),
+						album: t('settings.replayGainMode.album'),
+						off: t('settings.replayGainMode.off'),
+					},
+				},
+			},
+			{
 				name: t('settings.eqEnabled.name'),
 				desc: t('settings.eqEnabled.desc'),
 				control: {
@@ -117,8 +130,29 @@ export class MusicPlayerSettingTab extends PluginSettingTab {
 				},
 			},
 			{
+				name: t('settings.artworkDisplayMode.name'),
+				desc: t('settings.artworkDisplayMode.desc'),
+				control: {
+					key: 'artworkDisplayMode',
+					type: 'dropdown',
+					options: {
+						card: t('settings.artworkDisplayMode.card'),
+						vinyl: t('settings.artworkDisplayMode.vinyl'),
+					},
+				},
+			},
+			{
+				name: t('settings.showStarRating.name'),
+				desc: t('settings.showStarRating.desc'),
+				control: {
+					key: 'showStarRatingOnPlayer',
+					type: 'toggle',
+				},
+			},
+			{
 				name: t('settings.turntableStyle.name'),
 				desc: t('settings.turntableStyle.desc'),
+				visible: () => (this.plugin.settings.artworkDisplayMode ?? 'card') === 'vinyl',
 				control: {
 					key: 'turntableStyle',
 					type: 'dropdown',

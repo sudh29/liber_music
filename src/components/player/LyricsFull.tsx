@@ -13,6 +13,7 @@ import "./LyricsFull.css";
 import type { LyricLine } from "@/utils/lyrics/parser";
 import { t } from "@/utils/i18n/i18n";
 import { generateLyricMarkdownLink } from "@/utils/protocol/uri";
+import { copyTextToClipboard } from "@/utils/ui/clipboard";
 
 /**
  * Props interface for LyricsFull component
@@ -84,9 +85,11 @@ export function LyricsFull({
 		e.stopPropagation();
 		if (!currentPath) return;
 		const link = generateLyricMarkdownLink(currentPath, line.time, line.text, trackTitle);
-		navigator.clipboard.writeText(link).then(() => {
-			new Notice(t("playback.copiedTimestampLink"));
-		}).catch(() => {});
+		void copyTextToClipboard(link).then((success) => {
+			if (success) {
+				new Notice(t("playback.copiedTimestampLink"));
+			}
+		});
 	};
 
 	return (

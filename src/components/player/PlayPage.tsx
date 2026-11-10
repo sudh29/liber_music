@@ -1,9 +1,12 @@
 /**
- * Play page component
+ * Play page component - Minimalist Material 3 Layout
  * 
- * Combines DiscPage and LyricsPage functionality, toggling modes via viewMode:
- * - "disc": Displays album disc cover and triplet lyrics
- * - "lyrics": Displays full scrollable lyrics list
+ * Inspired by Obsidian-Music (Varun7009/Obsidian-Music):
+ * - Clean, distraction-free modern playback layout
+ * - Fluid sizing that dynamically adapts to Obsidian leaves/sidebars without vertical scrollbars
+ * - Integrated favorite button within track header
+ * - Material 3 dynamic color theming based on current album artwork
+ * - Secondary controls (equalizer, visualizer, styles) relocated to Settings
  */
 
 import React from "react";
@@ -17,7 +20,7 @@ import { LyricsExtendedFull } from "@/components/player/LyricsExtendedFull";
 import { TrackHeader } from "@/components/player/TrackHeader";
 import { ProgressBar } from "@/components/player/ProgressBar";
 import { PlaybackControls } from "@/components/player/PlaybackControls";
-import { TrackActions } from "@/components/player/TrackActions";
+import { StarRating } from "@/components/player/StarRating";
 import { AudioVisualizer } from "@/components/player/AudioVisualizer";
 import { applyPaletteTheme, extractPaletteFromImageUrl } from "@/utils/ui/palette";
 import { useLyricsAutoScroll } from "@/hooks/useLyricsAutoScroll";
@@ -46,6 +49,7 @@ export interface PlayPageProps {
 	isShuffle?: boolean;
 	artworkDisplayMode?: "vinyl" | "card";
 	rating?: number;
+	showStarRating?: boolean;
 	
 	// Disc mode props
 	coverUrl?: string;
@@ -118,8 +122,9 @@ export function PlayPage({
 	duration,
 	playMode,
 	isShuffle = false,
-	artworkDisplayMode = "vinyl",
+	artworkDisplayMode = "card",
 	rating = 0,
+	showStarRating = false,
 	coverUrl,
 	prevCoverUrl,
 	nextCoverUrl,
@@ -140,7 +145,6 @@ export function PlayPage({
 	onTogglePlay,
 	onToggleMode,
 	onToggleShuffle,
-	onToggleArtworkDisplayMode,
 	onRate,
 	onOpenPlaylist,
 	onSeek,
@@ -149,20 +153,12 @@ export function PlayPage({
 	currentPath,
 	sectionId,
 	isFavorite,
-	volume,
-	playbackRate,
-	onAddToPlaylist,
 	onToggleFavorite,
-	onVolumeChange,
-	onPlaybackRateChange,
-	onOpenEqualizer,
 	turntableStyle = "obsidian",
-	showVisualizer = true,
+	showVisualizer = false,
 	dynamicAlbumTheme = true,
 	equalizerService,
 	onToggleVisualizer,
-	onToggleTurntableStyle,
-	onOpenMetadataEditor,
 }: PlayPageProps) {
 	// Determine whether to use extended lyrics
 	const useExtendedLyrics = viewMode === "disc" 
@@ -186,20 +182,13 @@ export function PlayPage({
 	const prevPathRef = React.useRef<string | null>(currentPath);
 
 	// Compute effective playingIndex: return -1 immediately after track switch, otherwise return actual playingIndex
-	// Because container is remounted via key={currentPath}, new container mounts with effectivePlayingIndex = -1
-	// Once mounted, playingIndex synchronizes normally without delayed cleanup flags
 	const effectivePlayingIndex = React.useMemo(() => {
-		// Detect track switch: if currentPath differs from ref, a track change just occurred
 		if (prevPathRef.current !== currentPath) {
-			// Track switched, update ref and return -1
-			// New container remounts via key, using -1 on initial render, then syncing playingIndex
 			prevPathRef.current = currentPath;
 			return -1;
 		}
-		
-		// Normal case: return actual playingIndex
 		return playingIndex;
-	}, [playingIndex, currentPath]); // Dependent on currentPath to recalculate on track change
+	}, [playingIndex, currentPath]);
 
 	const activeIndex = viewMode === "lyrics" ? effectivePlayingIndex : -1;
 
@@ -234,33 +223,13 @@ export function PlayPage({
 
 	return (
 		<div ref={rootRef} className={`play-page-wrapper play-page-${viewMode}`}>
-			<TrackHeader title={title} artist={artist} />
-
-			{showVisualizer && (
-				<AudioVisualizer
-					equalizerService={equalizerService}
-					isPlaying={isPlaying}
-					onToggleVisualizer={onToggleVisualizer}
-				/>
-			)}
-
-			{/* Disc mode: rendered simultaneously, display toggled via CSS */}
+			{/* Artwork mode: rendered simultaneously, display toggled via CSS */}
 			<div 
 				className={`disc-and-lyrics-triplet-wrapper ${viewMode === "disc" ? "visible" : "hidden"}`} 
 				onClick={onSwitchViewMode}
 			>
-				<div className="disc-wrapper" onClick={onSwitchViewMode}>
-					{artworkDisplayMode === "card" ? (
-						<AlbumCard
-							coverUrl={coverUrl}
-							title={title}
-							artist={artist}
-							isPlaying={isPlaying}
-							onTogglePlay={onTogglePlay}
-							onPrev={onPrev}
-							onNext={onNext}
-						/>
-					) : (
+				<div className="disc-wrapper">
+					{artworkDisplayMode === "vinyl" ? (
 						<AlbumDisc
 							coverUrl={coverUrl}
 							trackKey={currentPath || undefined}
@@ -273,9 +242,19 @@ export function PlayPage({
 							lastAction={lastAction}
 							turntableStyle={turntableStyle}
 						/>
+					) : (
+						<AlbumCard
+							coverUrl={coverUrl}
+							title={title}
+							artist={artist}
+							isPlaying={isPlaying}
+							onTogglePlay={onTogglePlay}
+							onPrev={onPrev}
+							onNext={onNext}
+						/>
 					)}
 				</div>
-				<div className="lyrics-triplet-wrapper" onClick={onSwitchViewMode}>
+				<div className="lyrics-triplet-wrapper">
 					{useExtendedLyrics ? (
 						<LyricsExtendedTriplet 
 							prev={prevExtendedLyric} 
@@ -290,7 +269,6 @@ export function PlayPage({
 			</div>
 
 			{/* Lyrics mode: rendered simultaneously, display toggled via CSS */}
-			{/* Use currentPath as key so container remounts on track change, auto-resetting scroll position */}
 			<div 
 				key={currentPath || "no-track"}
 				className={`lyrics-list-wrapper ${viewMode === "lyrics" ? "visible" : "hidden"}`} 
@@ -324,46 +302,52 @@ export function PlayPage({
 				)}
 			</div>
 
-			<TrackActions
-				currentPath={currentPath}
-				sectionId={sectionId}
-				isFavorite={isFavorite}
-				volume={volume}
-				playbackRate={playbackRate}
-				artworkDisplayMode={artworkDisplayMode}
-				rating={rating}
-				onAddToPlaylist={onAddToPlaylist}
-				onToggleFavorite={onToggleFavorite}
-				onVolumeChange={onVolumeChange}
-				onPlaybackRateChange={onPlaybackRateChange}
-				onToggleArtworkDisplayMode={onToggleArtworkDisplayMode}
-				onRate={onRate}
-				onOpenEqualizer={onOpenEqualizer}
-				turntableStyle={turntableStyle}
-				showVisualizer={showVisualizer}
-				onToggleVisualizer={onToggleVisualizer}
-				onToggleTurntableStyle={onToggleTurntableStyle}
-				onOpenMetadataEditor={onOpenMetadataEditor}
-			/>
-			<ProgressBar
-				current={currentTime}
-				duration={duration}
-				onSeek={onSeek}
-				onSeekBackward={onSeekBackward}
-				onSeekForward={onSeekForward}
-			/>
-			<PlaybackControls
-				isPlaying={isPlaying}
-				playMode={playMode}
-				isShuffle={isShuffle}
-				onTogglePlay={onTogglePlay}
-				onPrev={onPrev}
-				onNext={onNext}
-				onToggleMode={onToggleMode}
-				onToggleShuffle={onToggleShuffle}
-				onOpenPlaylist={onOpenPlaylist}
-			/>
+			{showVisualizer && (
+				<AudioVisualizer
+					equalizerService={equalizerService}
+					isPlaying={isPlaying}
+					onToggleVisualizer={onToggleVisualizer}
+				/>
+			)}
+
+			<div className="player-bottom-section" onClick={(e) => e.stopPropagation()}>
+				<TrackHeader
+					title={title}
+					artist={artist}
+					isFavorite={isFavorite}
+					onToggleFavorite={() => {
+						if (currentPath) {
+							onToggleFavorite(currentPath, sectionId || undefined);
+						}
+					}}
+				/>
+
+				{showStarRating && onRate && (
+					<div className="player-rating-row">
+						<StarRating rating={rating} onRate={onRate} />
+					</div>
+				)}
+
+				<ProgressBar
+					current={currentTime}
+					duration={duration}
+					onSeek={onSeek}
+					onSeekBackward={onSeekBackward}
+					onSeekForward={onSeekForward}
+				/>
+
+				<PlaybackControls
+					isPlaying={isPlaying}
+					playMode={playMode}
+					isShuffle={isShuffle}
+					onTogglePlay={onTogglePlay}
+					onPrev={onPrev}
+					onNext={onNext}
+					onToggleMode={onToggleMode}
+					onToggleShuffle={onToggleShuffle}
+					onOpenPlaylist={onOpenPlaylist}
+				/>
+			</div>
 		</div>
 	);
 }
-

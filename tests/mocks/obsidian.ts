@@ -130,6 +130,12 @@ export class MockElement {
 		return this.parentElement ? this.parentElement.closest(selector) : null;
 	}
 
+	setCssProps(props: Record<string, string>): void {
+		for (const [k, v] of Object.entries(props)) {
+			this.style[k] = v;
+		}
+	}
+
 	focus(): void {
 		this.dispatchEvent({ type: "focus" });
 	}
@@ -257,6 +263,10 @@ export class Vault {
 	async read(file: TFile): Promise<string> {
 		const content = this.fileContents.get(file.path);
 		return typeof content === "string" ? content : "";
+	}
+
+	async cachedRead(file: TFile): Promise<string> {
+		return this.read(file);
 	}
 
 	async readBinary(file: TFile): Promise<ArrayBuffer> {
@@ -707,3 +717,43 @@ export const Platform = {
 	isMacOS: false,
 	isSafari: false,
 };
+
+export class Keymap {
+	static isModifier(evt: MouseEvent | TouchEvent | KeyboardEvent, modifier: string): boolean {
+		if (modifier === "Mod") {
+			if (Platform.isMacOS || Platform.isIosApp) {
+				return evt.metaKey;
+			}
+			return evt.ctrlKey || evt.metaKey;
+		}
+		if (modifier === "Ctrl") return evt.ctrlKey;
+		if (modifier === "Meta") return evt.metaKey;
+		if (modifier === "Shift") return evt.shiftKey;
+		if (modifier === "Alt") return evt.altKey;
+		return false;
+	}
+}
+
+if (typeof (globalThis as any).window === "undefined") {
+	(globalThis as any).window = globalThis;
+}
+
+if (typeof (globalThis as any).createEl === "undefined") {
+	(globalThis as any).createEl = (tag: string, options?: any) => {
+		if (typeof document !== "undefined" && typeof document.createElement === "function") {
+			const el = document.createElement(tag);
+			if (options?.cls) el.className = options.cls;
+			if (options?.text) el.textContent = options.text;
+			return el;
+		}
+		return new MockElement(tag, options);
+	};
+}
+
+if (typeof HTMLElement !== "undefined" && !(HTMLElement.prototype as any).setCssProps) {
+	(HTMLElement.prototype as any).setCssProps = function (props: Record<string, string>) {
+		for (const [k, v] of Object.entries(props)) {
+			this.style.setProperty(k, v);
+		}
+	};
+}

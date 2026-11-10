@@ -8,7 +8,7 @@
  * - Managing volume and playback rate
  */
 
-import { App, TFile } from "obsidian";
+import { App, Platform, TFile } from "obsidian";
 import { EqualizerService } from "./EqualizerService";
 import { shouldTranscodeVorbis, transcodeOggVorbisToWavBlob } from "@/utils/audio/vorbisDecoder";
 import type MusicPlayerPlugin from "@/main";
@@ -42,6 +42,11 @@ export class AudioService {
 	private currentBlobUrl: string | null = null;
 	/** Reference to current event handlers bound to audioElement (for proper removal) */
 	private currentHandlers: AudioEventHandlers | null = null;
+
+	/** Outgoing audio element preserved during dual-pipeline crossfade transitions */
+	private outgoingAudioElement: HTMLAudioElement | null = null;
+	private outgoingBlobUrl: string | null = null;
+	private outgoingHandlers: AudioEventHandlers | null = null;
 
 	/**
 	 * When seek finishes near media end (including decode alignment pushing currentTime to duration),
@@ -99,7 +104,16 @@ export class AudioService {
 	 */
 	setEqualizerService(eqService: EqualizerService): void {
 		this.equalizerService = eqService;
-		if (this.audioElement) {
+		if (this.audioElement && (typeof eqService.isEnabled !== "function" || eqService.isEnabled())) {
+			this.equalizerService.attachAudioElement(this.audioElement);
+		}
+	}
+
+	/**
+	 * Synchronizes equalizer attachment based on its enabled state.
+	 */
+	syncEqualizerState(): void {
+		if (this.equalizerService && this.audioElement && this.equalizerService.isEnabled()) {
 			this.equalizerService.attachAudioElement(this.audioElement);
 		}
 	}
@@ -122,35 +136,60 @@ export class AudioService {
 		trackFile: TFile,
 		volume: number,
 		playbackRate: number,
-		handlers: AudioEventHandlers
+		handlers: AudioEventHandlers,
+		preserveOutgoingForCrossfade: boolean = false
 	): Promise<HTMLAudioElement> {
-		// Clean up existing audio element and Blob URL
-		await this.cleanup();
+		const canCrossfade = preserveOutgoingForCrossfade && Boolean(this.audioElement && !this.audioElement.paused);
+		if (canCrossfade && this.audioElement) {
+			// Move active element to outgoing slot for dual-pipeline crossfading
+			await this.cleanupOutgoing();
+			this.outgoingAudioElement = this.audioElement;
+			this.outgoingBlobUrl = this.currentBlobUrl;
+			this.outgoingHandlers = this.currentHandlers;
+			this.audioElement = null;
+			this.currentBlobUrl = null;
+			this.currentHandlers = null;
+		} else {
+			// Clean up existing audio element and Blob URL
+			await this.cleanup();
+		}
 
 		// Read file into memory and create Blob URL
 		// Prevents file lock so file can be safely renamed or removed
 		try {
-			const binary = await this.app.vault.readBinary(trackFile);
-			let blob: Blob;
-
 			const wasmEnabled = this.plugin?.settings.enableWasmVorbisDecoder ?? true;
-			if (wasmEnabled && shouldTranscodeVorbis(trackFile.extension)) {
-				try {
-					blob = await transcodeOggVorbisToWavBlob(binary);
-				} catch (decodeErr) {
-					console.warn(`WASM Vorbis decoding failed for ${trackFile.path}, falling back to native:`, decodeErr);
+			const needsTranscode = wasmEnabled && shouldTranscodeVorbis(trackFile.extension);
+			const isLargeFile = Boolean(trackFile.stat?.size && trackFile.stat.size > 15 * 1024 * 1024);
+
+			// For large files (>15MB) or on mobile platforms (Android/iOS WebView) that do not require WASM transcoding,
+			// stream directly via Obsidian's local resource handler to prevent memory exhaustion / OOM kills
+			if (!needsTranscode && (isLargeFile || Platform.isMobile)) {
+				const url = this.app.vault.getResourcePath(trackFile);
+				this.audioElement = new Audio(url);
+			} else {
+				const binary = await this.app.vault.readBinary(trackFile);
+				let blob: Blob;
+
+				if (needsTranscode) {
+					try {
+						blob = await transcodeOggVorbisToWavBlob(binary);
+					} catch (decodeErr) {
+						console.warn(`WASM Vorbis decoding failed for ${trackFile.path}, falling back to native:`, decodeErr);
+						blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
+					}
+				} else {
 					blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
 				}
-			} else {
-				blob = new Blob([binary], { type: this.getMimeType(trackFile.extension) });
+
+				const blobUrl = URL.createObjectURL(blob);
+				this.currentBlobUrl = blobUrl;
+
+				// Create new audio element
+				this.audioElement = new Audio(blobUrl);
 			}
 
-			const blobUrl = URL.createObjectURL(blob);
-			this.currentBlobUrl = blobUrl;
-
-			// Create new audio element
-			this.audioElement = new Audio(blobUrl);
-			this.audioElement.volume = volume;
+			this.configureAudioElementAttributes(this.audioElement);
+			this.audioElement.volume = canCrossfade ? 0 : volume;
 			this.audioElement.playbackRate = playbackRate;
 
 			// Store current handlers for proper cleanup
@@ -163,8 +202,8 @@ export class AudioService {
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
 			this.audioElement.addEventListener("error", this.onAudioError);
 
-			// Connect to Web Audio equalizer graph if enabled
-			if (this.equalizerService) {
+			// Connect to Web Audio equalizer graph only if actively enabled to preserve native mobile background audio
+			if (this.equalizerService && (typeof this.equalizerService.isEnabled !== "function" || this.equalizerService.isEnabled())) {
 				this.equalizerService.attachAudioElement(this.audioElement);
 			}
 
@@ -174,6 +213,7 @@ export class AudioService {
 			// Fallback to vault resource path if Blob URL fails
 			const url = this.app.vault.getResourcePath(trackFile);
 			this.audioElement = new Audio(url);
+			this.configureAudioElementAttributes(this.audioElement);
 			this.audioElement.volume = volume;
 			this.audioElement.playbackRate = playbackRate;
 
@@ -185,12 +225,23 @@ export class AudioService {
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
 			this.audioElement.addEventListener("error", this.onAudioError);
 
-			if (this.equalizerService) {
+			if (this.equalizerService && (typeof this.equalizerService.isEnabled !== "function" || this.equalizerService.isEnabled())) {
 				this.equalizerService.attachAudioElement(this.audioElement);
 			}
 
 			return this.audioElement;
 		}
+	}
+
+	/**
+	 * Configures audio element attributes for mobile media session and audio focus compatibility.
+	 */
+	private configureAudioElementAttributes(el: HTMLAudioElement): void {
+		if (typeof el.setAttribute === "function") {
+			el.setAttribute("playsinline", "true");
+			el.setAttribute("webkit-playsinline", "true");
+		}
+		el.preload = "auto";
 	}
 
 	/**
@@ -236,6 +287,46 @@ export class AudioService {
 	}
 
 	/**
+	 * Gets active outgoing audio element during crossfade, if any
+	 */
+	getOutgoingAudioElement(): HTMLAudioElement | null {
+		return this.outgoingAudioElement;
+	}
+
+	/**
+	 * Cleans up the outgoing audio element preserved during a dual-pipeline crossfade transition.
+	 */
+	async cleanupOutgoing(): Promise<void> {
+		if (this.outgoingAudioElement) {
+			try {
+				if (!this.outgoingAudioElement.paused) {
+					this.outgoingAudioElement.pause();
+				}
+			} catch {
+				// Ignore pause errors on outgoing element
+			}
+
+			if (this.outgoingHandlers) {
+				this.outgoingAudioElement.removeEventListener("timeupdate", this.outgoingHandlers.onTimeUpdate);
+				this.outgoingAudioElement.removeEventListener("loadedmetadata", this.outgoingHandlers.onLoadedMetadata);
+				this.outgoingAudioElement.removeEventListener("ended", this.outgoingHandlers.onEnded);
+			}
+
+			this.outgoingAudioElement = null;
+			this.outgoingHandlers = null;
+		}
+
+		if (this.outgoingBlobUrl) {
+			try {
+				URL.revokeObjectURL(this.outgoingBlobUrl);
+			} catch {
+				// Ignore URL revoke error
+			}
+			this.outgoingBlobUrl = null;
+		}
+	}
+
+	/**
 	 * Cleans up audio element:
 	 * Pauses playback, removes event listeners, revokes Blob URL, and nullifies references.
 	 * Called when creating a new audio element or destroying the service.
@@ -243,6 +334,7 @@ export class AudioService {
 	 * Handles active playback gracefully to avoid AbortError when pause() interrupts pending play().
 	 */
 	async cleanup(): Promise<void> {
+		await this.cleanupOutgoing();
 		if (this.audioElement) {
 			if (!this.audioElement.paused) {
 				this.audioElement.pause();
@@ -275,6 +367,13 @@ export class AudioService {
 	 */
 	pause(): void {
 		this.audioElement?.pause();
+		if (this.outgoingAudioElement && !this.outgoingAudioElement.paused) {
+			try {
+				this.outgoingAudioElement.pause();
+			} catch {
+				// Ignore pause error on outgoing element
+			}
+		}
 	}
 
 	/**
@@ -288,7 +387,9 @@ export class AudioService {
 		}
 		
 		try {
-			await this.equalizerService?.resumeContext();
+			if (this.equalizerService && (typeof this.equalizerService.isEnabled !== "function" || this.equalizerService.isEnabled())) {
+				await this.equalizerService.resumeContext();
+			}
 			await this.audioElement.play();
 		} catch (error) {
 			// AbortError when pause() interrupts play() during track changes is normal

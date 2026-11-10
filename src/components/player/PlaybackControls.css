@@ -1,8 +1,8 @@
 /**
- * Playback controls component styles - 2026 Modern Aesthetic
+ * Playback controls component styles - Material 3 Aesthetic
  * 
  * Features:
- * - Elevated hero accent play/pause button with subtle dynamic glow
+ * - Elevated hero accent play/pause button with dynamic Material 3 color & glow
  * - Tactile micro-interactions and smooth transforms
  * - Active dot indicator and accent glow for Shuffle and Repeat
  * - Responsive spacing and mobile optimization
@@ -12,9 +12,11 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	gap: 14px;
-	margin-bottom: 20px;
+	gap: clamp(8px, 1.8vw, 16px);
+	margin-bottom: clamp(6px, 1.2vh, 14px);
 	user-select: none;
+	width: 100%;
+	max-width: 420px;
 }
 
 .music-player button.play-control-btn.clickable-icon {
@@ -28,7 +30,7 @@
 	background: rgba(255, 255, 255, 0.04);
 	border-radius: 50%;
 	cursor: pointer;
-	color: var(--text-muted);
+	color: var(--md-sys-color-on-surface-variant, var(--text-muted));
 	transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
 	            color 0.2s ease,
 	            background 0.2s ease,
@@ -38,7 +40,7 @@
 }
 
 .music-player button.play-control-btn.clickable-icon:hover {
-	color: var(--text-normal);
+	color: var(--md-sys-color-on-surface, var(--text-normal));
 	background: rgba(255, 255, 255, 0.09);
 	border-color: rgba(255, 255, 255, 0.14);
 	transform: scale(1.08);
@@ -50,9 +52,9 @@
 
 /* Active states (Shuffle, Repeat active) */
 .music-player button.play-control-btn.clickable-icon.is-active {
-	color: var(--interactive-accent);
-	background: rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.12);
-	border-color: rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.3);
+	color: var(--md-sys-color-primary, var(--interactive-accent));
+	background: var(--md-sys-color-primary-container, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.15));
+	border-color: var(--md-sys-color-outline, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.3));
 }
 
 .music-player button.play-control-btn.clickable-icon .control-icon-wrapper {
@@ -77,33 +79,35 @@
 	width: 4px;
 	height: 4px;
 	border-radius: 50%;
-	background: var(--interactive-accent);
-	box-shadow: 0 0 6px var(--interactive-accent);
+	background: var(--md-sys-color-primary, var(--interactive-accent));
+	box-shadow: 0 0 6px var(--md-sys-color-primary, var(--interactive-accent));
 }
 
 /* Hero Play/Pause Button */
 .music-player button.play-control-btn.clickable-icon.hero-play-btn {
 	width: 58px;
 	height: 58px;
-	background: var(--interactive-accent);
-	color: var(--text-on-accent, #ffffff);
+	background: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
+	color: var(--md-sys-color-on-primary, var(--player-text-on-accent, #ffffff));
 	border: none;
-	box-shadow: 0 8px 24px -4px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45);
+	box-shadow: 0 8px 24px -4px var(--player-dynamic-glow, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45));
 	transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
 	            box-shadow 0.2s ease,
-	            background 0.2s ease;
+	            background 0.2s ease,
+	            filter 0.2s ease;
 }
 
 .music-player button.play-control-btn.clickable-icon.hero-play-btn:hover {
 	transform: scale(1.08);
-	box-shadow: 0 12px 28px -4px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.65);
-	background: var(--interactive-accent-hover, var(--interactive-accent));
-	color: var(--text-on-accent, #ffffff);
+	box-shadow: 0 12px 28px -4px var(--player-dynamic-glow, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.65));
+	background: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
+	filter: brightness(1.1);
+	color: var(--md-sys-color-on-primary, var(--player-text-on-accent, #ffffff));
 }
 
 .music-player button.play-control-btn.clickable-icon.hero-play-btn:active {
 	transform: scale(0.95);
-	box-shadow: 0 4px 16px -2px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.4);
+	box-shadow: 0 4px 16px -2px var(--player-dynamic-glow, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.4));
 }
 
 .music-player button.play-control-btn.clickable-icon.hero-play-btn svg {

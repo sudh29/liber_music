@@ -301,10 +301,22 @@ export function TrackList({
 
 		updateHeight();
 		scrollParent.addEventListener("scroll", onScroll, { passive: true });
-		window.addEventListener("resize", updateHeight);
+
+		let resizeObserver: ResizeObserver | null = null;
+		if (typeof ResizeObserver !== "undefined") {
+			resizeObserver = new ResizeObserver(updateHeight);
+			resizeObserver.observe(scrollParent);
+		}
+
+		const win = scrollParent.ownerDocument?.defaultView ?? window;
+		win.addEventListener("resize", updateHeight);
+
 		return () => {
 			scrollParent.removeEventListener("scroll", onScroll);
-			window.removeEventListener("resize", updateHeight);
+			if (resizeObserver) {
+				resizeObserver.disconnect();
+			}
+			win.removeEventListener("resize", updateHeight);
 		};
 	}, [shouldVirtualize]);
 

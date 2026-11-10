@@ -2,6 +2,12 @@
  * Sets up Obsidian DOM helper prototypes on HTMLElement for happy-dom tests.
  */
 
+import { afterEach, vi } from "vitest";
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
+
 if (typeof window !== "undefined" && typeof HTMLElement !== "undefined") {
 	const proto = HTMLElement.prototype as any;
 
@@ -103,5 +109,38 @@ if (typeof window !== "undefined" && typeof HTMLElement !== "undefined") {
 		proto.hasClass = function (cls: string) {
 			return this.classList.contains(cls);
 		};
+	}
+
+	if (!proto.setCssProps) {
+		proto.setCssProps = function (props: Record<string, string>) {
+			for (const [k, v] of Object.entries(props)) {
+				this.style.setProperty(k, v);
+			}
+		};
+	}
+
+	const createElFn = function (tag: string, options?: any) {
+		const el = document.createElement(tag);
+		if (typeof options === "string") {
+			el.className = options;
+		} else if (options?.cls) {
+			el.className = options.cls;
+		}
+		if (options?.text) {
+			el.textContent = options.text;
+		}
+		if (options?.attr) {
+			for (const [k, v] of Object.entries(options.attr)) {
+				el.setAttribute(k, String(v));
+			}
+		}
+		return el;
+	};
+
+	if (typeof (globalThis as any).createEl === "undefined") {
+		(globalThis as any).createEl = createElFn;
+	}
+	if (typeof (window as any).createEl === "undefined") {
+		(window as any).createEl = createElFn;
 	}
 }

@@ -175,7 +175,9 @@
 	direction: rtl;
 	appearance: slider-vertical;
 	width: 28px;
+	min-width: 44px;
 	height: 135px;
+	touch-action: none;
 	accent-color: var(--interactive-accent, #7f6df2);
 	cursor: pointer;
 }

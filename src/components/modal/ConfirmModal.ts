@@ -64,13 +64,17 @@ export class ConfirmModal extends BaseModal<boolean> {
 	}
 
 	/**
+	 * Returns false when dialog is closed or cancelled.
+	 */
+	protected override getCancelValue(): boolean {
+		return false;
+	}
+
+	/**
 	 * Called when modal closes.
 	 * Returns false if user did not explicitly submit.
 	 */
 	onClose() {
 		super.onClose();
-		if (!this.submitted) {
-			this.resolve(false);
-		}
 	}
 }

@@ -7,7 +7,7 @@ describe("AssetService", () => {
 	function createService() {
 		const app = new App();
 		const plugin = {
-			manifest: { id: "liber-music-player-plugin" },
+			manifest: { id: "liber-music-player" },
 		} as unknown as MusicPlayerPlugin;
 
 		const service = new AssetService(app, plugin);

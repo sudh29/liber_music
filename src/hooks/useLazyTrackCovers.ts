@@ -11,6 +11,7 @@
 import React from "react";
 import { App, TFile } from "obsidian";
 import type { ReactTrackInfo } from "@/types";
+import { LRUMap } from "@/utils/data/lruMap";
 
 /**
  * Hook input parameters
@@ -49,8 +50,8 @@ export function useLazyTrackCovers({
 	app,
 	getTrackCover,
 }: UseLazyTrackCoversParams): UseLazyTrackCoversReturn {
-	const coverCacheRef = React.useRef<Map<string, string>>(new Map());
-	const albumCoverCacheRef = React.useRef<Map<string, string>>(new Map());
+	const coverCacheRef = React.useRef<LRUMap<string, string>>(new LRUMap(100));
+	const albumCoverCacheRef = React.useRef<LRUMap<string, string>>(new LRUMap(50));
 	const [embeddedCovers, setEmbeddedCovers] = React.useState<Map<string, string>>(new Map());
 	const embeddedCoversRef = React.useRef<Map<string, string>>(new Map());
 	const loadingPromisesRef = React.useRef<Set<Promise<void>>>(new Set());

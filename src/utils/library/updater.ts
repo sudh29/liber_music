@@ -19,6 +19,7 @@ import {
 import { generateArtistsAndAlbums } from "../data/transform";
 import { scanVaultAudioFiles } from "./scanVaultAudio";
 import { parseTrackFilename } from "../audio/filenameParser";
+import { getOrCreateTrackId } from "../track/id";
 import { t, tWithParams } from "@/utils/i18n/i18n";
 
 /**
@@ -80,7 +81,6 @@ export async function rebuildAllData(
 					})
 				);
 
-				const { getOrCreateTrackId } = await import("@/utils/track/id");
 				const trackId = getOrCreateTrackId(file.path, plugin.settings);
 
 				const mtime = file.stat?.mtime;
@@ -142,6 +142,7 @@ export async function rebuildAllData(
 					track: audioMetadata?.track,
 					duration: audioMetadata?.duration,
 					replayGainDb: audioMetadata?.replayGainDb,
+					replayGainAlbumDb: audioMetadata?.replayGainAlbumDb,
 					rating: cached?.rating,
 					mtime,
 					size,
@@ -156,7 +157,7 @@ export async function rebuildAllData(
 
 				// Yield to event loop periodically to allow mobile browser GC to reclaim ArrayBuffers
 				if (processed % 4 === 0) {
-					await new Promise((resolve) => setTimeout(resolve, 0));
+					await new Promise((resolve) => window.setTimeout(resolve, 0));
 				}
 			} catch (error) {
 				console.error(`Error processing file ${file.path}:`, error);

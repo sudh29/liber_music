@@ -1,5 +1,5 @@
 /**
- * Playback progress bar component styles - 2026 Modern Aesthetic
+ * Playback progress bar component styles - Material 3 Aesthetic
  *
  * Modern pill slider with smooth expansion on hover, accent glow, and tabular numerals.
  */
@@ -8,18 +8,18 @@
 	display: flex;
 	align-items: center;
 	gap: 12px;
-	margin: 0 auto 24px;
+	margin: 0 auto clamp(6px, 1.2vh, 14px);
 	width: 100%;
-	max-width: 400px;
+	max-width: 420px;
 	user-select: none;
 }
 
 .music-player .play-progress-bar {
 	flex: 1;
 	height: 3px;
-	padding: 8px 0;
+	padding: 16px 0;
 	box-sizing: content-box;
-	background: rgba(255, 255, 255, 0.12);
+	background: var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.14));
 	background-clip: content-box;
 	background-origin: content-box;
 	border-radius: 9999px;
@@ -34,7 +34,7 @@
 .music-player .play-progress-container:hover .play-progress-bar,
 .music-player .play-progress-bar.is-dragging {
 	height: 5px;
-	background-color: rgba(255, 255, 255, 0.2);
+	background-color: var(--md-sys-color-outline, rgba(255, 255, 255, 0.22));
 }
 
 .music-player .play-progress-bar.is-dragging {
@@ -43,13 +43,13 @@
 
 .music-player .play-progress-fill {
 	height: 100%;
-	background: var(--interactive-accent);
+	background: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	border-radius: 9999px;
 	width: 0%;
 	min-width: 0;
 	transition: width 0.04s linear;
 	position: relative;
-	box-shadow: 0 0 8px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.35);
+	box-shadow: 0 0 8px var(--player-dynamic-glow, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.35));
 }
 
 .music-player .play-progress-bar.is-dragging .play-progress-fill {
@@ -66,10 +66,10 @@
 	height: 8px;
 	transform: translate(50%, -50%) scale(0.9);
 	border-radius: 50%;
-	background: #ffffff;
-	border: 2px solid var(--interactive-accent);
+	background: var(--md-sys-color-on-primary, #ffffff);
+	border: 2px solid var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	pointer-events: none;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.5);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 10px var(--player-dynamic-glow, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.5));
 	transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -89,7 +89,7 @@
 .music-player .play-time {
 	font-size: 11px;
 	font-weight: 500;
-	color: var(--text-muted);
+	color: var(--md-sys-color-on-surface-variant, var(--text-muted));
 	min-width: 38px;
 	text-align: center;
 	font-variant-numeric: tabular-nums;
@@ -98,5 +98,5 @@
 }
 
 .music-player .play-progress-container:hover .play-time {
-	color: var(--text-normal);
+	color: var(--md-sys-color-on-surface, var(--text-normal));
 }

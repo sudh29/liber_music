@@ -8,7 +8,7 @@
  * - Synchronized or plain lyrics (with companion .lrc sync)
  */
 
-import { App, Modal, Notice, TFile } from "obsidian";
+import { App, Modal, normalizePath, Notice, TFile } from "obsidian";
 import type MusicPlayerPlugin from "@/main";
 import { getOrCreateTrackId } from "@/utils/track/id";
 import { parseTrackFilename } from "@/utils/audio/filenameParser";
@@ -141,7 +141,7 @@ export class MetadataEditorModal extends Modal {
 		this.starElements = [];
 
 		for (let i = 1; i <= 5; i++) {
-			const star = starsContainer.createEl("span", {
+			const star = starsContainer.createSpan({
 				cls: `metadata-star-btn ${i <= this.rating ? "active" : ""}`,
 				text: "★",
 			});
@@ -211,15 +211,20 @@ export class MetadataEditorModal extends Modal {
 
 		// 3. Companion .lrc file synchronization (if lyrics changed)
 		const trimmedLyrics = this.lyricsTextarea.value.trim();
-		if (trimmedLyrics && trimmedLyrics !== (this.currentInfo.lyrics || "").trim()) {
+		if (trimmedLyrics !== (this.currentInfo.lyrics || "").trim()) {
 			try {
 				const lrcPath = getCompanionLrcPath(this.trackPath);
 				if (lrcPath) {
-					const existing = this.app.vault.getAbstractFileByPath(lrcPath);
-					if (existing instanceof TFile) {
-						await this.app.vault.modify(existing, trimmedLyrics);
-					} else {
-						await this.app.vault.create(lrcPath, trimmedLyrics);
+					const normalizedPath = normalizePath(lrcPath);
+					const existing = this.app.vault.getAbstractFileByPath(normalizedPath) || this.app.vault.getAbstractFileByPath(lrcPath);
+					if (trimmedLyrics) {
+						if (existing instanceof TFile) {
+							await this.app.vault.modify(existing, trimmedLyrics);
+						} else {
+							await this.app.vault.create(normalizedPath, trimmedLyrics);
+						}
+					} else if (existing instanceof TFile) {
+						await this.app.vault.modify(existing, "");
 					}
 				}
 			} catch (err) {

@@ -22,6 +22,8 @@ export abstract class BaseModal<TResult> extends Modal {
 	protected resolve: (value: TResult) => void;
 	/** Flag indicating whether user has submitted */
 	protected submitted = false;
+	/** Flag indicating whether the prompt promise has settled */
+	protected settled = false;
 
 	/**
 	 * Constructor
@@ -86,14 +88,25 @@ export abstract class BaseModal<TResult> extends Modal {
 	}
 
 	/**
+	 * Returns default cancellation value when modal is dismissed without submitting.
+	 */
+	protected getCancelValue(): TResult {
+		return null as unknown as TResult;
+	}
+
+	/**
 	 * Called when modal is closed.
-	 * Cleans up keyboard event listeners.
+	 * Cleans up keyboard event listeners and ensures prompt promise settles.
 	 */
 	onClose() {
 		const handler = BaseModal.handlerMap.get(this);
 		if (handler) {
 			this.contentEl.removeEventListener("keydown", handler);
 			BaseModal.handlerMap.delete(this);
+		}
+		if (!this.settled && this.resolve) {
+			this.settled = true;
+			this.resolve(this.getCancelValue());
 		}
 	}
 
@@ -104,6 +117,7 @@ export abstract class BaseModal<TResult> extends Modal {
 	 */
 	protected submit(result: TResult): void {
 		this.submitted = true;
+		this.settled = true;
 		this.resolve(result);
 		this.close();
 	}
@@ -114,6 +128,7 @@ export abstract class BaseModal<TResult> extends Modal {
 	 * @param result Default result value on cancellation
 	 */
 	protected cancel(result: TResult): void {
+		this.settled = true;
 		this.resolve(result);
 		this.close();
 	}

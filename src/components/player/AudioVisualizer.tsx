@@ -36,8 +36,10 @@ export function AudioVisualizer({
 			// Reset bars to idle height when paused
 			for (const bar of barsRef.current) {
 				if (bar) {
-					bar.style.height = "3px";
-					bar.style.opacity = "0.45";
+					bar.setCssProps({
+						"--bar-height": "3px",
+						"--bar-opacity": "0.45",
+					});
 				}
 			}
 			return;
@@ -72,8 +74,10 @@ export function AudioVisualizer({
 						const heightPx = Math.max(3, Math.round(ratio * 32));
 						const opacity = Math.min(1.0, 0.4 + ratio * 0.6);
 
-						bar.style.height = `${heightPx}px`;
-						bar.style.opacity = String(opacity);
+						bar.setCssProps({
+							"--bar-height": `${heightPx}px`,
+							"--bar-opacity": String(opacity),
+						});
 					}
 				}
 				lastSampleTime = timestamp;

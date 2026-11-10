@@ -1,3 +1,4 @@
+import { Keymap } from "obsidian";
 import { MusicPlayerView } from "@/views/MusicPlayerView";
 
 /**
@@ -15,8 +16,8 @@ export interface KeyboardShortcutHandler {
  * - ArrowDown: next track
  * - ArrowLeft: seek backward 5s
  * - ArrowRight: seek forward 5s
- * - Ctrl + ArrowLeft: seek backward 15s
- * - Ctrl + ArrowRight: seek forward 15s
+ * - Mod + ArrowLeft: seek backward 15s
+ * - Mod + ArrowRight: seek forward 15s
  * 
  * Shortcuts are only handled when:
  * 1. View is mounted and connected to DOM
@@ -90,16 +91,16 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 			return;
 		}
 
-		// Ctrl + ArrowLeft: Seek backward 15s
-		if (e.code === "ArrowLeft" && e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+		// Mod + ArrowLeft: Seek backward 15s
+		if (e.code === "ArrowLeft" && Keymap.isModifier(e, "Mod") && !e.altKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
 			view.seekBackward(15);
 			return;
 		}
 
-		// Ctrl + ArrowRight: Seek forward 15s
-		if (e.code === "ArrowRight" && e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+		// Mod + ArrowRight: Seek forward 15s
+		if (e.code === "ArrowRight" && Keymap.isModifier(e, "Mod") && !e.altKey && !e.shiftKey) {
 			e.preventDefault();
 			e.stopPropagation();
 			view.seekForward(15);
@@ -107,11 +108,20 @@ export function setupKeyboardShortcuts(view: MusicPlayerView): KeyboardShortcutH
 		}
 	};
 
-	window.addEventListener("keydown", handleKeyDown, true);
+	const targetWindow: Window =
+		(view.containerEl as HTMLElement & { win?: Window })?.win ??
+		view.containerEl?.ownerDocument?.defaultView ??
+		window;
+
+	if (typeof view.registerDomEvent === "function") {
+		view.registerDomEvent(targetWindow, "keydown", handleKeyDown, true);
+	} else {
+		targetWindow.addEventListener("keydown", handleKeyDown, true);
+	}
 
 	return {
 		cleanup: () => {
-			window.removeEventListener("keydown", handleKeyDown, true);
+			targetWindow.removeEventListener("keydown", handleKeyDown, true);
 		},
 	};
 }

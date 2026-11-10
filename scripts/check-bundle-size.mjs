@@ -60,7 +60,7 @@ function verifyBundle() {
 			console.log(`✅ Version sync   : v${manifest.version} across manifest.json and package.json`);
 		}
 
-		if (!manifest.id || manifest.id !== 'liber-music-player-plugin') {
+		if (!manifest.id || manifest.id !== 'liber-music-player') {
 			console.error(`❌ Invalid plugin ID in manifest.json: ${manifest.id}`);
 			hasError = true;
 		}

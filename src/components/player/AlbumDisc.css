@@ -17,10 +17,10 @@
     align-items: flex-end;
     justify-content: center;
     overflow: hidden;
-    min-height: 405px;
-	max-height: 450px;
-    min-width: 320px;
-	margin-bottom: 32px;
+    width: 100%;
+    max-width: min(100%, 340px, 38vh);
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
 }
 
 .music-player .disc-shadow {

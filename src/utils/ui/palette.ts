@@ -14,6 +14,28 @@ export interface PaletteTheme {
 	surfaceGlow: string;
 	/** Contrasting text color on top of primary accent */
 	textOnAccent: string;
+
+	// Material 3 Dynamic Tonal Tokens
+	/** M3 Primary dynamic color */
+	mdPrimary?: string;
+	/** M3 On-Primary contrasting text/icon color */
+	mdOnPrimary?: string;
+	/** M3 Primary Container color (subtle tinted container) */
+	mdPrimaryContainer?: string;
+	/** M3 On-Primary Container text color */
+	mdOnPrimaryContainer?: string;
+	/** M3 Surface color with ambient tint */
+	mdSurface?: string;
+	/** M3 Surface Container (slightly elevated card/panel) */
+	mdSurfaceContainer?: string;
+	/** M3 High-emphasis text color */
+	mdOnSurface?: string;
+	/** M3 Medium-emphasis text/timestamp color */
+	mdOnSurfaceVariant?: string;
+	/** M3 Outline/divider color */
+	mdOutline?: string;
+	/** M3 Subtle outline variant for sliders */
+	mdOutlineVariant?: string;
 }
 
 export const DEFAULT_PALETTE_THEME: PaletteTheme = {
@@ -21,6 +43,16 @@ export const DEFAULT_PALETTE_THEME: PaletteTheme = {
 	secondaryAccent: '#5b86e5',
 	surfaceGlow: 'rgba(127, 109, 242, 0.35)',
 	textOnAccent: '#ffffff',
+	mdPrimary: 'var(--interactive-accent, #7f6df2)',
+	mdOnPrimary: '#ffffff',
+	mdPrimaryContainer: 'rgba(127, 109, 242, 0.16)',
+	mdOnPrimaryContainer: 'var(--interactive-accent, #7f6df2)',
+	mdSurface: 'transparent',
+	mdSurfaceContainer: 'rgba(255, 255, 255, 0.05)',
+	mdOnSurface: 'var(--text-normal, #e0e0e0)',
+	mdOnSurfaceVariant: 'var(--text-muted, #a0a0a0)',
+	mdOutline: 'rgba(127, 109, 242, 0.35)',
+	mdOutlineVariant: 'rgba(255, 255, 255, 0.12)',
 };
 
 import { LRUMap } from "../data/lruMap";
@@ -169,12 +201,35 @@ export function extractPaletteFromImageData(
 
 	const lum = getLuminance(primary.r, primary.g, primary.b);
 	const textOnAccent = lum > 0.48 ? '#111116' : '#ffffff';
+	const primaryColor = `rgb(${primary.r}, ${primary.g}, ${primary.b})`;
+	const secondaryColor = `rgb(${secondary.r}, ${secondary.g}, ${secondary.b})`;
+	const surfaceGlow = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.38)`;
+	const primaryContainer = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.18)`;
+	const onPrimaryContainer = lum > 0.48
+		? `rgb(${Math.round(primary.r * 0.4)}, ${Math.round(primary.g * 0.4)}, ${Math.round(primary.b * 0.4)})`
+		: `rgb(${Math.min(255, Math.round(primary.r * 1.25))}, ${Math.min(255, Math.round(primary.g * 1.25))}, ${Math.min(255, Math.round(primary.b * 1.25))})`;
+	const surface = `rgba(${Math.round(primary.r * 0.08)}, ${Math.round(primary.g * 0.08)}, ${Math.round(primary.b * 0.08 + 10)}, 0.95)`;
+	const surfaceContainer = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.08)`;
+	const onSurface = `var(--text-normal, #e0e0e0)`;
+	const onSurfaceVariant = `rgba(${Math.min(255, Math.round(primary.r * 0.3 + 160))}, ${Math.min(255, Math.round(primary.g * 0.3 + 160))}, ${Math.min(255, Math.round(primary.b * 0.3 + 170))}, 0.85)`;
+	const outline = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.35)`;
+	const outlineVariant = `rgba(255, 255, 255, 0.12)`;
 
 	return {
-		primaryAccent: `rgb(${primary.r}, ${primary.g}, ${primary.b})`,
-		secondaryAccent: `rgb(${secondary.r}, ${secondary.g}, ${secondary.b})`,
-		surfaceGlow: `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.38)`,
+		primaryAccent: primaryColor,
+		secondaryAccent: secondaryColor,
+		surfaceGlow,
 		textOnAccent,
+		mdPrimary: primaryColor,
+		mdOnPrimary: textOnAccent,
+		mdPrimaryContainer: primaryContainer,
+		mdOnPrimaryContainer: onPrimaryContainer,
+		mdSurface: surface,
+		mdSurfaceContainer: surfaceContainer,
+		mdOnSurface: onSurface,
+		mdOnSurfaceVariant: onSurfaceVariant,
+		mdOutline: outline,
+		mdOutlineVariant: outlineVariant,
 	};
 }
 
@@ -201,7 +256,7 @@ export async function extractPaletteFromImageUrl(
 
 	return new Promise<PaletteTheme>((resolve) => {
 		let isResolved = false;
-		const timer = setTimeout(() => {
+		const timer = window.setTimeout(() => {
 			if (!isResolved) {
 				isResolved = true;
 				resolve({ ...DEFAULT_PALETTE_THEME });
@@ -214,10 +269,10 @@ export async function extractPaletteFromImageUrl(
 		img.onload = () => {
 			if (isResolved) return;
 			isResolved = true;
-			clearTimeout(timer);
+			window.clearTimeout(timer);
 
 			try {
-				const canvas = document.createElement('canvas');
+				const canvas = createEl("canvas");
 				canvas.width = 24;
 				canvas.height = 24;
 				const ctx = canvas.getContext('2d');
@@ -240,7 +295,7 @@ export async function extractPaletteFromImageUrl(
 		img.onerror = () => {
 			if (!isResolved) {
 				isResolved = true;
-				clearTimeout(timer);
+				window.clearTimeout(timer);
 				resolve({ ...DEFAULT_PALETTE_THEME });
 			}
 		};
@@ -265,6 +320,16 @@ export function applyPaletteTheme(
 		element.style.removeProperty('--player-dynamic-glow');
 		element.style.removeProperty('--player-karaoke-highlight');
 		element.style.removeProperty('--player-text-on-accent');
+		element.style.removeProperty('--md-sys-color-primary');
+		element.style.removeProperty('--md-sys-color-on-primary');
+		element.style.removeProperty('--md-sys-color-primary-container');
+		element.style.removeProperty('--md-sys-color-on-primary-container');
+		element.style.removeProperty('--md-sys-color-surface');
+		element.style.removeProperty('--md-sys-color-surface-container');
+		element.style.removeProperty('--md-sys-color-on-surface');
+		element.style.removeProperty('--md-sys-color-on-surface-variant');
+		element.style.removeProperty('--md-sys-color-outline');
+		element.style.removeProperty('--md-sys-color-outline-variant');
 		return;
 	}
 
@@ -273,4 +338,14 @@ export function applyPaletteTheme(
 	element.style.setProperty('--player-dynamic-glow', theme.surfaceGlow);
 	element.style.setProperty('--player-karaoke-highlight', theme.primaryAccent);
 	element.style.setProperty('--player-text-on-accent', theme.textOnAccent);
+	element.style.setProperty('--md-sys-color-primary', theme.mdPrimary ?? theme.primaryAccent);
+	element.style.setProperty('--md-sys-color-on-primary', theme.mdOnPrimary ?? theme.textOnAccent);
+	element.style.setProperty('--md-sys-color-primary-container', theme.mdPrimaryContainer ?? theme.surfaceGlow);
+	element.style.setProperty('--md-sys-color-on-primary-container', theme.mdOnPrimaryContainer ?? theme.primaryAccent);
+	element.style.setProperty('--md-sys-color-surface', theme.mdSurface ?? 'transparent');
+	element.style.setProperty('--md-sys-color-surface-container', theme.mdSurfaceContainer ?? 'rgba(255, 255, 255, 0.05)');
+	element.style.setProperty('--md-sys-color-on-surface', theme.mdOnSurface ?? 'var(--text-normal)');
+	element.style.setProperty('--md-sys-color-on-surface-variant', theme.mdOnSurfaceVariant ?? 'var(--text-muted)');
+	element.style.setProperty('--md-sys-color-outline', theme.mdOutline ?? theme.secondaryAccent);
+	element.style.setProperty('--md-sys-color-outline-variant', theme.mdOutlineVariant ?? 'rgba(255, 255, 255, 0.12)');
 }

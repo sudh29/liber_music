@@ -11,10 +11,10 @@
 import {
 	clampEqGain,
 	dbToGain,
-	normalizeEqBands,
 	EQ_BAND_CONFIGS,
 	EQ_BAND_COUNT,
 	EQ_PRESETS,
+	normalizeEqBands,
 } from "@/utils/audio/equalizer";
 
 export interface EqState {
@@ -79,11 +79,11 @@ export class EqualizerService {
 			return this.audioContext;
 		}
 
-		if (typeof window === "undefined" && typeof globalThis === "undefined") {
+		if (typeof window === "undefined") {
 			return null;
 		}
 
-		const AudioCtx = (globalThis as any).AudioContext || (globalThis as any).webkitAudioContext;
+		const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 		if (!AudioCtx) {
 			return null;
 		}
@@ -167,7 +167,9 @@ export class EqualizerService {
 			if (this.sourceNode) {
 				try {
 					this.sourceNode.disconnect();
-				} catch {}
+				} catch {
+					// Ignore disconnect error
+				}
 			}
 
 			// Retrieve cached MediaElementSource or construct once
@@ -344,7 +346,7 @@ export class EqualizerService {
 			if (!ctx || !this.analyserNode) return null;
 		}
 		if (!this.analyserNode || !this.frequencyDataBuffer) return null;
-		this.analyserNode.getByteFrequencyData(this.frequencyDataBuffer as any);
+		this.analyserNode.getByteFrequencyData(this.frequencyDataBuffer as Uint8Array<ArrayBuffer>);
 		return this.frequencyDataBuffer;
 	}
 
@@ -400,14 +402,18 @@ export class EqualizerService {
 		if (this.sourceNode) {
 			try {
 				this.sourceNode.disconnect();
-			} catch {}
+			} catch {
+				// Ignore source disconnect error
+			}
 			this.sourceNode = null;
 		}
 
 		if (this.analyserNode) {
 			try {
 				this.analyserNode.disconnect();
-			} catch {}
+			} catch {
+				// Ignore analyser disconnect error
+			}
 			this.analyserNode = null;
 		}
 		this.frequencyDataBuffer = null;
@@ -415,7 +421,9 @@ export class EqualizerService {
 		if (this.audioContext && this.audioContext.state !== "closed") {
 			try {
 				await this.audioContext.close();
-			} catch {}
+			} catch {
+				// Ignore audio context close error
+			}
 			this.audioContext = null;
 		}
 

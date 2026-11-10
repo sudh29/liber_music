@@ -64,13 +64,17 @@ export class TextInputModal extends BaseModal<string | null> {
 	}
 
 	/**
+	 * Returns null when input modal is closed or cancelled.
+	 */
+	protected override getCancelValue(): string | null {
+		return null;
+	}
+
+	/**
 	 * Called when modal closes.
 	 * Resolves with null if not submitted.
 	 */
 	onClose() {
 		super.onClose();
-		if (!this.submitted) {
-			this.resolve(null);
-		}
 	}
 }

@@ -6,7 +6,7 @@
  */
 
 import { Platform } from "obsidian";
-import { OggVorbisDecoder, type OggVorbisDecodedAudio } from "@wasm-audio-decoders/ogg-vorbis";
+import { type OggVorbisDecodedAudio, OggVorbisDecoder } from "@wasm-audio-decoders/ogg-vorbis";
 
 /**
  * Checks whether the current runtime environment natively supports OGG Vorbis in HTMLAudioElement.
@@ -37,8 +37,8 @@ export function shouldTranscodeVorbis(extension: string, forceTranscode = false)
 	if (forceTranscode) {
 		return true;
 	}
-	const isAppleDevice = typeof Platform !== "undefined" && (Platform.isIosApp || (Platform as any).isSafari);
-	return isAppleDevice || !isNativeOggSupported();
+	const isAppleDevice = typeof Platform !== "undefined" && Platform.isIosApp;
+	return Boolean(isAppleDevice || !isNativeOggSupported());
 }
 
 /**
@@ -138,7 +138,7 @@ export function pcmToWavBuffer(
  * @param audioContext - Target AudioContext
  */
 export function pcmToAudioBuffer(
-	channelData: Float32Array[],
+	channelData: Float32Array<ArrayBuffer>[],
 	sampleRate: number,
 	samplesDecoded: number,
 	audioContext: AudioContext
@@ -148,7 +148,7 @@ export function pcmToAudioBuffer(
 	for (let ch = 0; ch < numChannels; ch++) {
 		const samples = channelData[ch];
 		if (samples) {
-			audioBuffer.copyToChannel(samples as any, ch);
+			audioBuffer.copyToChannel(samples, ch);
 		}
 	}
 	return audioBuffer;

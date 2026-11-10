@@ -41,6 +41,8 @@ describe("ReactApiService", () => {
 				playlists: {},
 			},
 			saveData: vi.fn().mockResolvedValue(undefined),
+			saveSettings: vi.fn().mockResolvedValue(undefined),
+			requestSaveSettings: vi.fn().mockResolvedValue(undefined),
 		} as unknown as MusicPlayerPlugin;
 
 		const stateService = new StateService();

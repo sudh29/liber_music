@@ -4,7 +4,7 @@
  * Manages loading and caching of plugin asset files.
  * Asset files (e.g. images) are converted to base64 Data URIs for consumption in React components.
  *
- * Reads files under `.obsidian/plugins/<id>/` via {@link App.vault.adapter} without Node `fs`,
+ * Reads files under `<configDir>/plugins/<id>/` via {@link App.vault.adapter} without Node `fs`,
  * ensuring compatibility with Obsidian Mobile and eslint-plugin-obsidianmd's `import/no-nodejs-modules` rule.
  */
 
@@ -82,7 +82,8 @@ export class AssetService {
 		if (this.assetCache.has(filename)) return this.assetCache.get(filename)!;
 		try {
 			const pluginId = this.plugin.manifest.id;
-			const relativePath = normalizePath(`.obsidian/plugins/${pluginId}/${filename}`);
+			const basePath = this.plugin.manifest.dir ?? `${this.app.vault.configDir}/plugins/${pluginId}`;
+			const relativePath = normalizePath(`${basePath}/${filename}`);
 			const adapter = this.app.vault.adapter;
 			if (!(await adapter.exists(relativePath))) {
 				throw new Error(`Asset file does not exist: ${relativePath}`);

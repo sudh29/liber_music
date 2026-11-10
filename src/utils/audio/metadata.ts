@@ -264,6 +264,8 @@ export interface EmbeddedAudioMetadata {
 	duration?: number;
 	/** ReplayGain track gain (dB) */
 	replayGainDb?: number;
+	/** ReplayGain album gain (dB) */
+	replayGainAlbumDb?: number;
 }
 
 /**
@@ -511,6 +513,18 @@ export async function getEmbeddedAudioMetadataFromBuffer(
 		const parsedGain = parseReplayGain(rawGain);
 		if (parsedGain !== undefined) {
 			result.replayGainDb = parsedGain;
+		}
+
+		// ReplayGain album gain (dB)
+		const rawAlbumGain =
+			(metadata.common as { replaygain_album_gain?: unknown })?.replaygain_album_gain ??
+			extractTextFromNativeTags(
+				metadata.native,
+				(id) => /replaygain_album_gain/i.test(id) || /TXXX:REPLAYGAIN_ALBUM_GAIN/i.test(id)
+			);
+		const parsedAlbumGain = parseReplayGain(rawAlbumGain);
+		if (parsedAlbumGain !== undefined) {
+			result.replayGainAlbumDb = parsedAlbumGain;
 		}
 
 		return result;

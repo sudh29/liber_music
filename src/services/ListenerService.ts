@@ -256,7 +256,6 @@ export class ListenerService {
 				return;
 			}
 		};
-		this.app.vault.on('rename', renameHandler);
 
 		// File modify event
 		const modifyHandler = (file: TAbstractFile) => {
@@ -264,6 +263,10 @@ export class ListenerService {
 				void this.handleFileModify(file.path);
 			}
 		};
+
+		this.app.vault.on('delete', deleteHandler);
+		this.app.vault.on('create', createHandler);
+		this.app.vault.on('rename', renameHandler);
 		this.app.vault.on('modify', modifyHandler);
 
 		// Store remover callbacks

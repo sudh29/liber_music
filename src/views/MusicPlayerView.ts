@@ -26,7 +26,7 @@ import { formatListLabel } from "@/utils/list/formatter";
  * 
  * Used to register and identify the music player view in Obsidian.
  */
-export const VIEW_TYPE_MUSIC_PLAYER = "view";
+export const VIEW_TYPE_MUSIC_PLAYER = "liber-music-player-view";
 
 /**
  * Liber Music Player view class.
@@ -197,8 +197,11 @@ export class MusicPlayerView extends ItemView {
 			this.plugin.settings.crossfadeDuration ?? 0,
 			{
 				onTriggerTransition: async () => {
-					await this.playbackService.playNext();
+					await this.playbackService.playNext(true);
 					return this.audioService.getAudioElement();
+				},
+				onTransitionComplete: () => {
+					void this.audioService.cleanupOutgoing();
 				},
 				onPrebufferNextTrack: async () => {
 					const state = this.stateService.getState();
@@ -206,7 +209,9 @@ export class MusicPlayerView extends ItemView {
 					if (nextTrack) {
 						try {
 							await this.app.vault.readBinary(nextTrack);
-						} catch {}
+						} catch {
+							// Ignore pre-buffering error for optional upcoming track
+						}
 					}
 				},
 			}
@@ -397,6 +402,19 @@ export class MusicPlayerView extends ItemView {
 	}
 
 	/**
+	 * Stops playback and cleans up audio and hardware services when plugin is unloaded or view closed.
+	 */
+	public destroyServices(): void {
+		void this.audioService.cleanup();
+		if (this.keyboardShortcuts) this.keyboardShortcuts.cleanup();
+		if (this.mediaSessionService) this.mediaSessionService.destroy();
+		if (this.wakeLockService) this.wakeLockService.destroy();
+		if (this.crossfadeService) this.crossfadeService.dispose();
+		if (this.equalizerService) void this.equalizerService.dispose();
+		this.listenerService.cleanup();
+	}
+
+	/**
 	 * View cleanup method called on close.
 	 * 
 	 * Responsible for:
@@ -406,14 +424,7 @@ export class MusicPlayerView extends ItemView {
 	 * - Unmounting React root
 	 */
 	async onClose() {
-		await this.audioService.cleanup();
-		if (this.keyboardShortcuts) this.keyboardShortcuts.cleanup();
-		if (this.mediaSessionService) this.mediaSessionService.destroy();
-		if (this.wakeLockService) this.wakeLockService.destroy();
-		if (this.crossfadeService) this.crossfadeService.dispose();
-		if (this.equalizerService) await this.equalizerService.dispose();
-		// Clean up file system listeners
-		this.listenerService.cleanup();
+		this.destroyServices();
 		if (this.reactRoot) {
 			this.reactRoot.unmount();
 			this.reactRoot = null;
@@ -655,6 +666,15 @@ export class MusicPlayerView extends ItemView {
 	 */
 	async setRating(path: string, rating: number) {
 		await this.playbackService.setTrackRating(path, rating);
+	}
+
+	/**
+	 * Sets player volume (0.0 to 1.0) and synchronizes audio engine with UI state.
+	 */
+	public setVolume(volume: number): void {
+		const clamped = Math.max(0, Math.min(1, volume));
+		this.audioService.setVolume(clamped);
+		this.stateService.setVolume(clamped);
 	}
 
 	/**

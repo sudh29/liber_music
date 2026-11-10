@@ -16,6 +16,7 @@ import { linearFillProgress } from "@/utils/lyrics/charFillProgress";
 import { buildKaraokeUnits } from "@/utils/lyrics/karaokeUnits";
 import { t } from "@/utils/i18n/i18n";
 import { generateLyricMarkdownLink } from "@/utils/protocol/uri";
+import { copyTextToClipboard } from "@/utils/ui/clipboard";
 
 /**
  * Props interface for LyricsExtendedFull component
@@ -122,9 +123,11 @@ const LineComponent = React.memo(({ line, index, currentTime, isActive, isPlayin
 						e.stopPropagation();
 						const lineText = line.chars ? line.chars.map((c) => c.char).join("") : "";
 						const link = generateLyricMarkdownLink(currentPath, line.time, lineText, trackTitle);
-						navigator.clipboard.writeText(link).then(() => {
-							new Notice(t("playback.copiedTimestampLink"));
-						}).catch(() => {});
+						void copyTextToClipboard(link).then((success) => {
+							if (success) {
+								new Notice(t("playback.copiedTimestampLink"));
+							}
+						});
 					}}
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">

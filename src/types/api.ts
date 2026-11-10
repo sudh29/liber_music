@@ -5,7 +5,6 @@
  */
 
 import type { ReactTrackInfo } from "./library";
-import type { SmartPlaylistDefinition } from "./settings";
 
 /**
  * React API interface

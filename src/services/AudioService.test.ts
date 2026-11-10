@@ -282,5 +282,33 @@ describe("AudioService", () => {
 
 		Platform.isIosApp = false;
 	});
+
+	it("preserves outgoing audio element when preserveOutgoingForCrossfade is true and track is playing", async () => {
+		const track1 = app.vault.createFile("music/track1.mp3", new ArrayBuffer(50));
+		const track2 = app.vault.createFile("music/track2.mp3", new ArrayBuffer(50));
+
+		const handlers = {
+			onTimeUpdate: vi.fn(),
+			onLoadedMetadata: vi.fn(),
+			onEnded: vi.fn(),
+		};
+
+		const el1 = await audioService.createAudioElement(track1, 0.8, 1.0, handlers);
+		await audioService.play(); // set paused = false
+		expect(el1.paused).toBe(false);
+
+		// Now create track2 with preserveOutgoingForCrossfade: true
+		const el2 = await audioService.createAudioElement(track2, 0.8, 1.0, handlers, true);
+
+		expect(audioService.getAudioElement()).toBe(el2);
+		expect(audioService.getOutgoingAudioElement()).toBe(el1);
+		expect(el1.paused).toBe(false); // Outgoing track is still playing
+		expect(el2.volume).toBe(0); // Incoming track starts at 0 for smooth blend
+
+		// Clean up outgoing
+		await audioService.cleanupOutgoing();
+		expect(audioService.getOutgoingAudioElement()).toBeNull();
+		expect(el1.paused).toBe(true);
+	});
 });
 

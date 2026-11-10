@@ -79,6 +79,19 @@ describe("keyboard/shortcuts utilities", () => {
 		handler.cleanup();
 	});
 
+	it("should trigger seekBackward(15) and seekForward(15) with Meta key (Cmd on macOS/iPadOS)", () => {
+		const { mockView } = createMockView();
+		const handler = setupKeyboardShortcuts(mockView);
+
+		window.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowLeft", metaKey: true, bubbles: true }));
+		expect(mockView.seekBackward).toHaveBeenCalledWith(15);
+
+		window.dispatchEvent(new KeyboardEvent("keydown", { code: "ArrowRight", metaKey: true, bubbles: true }));
+		expect(mockView.seekForward).toHaveBeenCalledWith(15);
+
+		handler.cleanup();
+	});
+
 	it("should ignore shortcuts when view is not connected to DOM", () => {
 		const { mockView, container } = createMockView();
 		container.remove(); // disconnect from DOM
