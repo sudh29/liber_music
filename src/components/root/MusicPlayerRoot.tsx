@@ -215,6 +215,7 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 						isShuffle={playback.isShuffle}
 						artworkDisplayMode={playback.artworkDisplayMode}
 						rating={playback.rating}
+						showStarRating={view.plugin.settings.showStarRatingOnPlayer ?? false}
 						prevLyric={playback.prevLyric}
 						currentLyric={playback.currentLyric}
 						nextLyric={playback.nextLyric}

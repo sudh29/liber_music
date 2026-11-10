@@ -77,6 +77,8 @@ export interface MusicPlayerSettings {
 	isShuffle: boolean;
 	/** Artwork presentation mode: rotating vinyl disc or modern card */
 	artworkDisplayMode: 'vinyl' | 'card';
+	/** Whether to display the 5-star rating widget directly on the main player screen */
+	showStarRatingOnPlayer?: boolean;
 	/** Track ID to star rating mapping (0 to 5) */
 	ratings?: Record<string, number>;
 	/** Whether to prevent display sleep via Screen Wake Lock while audio is playing */
@@ -184,7 +186,8 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	volume: 1.0,               // Default: 100% volume
 	playbackRate: 1.0,         // Default: normal speed
 	isShuffle: false,          // Default: sequential playback
-	artworkDisplayMode: 'vinyl', // Default: classic vinyl mode
+	artworkDisplayMode: 'card', // Default: modern minimalist card mode (inspired by Obsidian-Music)
+	showStarRatingOnPlayer: false, // Default: ratings hidden from player to keep UI minimalist
 	ratings: {},               // Default: no ratings
 	keepScreenAwake: false,     // Default: do not keep screen awake
 	dailyNotesScrobbler: false, // Default: do not record to Daily Notes
@@ -197,7 +200,7 @@ export const DEFAULT_SETTINGS: MusicPlayerSettings = {
 	preampGainDb: 0,           // Default 0 dB preamp
 	turntableStyle: 'obsidian', // Default: stealth dark matte aluminum
 	dynamicAlbumTheme: true,   // Default: dynamic album art theming enabled
-	showVisualizer: true,      // Default: real-time spectrum visualizer enabled
+	showVisualizer: false,     // Default: real-time spectrum visualizer disabled for clean minimal UI
 	smartPlaylists: {},        // Default: no smart playlists
 	syncFolderPlaylists: false, // Default: folder auto-sync disabled
 	folderPlaylistDepth: 1,    // Default: depth 1

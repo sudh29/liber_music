@@ -188,6 +188,7 @@ export class AudioService {
 				this.audioElement = new Audio(blobUrl);
 			}
 
+			this.configureAudioElementAttributes(this.audioElement);
 			this.audioElement.volume = canCrossfade ? 0 : volume;
 			this.audioElement.playbackRate = playbackRate;
 
@@ -212,6 +213,7 @@ export class AudioService {
 			// Fallback to vault resource path if Blob URL fails
 			const url = this.app.vault.getResourcePath(trackFile);
 			this.audioElement = new Audio(url);
+			this.configureAudioElementAttributes(this.audioElement);
 			this.audioElement.volume = volume;
 			this.audioElement.playbackRate = playbackRate;
 
@@ -223,12 +225,23 @@ export class AudioService {
 			this.audioElement.addEventListener("seeked", this.onSeekedEmitEndedIfAtClose);
 			this.audioElement.addEventListener("error", this.onAudioError);
 
-			if (this.equalizerService) {
+			if (this.equalizerService && (typeof this.equalizerService.isEnabled !== "function" || this.equalizerService.isEnabled())) {
 				this.equalizerService.attachAudioElement(this.audioElement);
 			}
 
 			return this.audioElement;
 		}
+	}
+
+	/**
+	 * Configures audio element attributes for mobile media session and audio focus compatibility.
+	 */
+	private configureAudioElementAttributes(el: HTMLAudioElement): void {
+		if (typeof el.setAttribute === "function") {
+			el.setAttribute("playsinline", "true");
+			el.setAttribute("webkit-playsinline", "true");
+		}
+		el.preload = "auto";
 	}
 
 	/**

@@ -79,6 +79,61 @@ export class MediaSessionService {
 	}
 
 	/**
+	 * Converts a local or blob cover URL into a Base64 data URI so native mobile OS
+	 * notification handlers (such as Android SystemUI) can decode the bitmap across IPC.
+	 */
+	private async convertCoverToDataUri(url: string): Promise<string | null> {
+		try {
+			if (typeof document === "undefined") return null;
+			return await new Promise<string | null>((resolve) => {
+				const img = new Image();
+				img.crossOrigin = "anonymous";
+				const timer = window.setTimeout(() => resolve(null), 1200);
+				img.onload = () => {
+					window.clearTimeout(timer);
+					try {
+						const canvas = createEl("canvas");
+						const size = Math.min(Math.max(img.width || 256, img.height || 256, 256), 512);
+						canvas.width = size;
+						canvas.height = size;
+						const ctx = canvas.getContext("2d");
+						if (!ctx) {
+							resolve(null);
+							return;
+						}
+						ctx.drawImage(img, 0, 0, size, size);
+						resolve(canvas.toDataURL("image/jpeg", 0.85));
+					} catch {
+						resolve(null);
+					}
+				};
+				img.onerror = () => {
+					window.clearTimeout(timer);
+					resolve(null);
+				};
+				img.src = url;
+			});
+		} catch {
+			return null;
+		}
+	}
+
+	/**
+	 * Builds artwork array for MediaMetadata with standard multi-resolution specs.
+	 */
+	private buildArtworkEntries(src: string): MediaImage[] {
+		const type = src.startsWith("data:image/png") ? "image/png" : "image/jpeg";
+		return [
+			{ src, sizes: "96x96", type },
+			{ src, sizes: "128x128", type },
+			{ src, sizes: "192x192", type },
+			{ src, sizes: "256x256", type },
+			{ src, sizes: "384x384", type },
+			{ src, sizes: "512x512", type },
+		];
+	}
+
+	/**
 	 * Updates notification / lock-screen track metadata (title, artist, album, cover art).
 	 */
 	public updateMetadata(track: TFile, trackInfo?: TrackInfo, coverUrl?: string): void {
@@ -90,12 +145,20 @@ export class MediaSessionService {
 			const album = trackInfo?.album || "Unknown Album";
 
 			const artwork: MediaImage[] = [];
-			if (coverUrl && (coverUrl.startsWith("http") || coverUrl.startsWith("data:") || coverUrl.startsWith("blob:") || coverUrl.startsWith("app:"))) {
-				artwork.push({
-					src: coverUrl,
-					sizes: "512x512",
-					type: coverUrl.startsWith("data:image/png") ? "image/png" : "image/jpeg",
-				});
+			const isSupportedUrl = Boolean(
+				coverUrl && (
+					coverUrl.startsWith("http://") ||
+					coverUrl.startsWith("https://") ||
+					coverUrl.startsWith("data:") ||
+					coverUrl.startsWith("blob:") ||
+					coverUrl.startsWith("app:") ||
+					coverUrl.startsWith("capacitor:") ||
+					coverUrl.startsWith("file:")
+				)
+			);
+
+			if (coverUrl && isSupportedUrl) {
+				artwork.push(...this.buildArtworkEntries(coverUrl));
 			}
 
 			if (typeof MediaMetadata !== "undefined") {
@@ -105,6 +168,16 @@ export class MediaSessionService {
 					album,
 					artwork,
 				});
+
+				// On Android WebView, blob: and capacitor: URIs cannot be resolved by Android SystemUI across IPC.
+				// Asynchronously convert to a Base64 data: URI and update metadata artwork for native notification rendering.
+				if (coverUrl && (coverUrl.startsWith("blob:") || coverUrl.startsWith("capacitor:") || coverUrl.startsWith("app:"))) {
+					void this.convertCoverToDataUri(coverUrl).then((dataUri) => {
+						if (dataUri && navigator.mediaSession.metadata) {
+							navigator.mediaSession.metadata.artwork = this.buildArtworkEntries(dataUri);
+						}
+					});
+				}
 			}
 		} catch (e) {
 			console.warn("Failed to update MediaSession metadata:", e);

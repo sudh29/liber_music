@@ -1,29 +1,84 @@
 /**
- * Track header component styles
+ * Track header component styles - Minimalist Material 3 Aesthetic
  * 
- * Contains styles for track title and artist name display.
+ * Contains styles for track title, artist name display, and the integrated favorite heart button.
  */
 
-/* ========== Header Styles ========== */
 .music-player .track-header {
-	text-align: center;
-	margin-bottom: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	max-width: 420px;
+	margin: 0 auto clamp(6px, 1.2vh, 12px);
+	padding: 0 4px;
+	box-sizing: border-box;
+	gap: 12px;
+	user-select: none;
+}
+
+.music-player .track-header-info {
+	flex: 1;
+	min-width: 0;
+	text-align: left;
 }
 
 .music-player .track-title {
+	font-size: clamp(16px, 2.2vw, 20px);
+	font-weight: 700;
+	line-height: 1.25;
+	margin: 0 0 2px 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	text-align: center;
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-on-surface, var(--text-normal));
 }
 
 .music-player .artist-name {
-	font-size: 14px;
-	color: var(--interactive-accent);
+	font-size: clamp(12px, 1.6vw, 14px);
+	color: var(--md-sys-color-on-surface-variant, var(--text-muted));
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	text-align: center;
-	opacity: 0.8;
+	margin: 0;
+	opacity: 0.85;
+}
+
+.music-player button.track-header-favorite-btn {
+	flex: 0 0 auto;
+	width: 38px;
+	height: 38px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	color: var(--text-muted);
+	background: transparent;
+	border: 1px solid transparent;
+	transition: color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
+	padding: 0;
+}
+
+.music-player button.track-header-favorite-btn:hover {
+	color: var(--text-normal);
+	background: rgba(255, 255, 255, 0.08);
+	transform: scale(1.1);
+}
+
+.music-player button.track-header-favorite-btn:active {
+	transform: scale(0.92);
+}
+
+.music-player button.track-header-favorite-btn.is-favorite {
+	color: var(--md-sys-color-primary, var(--interactive-accent, #ff4081));
+}
+
+.music-player button.track-header-favorite-btn.is-favorite svg {
+	fill: currentColor;
+}
+
+.music-player button.track-header-favorite-btn svg {
+	width: 20px;
+	height: 20px;
 }

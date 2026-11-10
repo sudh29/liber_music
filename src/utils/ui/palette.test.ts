@@ -265,18 +265,24 @@ describe('palette extraction and theming', () => {
 			expect(el.style.getPropertyValue('--player-dynamic-glow')).toBe('rgba(200, 50, 100, 0.35)');
 			expect(el.style.getPropertyValue('--player-karaoke-highlight')).toBe('rgb(200, 50, 100)');
 			expect(el.style.getPropertyValue('--player-text-on-accent')).toBe('#ffffff');
+			expect(el.style.getPropertyValue('--md-sys-color-primary')).toBe('rgb(200, 50, 100)');
+			expect(el.style.getPropertyValue('--md-sys-color-on-primary')).toBe('#ffffff');
 		});
 
 		it('should remove CSS custom properties when disabled or theme is null', () => {
 			const el = document.createElement('div');
 			el.style.setProperty('--player-dynamic-accent', 'red');
+			el.style.setProperty('--md-sys-color-primary', 'red');
 
 			applyPaletteTheme(el, null, true);
 			expect(el.style.getPropertyValue('--player-dynamic-accent')).toBe('');
+			expect(el.style.getPropertyValue('--md-sys-color-primary')).toBe('');
 
 			el.style.setProperty('--player-dynamic-accent', 'blue');
+			el.style.setProperty('--md-sys-color-primary', 'blue');
 			applyPaletteTheme(el, { ...DEFAULT_PALETTE_THEME }, false);
 			expect(el.style.getPropertyValue('--player-dynamic-accent')).toBe('');
+			expect(el.style.getPropertyValue('--md-sys-color-primary')).toBe('');
 		});
 	});
 
