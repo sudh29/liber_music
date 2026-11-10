@@ -75,14 +75,14 @@
 	display: inline-block;
 	white-space: nowrap;
 	line-height: inherit;
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	font-weight: 600;
 }
 
 /* Current line: matching font weights for consistent alignment */
 .music-player .lyric-line-current .lyrics-extended-triplet-char-bg,
 .music-player .lyric-line-current .lyrics-extended-triplet-char-fill {
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	font-weight: 600;
 }
 
@@ -96,8 +96,10 @@
 
 /* Previous line text color */
 .music-player .lyric-line-prev .lyrics-extended-triplet-text {
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	font-weight: 600;
+	opacity: 0.55;
+}
 	opacity: 0.5;
 }
 

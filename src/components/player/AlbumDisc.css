@@ -18,7 +18,7 @@
     justify-content: center;
     overflow: hidden;
     width: 100%;
-    max-width: min(100%, 320px, 34vh);
+    max-width: min(80%, 210px, 24vh);
     aspect-ratio: 1 / 1;
     margin: 0 auto;
 }

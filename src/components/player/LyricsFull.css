@@ -106,23 +106,23 @@
 
 /* Center active line (currently playing line): change color only */
 .music-player .lyrics-line.is-active .lyrics-text {
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 }
 
 /* Played lyric lines: keep highlighted color (matches previous line style in extended lyrics) */
 .music-player .lyrics-line.is-played .lyrics-text {
 	font-weight: 600;
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	opacity: 0.5;
 }
 
 /* Currently playing line: enlarged font size, bold, and luminous text shadow */
 .music-player .lyrics-line.is-playing .lyrics-text {
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	font-weight: 700;
-	font-size: 1.22em;
-	transform: scale(1.04);
-	text-shadow: 0 0 16px rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45);
+	font-size: 1.28em;
+	transform: scale(1.05);
+	text-shadow: 0 0 18px var(--md-sys-color-primary-container, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.5));
 	transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

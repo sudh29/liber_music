@@ -53,11 +53,11 @@
 }
 
 .music-player .lyrics-extended-line.is-active .lyrics-extended-text {
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 }
 
 .music-player .lyrics-extended-line.is-played .lyrics-extended-text {
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 }
 
 .music-player .lyrics-extended-line.is-playing {
@@ -76,9 +76,10 @@
 }
 
 .music-player .lyrics-extended-line.is-playing .lyrics-extended-text {
-	color: var(--interactive-accent);
-	font-size: 1.15em;
-	font-weight: 600;
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
+	font-size: 1.25em;
+	font-weight: 700;
+	text-shadow: 0 0 18px var(--md-sys-color-primary-container, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.5));
 }
 
 .music-player .lyrics-extended-char {
@@ -107,7 +108,7 @@
 /* Played lyrics and current line background text color */
 .music-player .lyrics-extended-line.is-played .lyrics-extended-char-bg,
 .music-player .lyrics-extended-line.is-playing .lyrics-extended-char-bg {
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	opacity: 0.45;
 }
 
@@ -131,7 +132,7 @@
 	display: inline-block;
 	white-space: nowrap;
 	line-height: inherit;
-	color: var(--interactive-accent);
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	font-weight: 600;
 }
 

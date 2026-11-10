@@ -16,6 +16,7 @@ import "./MusicPlayerRoot.css";
 import { ConfirmModal, EqualizerModal, LibraryPage, NavigationBar, PlayPage } from "@/components";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { t } from "@/utils/i18n/i18n";
+import { applyPaletteTheme, extractPaletteFromImageUrl } from "@/utils/ui/palette";
 import {
 	useLibraryManagement,
 	useLibraryState,
@@ -176,10 +177,33 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 		view,
 	});
 
+	// Dynamic Material 3 album palette extraction at the root view level
+	const rootRef = React.useRef<HTMLDivElement>(null);
+	const dynamicAlbumTheme = view.plugin.settings.dynamicAlbumTheme ?? true;
+
+	React.useEffect(() => {
+		let isCancelled = false;
+		if (!dynamicAlbumTheme) {
+			applyPaletteTheme(rootRef.current, null, false);
+			return;
+		}
+
+		void extractPaletteFromImageUrl(finalCoverUrl).then((theme) => {
+			if (!isCancelled && rootRef.current) {
+				applyPaletteTheme(rootRef.current, theme, true);
+			}
+		});
+
+		return () => {
+			isCancelled = true;
+		};
+	}, [finalCoverUrl, dynamicAlbumTheme]);
+
 	return (
 		<ErrorBoundary>
-			<div className="music-player-nav-header-bar">
-				<NavigationBar
+			<div ref={rootRef} className="music-player-view-shell">
+				<div className="music-player-nav-header-bar">
+					<NavigationBar
 					activeTab={navigation.tab}
 					currentPage={navigation.tab === "currentDisc" ? navigation.currentPage : undefined}
 					onOpenLibrary={navigation.openLibrary}
@@ -304,6 +328,7 @@ export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
 					app={view.app}
 				/>
 			) : null}
+				</div>
 			</div>
 		</ErrorBoundary>
 	);
