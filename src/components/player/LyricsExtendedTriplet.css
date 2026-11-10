@@ -95,19 +95,22 @@
 }
 
 /* Previous line text color */
-.music-player .lyric-line-prev .lyrics-extended-triplet-text {
+.music-player .lyric-line-prev .lyrics-extended-triplet-text,
+.music-player .lyric-line-next .lyrics-extended-triplet-text {
 	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
-	font-weight: 600;
+	font-weight: 500;
+	font-size: clamp(0.9em, 1.6vh, 1.15em);
+	line-height: 1.4;
 	opacity: 0.55;
-}
-	opacity: 0.5;
 }
 
 /* Current line text color and style */
 .music-player .lyric-line-current .lyrics-extended-triplet-text {
-	color: var(--interactive-accent);
-	font-weight: 600;
-	font-size: 1.15em;
+	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
+	font-weight: 700;
+	font-size: clamp(1.22em, 2.3vh, 1.65em);
+	line-height: 1.45;
+	text-shadow: 0 0 16px var(--md-sys-color-primary-container, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45));
 }
 
 /* Word unit: standard letter spacing, slight padding */

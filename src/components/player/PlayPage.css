@@ -35,12 +35,13 @@
 	width: 100%;
 	min-height: 0;
 	cursor: pointer;
-	justify-content: center;
+	justify-content: space-evenly;
 	align-items: center;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
 	margin: 0 auto;
+	gap: clamp(6px, 1.5vh, 18px);
 }
 
 .music-player .disc-and-lyrics-triplet-wrapper.hidden {
@@ -57,21 +58,22 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	max-width: min(75%, 200px, 22vh);
+	max-width: min(85%, clamp(180px, 32vh, 320px));
 	min-height: 0;
-	margin: 2px auto clamp(2px, 0.8vh, 8px);
+	margin: clamp(4px, 1.2vh, 12px) auto;
 }
 
 .music-player .lyrics-triplet-wrapper {
 	flex: 1 1 auto;
 	width: 100%;
-	max-width: 520px;
-	min-height: 80px;
+	max-width: 540px;
+	min-height: clamp(100px, 16vh, 220px);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding-top: 2px;
+	padding: clamp(4px, 1vh, 12px) 16px;
+	box-sizing: border-box;
 }
 
 /* ========== Full Lyrics Mode Styles ========== */

@@ -16,22 +16,31 @@
 	justify-content: center;
 	width: 100%;
 	padding: 0 16px;
-	margin-bottom: 8px;
+	margin-bottom: 4px;
 	height: auto;
-	min-height: 80px;
-	max-height: 160px;
-	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
-	mask-image: linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%);
+	min-height: clamp(100px, 16vh, 200px);
+	max-height: clamp(160px, 26vh, 280px);
+	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+	mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
 }
 
 .music-player .lyric-line-prev,
-.music-player .lyric-line-next,
+.music-player .lyric-line-next {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: clamp(3px, 0.8vh, 8px) 0;
+	text-align: center;
+	transition: color 0.2s ease;
+}
+
 .music-player .lyric-line-current {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	padding: 4px 0;
+	padding: clamp(6px, 1.4vh, 14px) 0;
 	text-align: center;
 	transition: color 0.2s ease;
 }
@@ -44,18 +53,22 @@
 	word-break: break-word;
 }
 
-.music-player .lyric-line-prev .lyric-text {
+.music-player .lyric-line-prev .lyric-text,
+.music-player .lyric-line-next .lyric-text {
 	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
-	font-weight: 600;
-	opacity: 0.5;
+	font-weight: 500;
+	font-size: clamp(0.9em, 1.6vh, 1.15em);
+	line-height: 1.4;
+	opacity: 0.55;
 }
 
 /* Current line highlight and active playing: Material 3 dynamic color & glow */
 .music-player .lyric-line-current .lyric-text {
 	color: var(--md-sys-color-primary, var(--player-dynamic-accent, var(--interactive-accent)));
 	font-weight: 700;
-	font-size: 1.18em;
-	text-shadow: 0 0 14px var(--md-sys-color-primary-container, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45));
+	font-size: clamp(1.22em, 2.3vh, 1.65em);
+	line-height: 1.45;
+	text-shadow: 0 0 16px var(--md-sys-color-primary-container, rgba(var(--interactive-accent-rgb, 120, 100, 255), 0.45));
 }
 
 .music-player .karaoke-line-content {
