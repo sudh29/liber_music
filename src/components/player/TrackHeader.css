@@ -82,3 +82,10 @@
 	width: 20px;
 	height: 20px;
 }
+
+@media (pointer: coarse) {
+	.music-player button.track-header-favorite-btn {
+		min-width: 44px;
+		min-height: 44px;
+	}
+}

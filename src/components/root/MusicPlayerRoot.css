@@ -9,7 +9,8 @@
 
 /* ========== Obsidian view content area (matches addClass in ViewSetupService) ========== */
 .view-content.music-player {
-	padding: var(--size-4-1) var(--size-4-2) var(--size-4-8);
+	padding: 0 !important;
+	overflow: hidden !important;
 }
 
 /* ========== Main Container ========== */
@@ -17,8 +18,11 @@
 	display: flex;
 	flex-direction: column;
 	height: 100%;
+	width: 100%;
+	min-height: 0;
 	padding: 0;
 	position: relative;
+	overflow: hidden;
 }
 
 /* ========== Hidden textarea helper for cross-platform clipboard copy ========== */
