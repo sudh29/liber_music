@@ -35,13 +35,13 @@
 	width: 100%;
 	min-height: 0;
 	cursor: pointer;
-	justify-content: space-evenly;
+	justify-content: center;
 	align-items: center;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
 	margin: 0 auto;
-	gap: clamp(6px, 1.5vh, 18px);
+	gap: clamp(8px, 2.2vh, 22px);
 }
 
 .music-player .disc-and-lyrics-triplet-wrapper.hidden {
@@ -58,21 +58,21 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	max-width: min(85%, clamp(140px, 28vh, 320px));
+	max-width: min(88%, clamp(150px, 34vh, 380px));
 	min-height: 0;
-	margin: clamp(2px, 1vh, 10px) auto;
+	margin: 0 auto;
 }
 
 .music-player .lyrics-triplet-wrapper {
-	flex: 1 1 auto;
+	flex: 0 1 auto;
 	width: 100%;
-	max-width: 540px;
-	min-height: clamp(80px, 14vh, 220px);
+	max-width: 560px;
+	min-height: clamp(80px, 14vh, 200px);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	padding: clamp(2px, 0.8vh, 10px) 16px;
+	padding: clamp(2px, 0.8vh, 8px) 16px;
 	box-sizing: border-box;
 }
 

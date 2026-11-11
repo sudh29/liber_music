@@ -205,9 +205,17 @@ export function extractPaletteFromImageData(
 	const secondaryColor = `rgb(${secondary.r}, ${secondary.g}, ${secondary.b})`;
 	const surfaceGlow = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.38)`;
 	const primaryContainer = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.18)`;
+
+	// Luminance-boosted primary for dark UI surface contrast (Material 3 Tone 80 radiant parity)
+	const lumScale = lum < 0.22 ? Math.min(2.6, 0.44 / Math.max(0.08, lum)) : 1.0;
+	const boostedPrimaryR = Math.min(255, Math.round(primary.r * lumScale));
+	const boostedPrimaryG = Math.min(255, Math.round(primary.g * lumScale));
+	const boostedPrimaryB = Math.min(255, Math.round(primary.b * lumScale));
+	const mdPrimaryColor = lum < 0.22 ? `rgb(${boostedPrimaryR}, ${boostedPrimaryG}, ${boostedPrimaryB})` : primaryColor;
+
 	const onPrimaryContainer = lum > 0.48
 		? `rgb(${Math.round(primary.r * 0.4)}, ${Math.round(primary.g * 0.4)}, ${Math.round(primary.b * 0.4)})`
-		: `rgb(${Math.min(255, Math.round(primary.r * 1.25))}, ${Math.min(255, Math.round(primary.g * 1.25))}, ${Math.min(255, Math.round(primary.b * 1.25))})`;
+		: mdPrimaryColor;
 	const surface = `rgba(${Math.round(primary.r * 0.08)}, ${Math.round(primary.g * 0.08)}, ${Math.round(primary.b * 0.08 + 10)}, 0.95)`;
 	const surfaceContainer = `rgba(${primary.r}, ${primary.g}, ${primary.b}, 0.08)`;
 	const onSurface = `var(--text-normal, #e0e0e0)`;
@@ -220,7 +228,7 @@ export function extractPaletteFromImageData(
 		secondaryAccent: secondaryColor,
 		surfaceGlow,
 		textOnAccent,
-		mdPrimary: primaryColor,
+		mdPrimary: mdPrimaryColor,
 		mdOnPrimary: textOnAccent,
 		mdPrimaryContainer: primaryContainer,
 		mdOnPrimaryContainer: onPrimaryContainer,

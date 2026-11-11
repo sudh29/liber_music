@@ -16,10 +16,10 @@
 	justify-content: center;
 	width: 100%;
 	padding: 0 16px;
-	margin-bottom: 4px;
+	margin: 0;
 	height: auto;
-	min-height: clamp(80px, 14vh, 200px);
-	max-height: clamp(140px, 24vh, 260px);
+	min-height: clamp(80px, 14vh, 190px);
+	max-height: clamp(130px, 22vh, 240px);
 	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
 	mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
 }
