@@ -1,15 +1,28 @@
 <div align="center">
     <h1>Liber Music Player for Obsidian</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-2.1.0-7f6df2?logo=obsidian" alt="Version 2.1.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-3.0.0-7f6df2?logo=obsidian" alt="Version 3.0.0"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+        <img src="https://img.shields.io/badge/platforms-Laptop%20%7C%20Pixel%209a%20%7C%20iPad%20Air-informational" alt="Platforms: Laptop | Pixel 9a | iPad Air">
         <img src="https://img.shields.io/badge/tests-691%20passed-brightgreen" alt="Tests: 691 passed">
         <img src="https://img.shields.io/badge/coverage-98.32%25-brightgreen" alt="Coverage: 98.32%">
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
-    <p>An audiophile-grade skeuomorphic vinyl music player embedded directly in the Obsidian sidebar. Features local vault audio playback, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing.</p>
+    <p>A minimalist, audiophile-grade Material 3 music player embedded directly in the Obsidian sidebar. Features local vault audio playback, dynamic album palette color extraction, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing with 100% cross-platform parity on Laptop, iPad, and Pixel.</p>
 </div>
+
+---
+
+## ✨ What's New in v3.0: Minimalist Material 3
+
+Liber Music Player v3.0 introduces a comprehensive visual and architectural redesign:
+
+- 🎨 **Dynamic Material 3 Color Extraction**: Extracts dominant and secondary tones directly from the active song's album art, dynamically shading playing lyrics, active progress bars, and the hero FAB play/pause button with ambient mesh text glow.
+- 📐 **Adaptive Fluid Layout & Zero Empty Voids**: Proportional responsive sizing (`clamp(140px, 28vh, 320px)`) that eliminates empty black voids on tall screens while fitting comfortably into sidebars and mobile drawers without scrollbars.
+- 📱 **Obsidian Mobile Drawer CSS Isolation**: Scoped Navigation Bar styling (`.music-player-nav-buttons`) that prevents Obsidian core mobile drawer styles from forcibly pulling navigation icons over bottom playback controls.
+- 📱 **Universal Cross-Platform Parity**: Fully tested and optimized for **15.6" Laptop (Desktop Electron)**, **Pixel 9a (Android Chromium)**, and **iPad Air 13" (WebKit WKWebView)**.
+- 🎶 **Expanded Triplet Lyrics Window**: Generous vertical lyrics display (`clamp(80px, 14vh, 200px)`) with responsive fluid typography and word-by-word karaoke synchronization.
 
 ---
 
@@ -337,6 +350,35 @@ npm run build
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture
+
+---
+
+## 📦 Installation
+
+### Method 1: Beta Testing via BRAT (Recommended)
+You can test the latest pre-release versions of Liber Music Player across your desktop, phone, or tablet using the [Obsidian42 - BRAT](https://github.com/TfTHacker/obsidian42-brat) community plugin:
+
+1. In Obsidian, open **Settings** $\rightarrow$ **Community plugins**.
+2. Search for **BRAT** (by TfTHacker), then click **Install** and **Enable**.
+3. Open **BRAT settings** $\rightarrow$ click **Add Beta plugin**.
+4. Enter repository URL: `sudh29/liber_music` (or `https://github.com/sudh29/liber_music`).
+5. Click **Add Plugin**. BRAT will automatically fetch and install the latest `main.js`, `styles.css`, and `manifest.json`.
+6. Enable **Liber Music Player** in **Community plugins** and enjoy!
+
+### Method 2: Manual Installation
+1. Download `main.js`, `styles.css`, and `manifest.json` from the [Latest Release](https://github.com/sudh29/liber_music/releases).
+2. Inside your Obsidian vault, navigate to `.obsidian/plugins/` and create a folder named `liber-music-player`.
+3. Copy the three downloaded files into `.obsidian/plugins/liber-music-player/`.
+4. In Obsidian, go to **Settings** $\rightarrow$ **Community plugins**, reload, and toggle **Liber Music Player** ON.
+
+---
+
+## 💖 Sponsoring & Donations
+
+Liber Music Player is free and open-source software built with love for the Obsidian community. If this plugin enhances your daily workflow and listening enjoyment, consider supporting its ongoing maintenance and new features:
+
+- 🌟 **[Sponsor on GitHub Sponsors](https://github.com/sponsors/sudh29)**
+- ⭐ Star the repository on GitHub to help others discover it!
 
 ---
 
