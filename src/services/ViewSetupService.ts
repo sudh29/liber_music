@@ -12,7 +12,7 @@ import { MusicPlayerRoot } from "@/components";
 
 export interface ViewSetupResult {
 	container: HTMLElement;
-	navHost: HTMLElement;
+	navHost?: HTMLElement;
 	reactRoot: Root;
 }
 
@@ -45,25 +45,16 @@ export class ViewSetupService {
 			throw new Error("Unable to locate content container");
 		}
 
+		// Handle legacy navHost if present in DOM without creating unnecessary ghost nodes
 		const navContainer = leafContent ?? container;
 		const navHostEl = navContainer.querySelector(".nav-header, nav-header");
-		let navHost = navHostEl instanceof HTMLElement ? navHostEl : null;
-		if (!navHost) {
-			navHost = navContainer.createDiv();
-			// Add root prefix to nav host for scoped style isolation
-			navHost.className = "music-player nav-header";
-			if (viewHeader && navContainer === leafContent) {
-				navContainer.insertBefore(navHost, viewHeader);
-			} else {
-				navContainer.insertBefore(navHost, navContainer.firstChild);
-			}
-		} else {
+		const navHost = navHostEl instanceof HTMLElement ? navHostEl : undefined;
+		if (navHost) {
 			navHost.classList.add("music-player");
 			navHost.empty?.();
+			navHost.addClass("is-hidden");
+			navHost.setCssProps({ display: "none" });
 		}
-		// Hide legacy navHost to prevent DOM collisions with mobile bottom bars
-		navHost.addClass("is-hidden");
-		navHost.setCssProps({ display: "none" });
 
 		// Clean up residual React mount points if present
 		const oldReactMounts = container.querySelectorAll(".music-player-react-root");

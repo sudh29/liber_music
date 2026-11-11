@@ -36,8 +36,7 @@ describe("ViewSetupService", () => {
 		expect(wrapper.classList.contains("music-player")).toBe(true);
 		expect(viewContent.classList.contains("music-player")).toBe(true);
 		expect(result.container).toBe(viewContent);
-		expect(result.navHost).toBeDefined();
-		expect(result.navHost.className).toContain("nav-header");
+		expect(result.navHost).toBeUndefined();
 		expect(result.reactRoot).toBeDefined();
 		expect(viewContent.querySelector(".music-player-react-root")).not.toBeNull();
 	});

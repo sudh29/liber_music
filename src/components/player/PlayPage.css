@@ -10,6 +10,7 @@
 
 /* ========== Common Page Wrapper ========== */
 .music-player .play-page-wrapper {
+	container-type: inline-size;
 	flex: 1 1 auto;
 	display: flex;
 	flex-direction: column;
@@ -119,4 +120,51 @@
 	justify-content: center;
 	align-items: center;
 	margin-bottom: clamp(4px, 1vh, 8px);
+}
+
+/* ========== Wide & Landscape Responsive Multi-Column Split Mode ========== */
+@container (min-width: 620px) {
+	.music-player .disc-and-lyrics-triplet-wrapper {
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		gap: clamp(20px, 4vw, 48px);
+		padding: 0 clamp(16px, 2.5vw, 36px);
+	}
+
+	.music-player .disc-wrapper {
+		flex: 0 0 auto;
+		max-width: min(45%, 320px, 45vh);
+		margin: 0;
+	}
+
+	.music-player .lyrics-triplet-wrapper {
+		flex: 1 1 auto;
+		max-width: 480px;
+		height: 100%;
+		justify-content: center;
+	}
+}
+
+@media (min-width: 640px) and (orientation: landscape) {
+	.music-player .disc-and-lyrics-triplet-wrapper {
+		flex-direction: row;
+		justify-content: center;
+		align-items: center;
+		gap: clamp(20px, 4vw, 48px);
+		padding: 0 clamp(16px, 2.5vw, 36px);
+	}
+
+	.music-player .disc-wrapper {
+		flex: 0 0 auto;
+		max-width: min(45%, 320px, 45vh);
+		margin: 0;
+	}
+
+	.music-player .lyrics-triplet-wrapper {
+		flex: 1 1 auto;
+		max-width: 480px;
+		height: 100%;
+		justify-content: center;
+	}
 }

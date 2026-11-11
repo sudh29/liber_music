@@ -31,10 +31,10 @@ import type { MusicPlayerView } from "@/views/MusicPlayerView";
 
 export interface MusicPlayerRootProps {
 	view: MusicPlayerView;
-	navHost: HTMLElement;
+	navHost?: HTMLElement;
 }
 
-export function MusicPlayerRoot({ view, navHost }: MusicPlayerRootProps) {
+export function MusicPlayerRoot({ view }: MusicPlayerRootProps) {
 	// Navigation state management
 	const navigation = useNavigation();
 	const pageState = usePageState();
