@@ -18,8 +18,8 @@
 	padding: 0 16px;
 	margin-bottom: 4px;
 	height: auto;
-	min-height: clamp(100px, 16vh, 200px);
-	max-height: clamp(160px, 26vh, 280px);
+	min-height: clamp(80px, 14vh, 200px);
+	max-height: clamp(140px, 24vh, 260px);
 	-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
 	mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
 }

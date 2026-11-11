@@ -78,8 +78,8 @@
 @media (pointer: coarse) {
 	.music-player .music-player-nav-button.clickable-icon,
 	.music-player .nav-action-button.clickable-icon {
-		min-width: 38px;
-		min-height: 38px;
-		padding: 7px;
+		min-width: 42px;
+		min-height: 42px;
+		padding: 8px;
 	}
 }
