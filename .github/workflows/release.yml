@@ -55,5 +55,6 @@ jobs:
             # styles.css / main.js / manifest.json attached with provenance
             - name: Generate build provenance attestation (styles.css, main.js, manifest.json)
               uses: actions/attest@v4
+              continue-on-error: true
               with:
                   subject-path: "dist/styles.css, dist/main.js, dist/manifest.json"
