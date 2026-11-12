@@ -19,7 +19,11 @@ describe("MediaSessionService", () => {
 			setPositionState: vi.fn(),
 		};
 
-		(navigator as unknown as { mediaSession: unknown }).mediaSession = mockMediaSession;
+		if (typeof (globalThis as any).navigator === "undefined") {
+			(globalThis as any).navigator = { mediaSession: mockMediaSession };
+		} else {
+			(globalThis.navigator as any).mediaSession = mockMediaSession;
+		}
 		if (typeof window !== "undefined" && window.navigator) {
 			(window.navigator as unknown as { mediaSession: unknown }).mediaSession = mockMediaSession;
 		}
