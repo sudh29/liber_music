@@ -52,9 +52,12 @@ jobs:
                       dist/styles.css
                       dist/manifest.json
 
-            # styles.css / main.js / manifest.json attached with provenance
+            # styles.css / main.js / manifest.json attached with cryptographic provenance
             - name: Generate build provenance attestation (styles.css, main.js, manifest.json)
-              uses: actions/attest@v4
+              uses: actions/attest-build-provenance@v2
               continue-on-error: true
               with:
-                  subject-path: "dist/styles.css, dist/main.js, dist/manifest.json"
+                  subject-path: |
+                      dist/main.js
+                      dist/styles.css
+                      dist/manifest.json

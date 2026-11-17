@@ -1,12 +1,16 @@
 
 /* ========== Navigation Bar Icons - Scoped & Isolated from Obsidian Core Mobile CSS ========== */
 
-.is-phone .workspace-drawer .music-player .music-player-nav-buttons,
-.workspace-drawer .music-player .music-player-nav-buttons,
+body.is-phone .workspace-drawer .workspace-drawer-inner .music-player .music-player-nav-buttons,
+body.is-phone .workspace-drawer .workspace-drawer-inner .music-player .nav-buttons-container,
+body .workspace-drawer .music-player .music-player-nav-buttons,
+body .workspace-drawer .music-player .nav-buttons-container,
+body .music-player .music-player-nav-buttons,
+body .music-player .nav-buttons-container,
 .music-player .music-player-nav-buttons,
 .music-player .nav-buttons-container {
-	position: static !important;
-	inset: auto !important;
+	position: static;
+	inset: auto;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;

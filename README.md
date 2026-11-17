@@ -1,7 +1,7 @@
 <div align="center">
-    <h1>Liber Music Player for Obsidian</h1>
+    <h1>Liber Music Player</h1>
     <p>
-        <a href="manifest.json"><img src="https://img.shields.io/badge/version-3.0.0-7f6df2?logo=obsidian" alt="Version 3.0.0"></a>
+        <a href="manifest.json"><img src="https://img.shields.io/badge/version-3.0.1-7f6df2?logo=obsidian" alt="Version 3.0.1"></a>
         <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.13.4%2B-purple?logo=obsidian" alt="Obsidian minAppVersion: v1.13.4+"></a>
         <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
         <img src="https://img.shields.io/badge/platforms-Laptop%20%7C%20Pixel%209a%20%7C%20iPad%20Air-informational" alt="Platforms: Laptop | Pixel 9a | iPad Air">
