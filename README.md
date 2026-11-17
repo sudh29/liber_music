@@ -26,6 +26,7 @@
 - [⚙️ Settings Configuration](#️-settings-configuration)
 - [⚡ Improvements Over Upstream (Fork & Benchmarks)](#-improvements-over-upstream-fork-comparison)
 - [🛠️ Development & Architecture](#️-development--architecture)
+- [🤝 Contributing & Feedback](#-contributing--feedback)
 - [💖 Sponsoring & Donations](#-sponsoring--donations)
 - [📄 License](#-license)
 
@@ -392,6 +393,17 @@ npm run build
 - **Bundler**: **esbuild** with embedded image inlining and mobile Buffer polyfills
 - **Metadata Parser**: `music-metadata` (v12.x browser build)
 - **Internationalization**: English-only codebase and locale architecture
+
+---
+
+## 🤝 Contributing & Feedback
+
+Contributions, feature suggestions, and bug reports are warmly welcome!
+
+- 🐛 **Report a Bug**: [Open an issue on GitHub](https://github.com/sudh29/liber_music/issues/new) with reproduction steps, your OS, and Obsidian version.
+- 💡 **Request a Feature**: [Submit a suggestion](https://github.com/sudh29/liber_music/issues/new) detailing the proposed enhancement or workflow.
+- 💻 **Code Contributions**: Review our [Contributing Guide](docs/contributing/contributing.md) for local development setup, coding standards, and PR guidelines.
+- 💬 **Discussions & Questions**: Join community discussions in [GitHub Discussions](https://github.com/sudh29/liber_music/discussions).
 
 ---
 
