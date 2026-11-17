@@ -1,7 +1,7 @@
 {
 	"id": "liber-music-player",
 	"name": "Liber Music Player",
-	"version": "3.0.1",
+	"version": "3.0.2",
 	"minAppVersion": "1.13.4",
 	"description": "Play local music files from your vault in the sidebar with synced lyrics, graphic equalizer, and audio bookmarks.",
 	"author": "Liber Primus",
