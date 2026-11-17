@@ -20,14 +20,14 @@
 - [🚀 Quick Start](#-quick-start)
 - [📦 Installation](#-installation)
 - [🌟 Key Features](#-key-features)
-- [📝 Markdown Codeblock Embeds & PKM Deep-Linking](#-markdown-codeblock-embeds--pkm-deep-linking)
-- [⌨️ Global Commands & Hotkeys](#-global-commands--hotkeys)
+- [📝 Markdown Codeblock Embeds & PKM Deep-Linking](#-markdown-codeblock-embeds-pkm-deep-linking)
+- [⌨️ Global Commands & Hotkeys](#-global-commands-hotkeys)
 - [📖 Lyrics Format Specification](#-lyrics-format-specification)
-- [⚙️ Settings Configuration](#️-settings-configuration)
+- [⚙️ Settings Configuration](#-settings-configuration)
 - [⚡ Improvements Over Upstream (Fork & Benchmarks)](#-improvements-over-upstream-fork-comparison)
-- [🛠️ Development & Architecture](#️-development--architecture)
-- [🤝 Contributing & Feedback](#-contributing--feedback)
-- [💖 Sponsoring & Donations](#-sponsoring--donations)
+- [🛠️ Development & Architecture](#-development-architecture)
+- [🤝 Contributing & Feedback](#-contributing-feedback)
+- [💖 Sponsoring & Donations](#-sponsoring-donations)
 - [📄 License](#-license)
 
 ---
@@ -400,8 +400,8 @@ npm run build
 
 Contributions, feature suggestions, and bug reports are warmly welcome!
 
-- 🐛 **Report a Bug**: [Open an issue on GitHub](https://github.com/sudh29/liber_music/issues/new) with reproduction steps, your OS, and Obsidian version.
-- 💡 **Request a Feature**: [Submit a suggestion](https://github.com/sudh29/liber_music/issues/new) detailing the proposed enhancement or workflow.
+- 🐛 **Report a Bug**: [Open an issue on GitHub](https://github.com/sudh29/liber_music/issues/new?template=bug_report.md) with reproduction steps, your OS, and Obsidian version.
+- 💡 **Request a Feature**: [Submit a suggestion](https://github.com/sudh29/liber_music/issues/new?template=feature_request.md) detailing the proposed enhancement or workflow.
 - 💻 **Code Contributions**: Review our [Contributing Guide](docs/contributing/contributing.md) for local development setup, coding standards, and PR guidelines.
 - 💬 **Discussions & Questions**: Join community discussions in [GitHub Discussions](https://github.com/sudh29/liber_music/discussions).
 
