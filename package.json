@@ -1,6 +1,6 @@
 {
 	"name": "liber-music-player",
-	"version": "3.0.0",
+	"version": "3.0.1",
 	"description": "Liber Music Player for Obsidian. Play local music files from the vault in the sidebar.",
 	"main": "main.js",
 	"type": "module",

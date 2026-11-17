@@ -16,7 +16,7 @@
 import { initBufferPolyfill } from "../polyfills/buffer";
 initBufferPolyfill();
 
-import { App, TFile } from "obsidian";
+import { App, Platform, TFile } from "obsidian";
 import { IAudioMetadata, parseBuffer } from "music-metadata";
 import { isSupportedAudioExtension } from "@/constants/audio";
 import { parseReplayGain } from "./replayGain";
@@ -331,21 +331,23 @@ export async function readAudioFileHeaderBinary(
 ): Promise<ArrayBuffer | null> {
 	// 1. On desktop (Electron) with Node.js fs environment, use fs.openSync + fs.readSync to read only the first maxBytes
 	try {
-		const adapter = app.vault.adapter as unknown as { getBasePath?: () => string };
-		if (typeof adapter.getBasePath === "function") {
-			const fs = await import("node:fs");
-			const path = await import("node:path");
-			const basePath = adapter.getBasePath();
-			const fullPath = path.join(basePath, file.path);
-			if (fs.existsSync(fullPath)) {
-				const fd = fs.openSync(fullPath, "r");
-				try {
-					const buffer = Buffer.alloc(maxBytes);
-					const bytesRead = fs.readSync(fd, buffer, 0, maxBytes, 0);
-					const slice = buffer.subarray(0, bytesRead);
-					return slice.buffer.slice(slice.byteOffset, slice.byteOffset + slice.byteLength);
-				} finally {
-					fs.closeSync(fd);
+		if (Platform.isDesktop) {
+			const adapter = app.vault.adapter as unknown as { getBasePath?: () => string };
+			if (typeof adapter.getBasePath === "function") {
+				const fs = await import("node:fs");
+				const path = await import("node:path");
+				const basePath = adapter.getBasePath();
+				const fullPath = path.join(basePath, file.path);
+				if (fs.existsSync(fullPath)) {
+					const fd = fs.openSync(fullPath, "r");
+					try {
+						const buffer = Buffer.alloc(maxBytes);
+						const bytesRead = fs.readSync(fd, buffer, 0, maxBytes, 0);
+						const slice = buffer.subarray(0, bytesRead);
+						return slice.buffer.slice(slice.byteOffset, slice.byteOffset + slice.byteLength);
+					} finally {
+						fs.closeSync(fd);
+					}
 				}
 			}
 		}

@@ -8,9 +8,12 @@
  */
 
 /* ========== Obsidian view content area (matches addClass in ViewSetupService) ========== */
+body .workspace-split .workspace-leaf .workspace-leaf-content .view-content.music-player,
+body .workspace-leaf-content .view-content.music-player,
+body .view-content.music-player,
 .view-content.music-player {
-	padding: 0 !important;
-	overflow: hidden !important;
+	padding: 0;
+	overflow: hidden;
 }
 
 /* ========== Main Container ========== */
@@ -68,9 +71,9 @@
 
 /* ========== Hidden textarea helper for cross-platform clipboard copy ========== */
 .music-clipboard-hidden {
-	position: fixed !important;
-	left: -9999px !important;
-	top: -9999px !important;
-	opacity: 0 !important;
-	pointer-events: none !important;
+	position: fixed;
+	left: -9999px;
+	top: -9999px;
+	opacity: 0;
+	pointer-events: none;
 }
