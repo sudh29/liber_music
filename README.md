@@ -10,6 +10,8 @@
         <img src="https://img.shields.io/badge/toolchain-Vite%2B%20%7C%20Oxc-orange" alt="Toolchain: Vite+ | Oxc">
     </p>
     <p>A minimalist, audiophile-grade Material 3 music player embedded directly in the Obsidian sidebar. Features local vault audio playback, dynamic album palette color extraction, synchronized karaoke lyrics, playlist and queue management, and offline-first library indexing with 100% cross-platform parity on Laptop, iPad, and Pixel.</p>
+    <br>
+    <a href="./images/desktop.png"><img src="./images/desktop.png" alt="Liber Music Player for Obsidian" width="850"></a>
 </div>
 
 ---
@@ -17,6 +19,7 @@
 ## 📑 Table of Contents
 
 - [✨ What's New in v3.0](#-whats-new-in-v30-minimalist-material-3)
+- [📱 Universal Device Showcase](#-universal-device-showcase)
 - [🚀 Quick Start](#-quick-start)
 - [📦 Installation](#-installation)
 - [🌟 Key Features](#-key-features)
@@ -41,6 +44,17 @@ Liber Music Player v3.0 introduces a comprehensive visual and architectural rede
 - 📱 **Obsidian Mobile Drawer CSS Isolation**: Scoped Navigation Bar styling (`.music-player-nav-buttons`) that prevents Obsidian core mobile drawer styles from forcibly pulling navigation icons over bottom playback controls.
 - 📱 **Universal Cross-Platform Parity**: Fully tested and optimized for **15.6" Laptop (Desktop Electron)**, **Pixel 9a (Android Chromium)**, and **iPad Air 13" (WebKit WKWebView)**.
 - 🎶 **Expanded Triplet Lyrics Window**: Generous vertical lyrics display (`clamp(80px, 14vh, 200px)`) with responsive fluid typography and word-by-word karaoke synchronization.
+
+---
+
+## 📱 Universal Device Showcase
+
+Liber Music Player is engineered and visually calibrated for complete cross-platform parity across desktop, tablet, and mobile:
+
+| 💻 Laptop / Desktop (Electron) | 📱 Mobile / Pixel 9a (Android) | 📲 Tablet / iPad Air 13" (WebKit) |
+| :---: | :---: | :---: |
+| <a href="./images/desktop.png"><img src="./images/desktop.png" alt="Laptop Desktop View" width="380"></a> | <a href="./images/mobile.jpeg"><img src="./images/mobile.jpeg" alt="Pixel Mobile View" width="180"></a> | <a href="./images/tablet.jpeg"><img src="./images/tablet.jpeg" alt="iPad Tablet View" width="300"></a> |
+| *Sidebar docked with synced lyrics & library* | *Compact drawer layout with isolated controls* | *Adaptive fluid canvas with touch controls* |
 
 ---
 
